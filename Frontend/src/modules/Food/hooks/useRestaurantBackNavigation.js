@@ -81,7 +81,7 @@ const resolveRestaurantBackPath = ({ pathname, state }) => {
     normalizedPath === "/status" ||
     normalizedPath === "/menu-categories"
   ) {
-    return explicitBackPath || "/food/restaurant"
+    return explicitBackPath || "/food/restaurant/inventory"
   }
 
   if (
@@ -115,7 +115,7 @@ const resolveRestaurantBackPath = ({ pathname, state }) => {
   }
 
   if (/^\/hub-menu\/item\/[^/]+$/.test(normalizedPath)) {
-    return explicitBackPath || "/food/restaurant/explore"
+    return explicitBackPath || "/food/restaurant/inventory"
   }
 
   if (explicitBackPath && explicitBackPath !== pathname) {

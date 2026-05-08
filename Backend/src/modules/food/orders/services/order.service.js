@@ -1083,6 +1083,97 @@ async function notifySellerNewOrders(orderDoc, sellerOrders = []) {
   }
 }
 
+/**
+ * Synchronize cancellation of all seller-specific order legs associated with a parent order.
+ * Triggers status updates and real-time socket notifications to sellers.
+ */
+async function cancelSellerOrdersForParent(orderDoc, reason = "Parent order cancelled") {
+  try {
+    const parentId = orderDoc._id;
+    // Find active seller order legs (not yet delivered or already cancelled)
+    const activeSellerOrders = await SellerOrder.find({
+      parentOrderId: parentId,
+      status: { $nin: ["cancelled", "delivered"] }
+    });
+
+    if (!activeSellerOrders.length) return;
+
+    logger.info(`MixedOrder: Cancelling ${activeSellerOrders.length} seller legs for Order ${orderDoc.orderId}`);
+
+    // Update all matching legs to 'cancelled' status
+    await SellerOrder.updateMany(
+      { 
+        parentOrderId: parentId, 
+        status: { $nin: ["cancelled", "delivered"] } 
+      },
+      { 
+        $set: { 
+          status: "cancelled",
+          workflowStatus: "CANCELLED"
+        } 
+      }
+    );
+
+    // Notify each seller via Socket.io and Push Notifications
+    await notifySellerOrderCancelled(orderDoc, activeSellerOrders, reason);
+  } catch (error) {
+    logger.error(`cancelSellerOrdersForParent failed for Order ${orderDoc?.orderId}: ${error.message}`);
+  }
+}
+
+/**
+ * Emit real-time socket events and send push notifications to sellers when their leg of a mixed order is cancelled.
+ */
+async function notifySellerOrderCancelled(orderDoc, sellerOrders, reason) {
+  try {
+    const io = getIO();
+    for (const sellerOrder of sellerOrders) {
+      const sellerId = sellerOrder.sellerId?.toString?.() || sellerOrder.sellerId;
+      
+      if (io && sellerId) {
+        const payload = {
+          orderId: sellerOrder.orderId,
+          sellerOrderId: sellerOrder._id?.toString?.() || "",
+          reason,
+          status: "cancelled"
+        };
+        
+        console.log(`[MIXED-SYNC] Emitting cancellation for SellerOrder ${sellerOrder.orderId} to seller room: ${rooms.seller(sellerId)}`);
+        // Emit specific cancellation events to seller room
+        io.to(rooms.seller(sellerId)).emit("order_cancelled", payload);
+        io.to(rooms.seller(sellerId)).emit("order:cancelled", payload);
+        
+        // Also emit 'order_status_update' so generic UI listeners (like DashboardLayout) can update status tags
+        io.to(rooms.seller(sellerId)).emit("order_status_update", {
+            ...payload,
+            orderStatus: "cancelled",
+            sellerStatus: "cancelled",
+            message: `Order #${sellerOrder.orderId} was cancelled.`
+        });
+      }
+
+      if (sellerId) {
+        await notifyOwnerSafely(
+          { ownerType: "SELLER", ownerId: sellerId },
+          {
+            title: "Order Cancelled ❌",
+            body: `Order ${sellerOrder.orderId} has been cancelled by the ${reason.includes('user') ? 'user' : 'restaurant'}.`,
+            data: {
+              type: "seller_order_cancelled",
+              orderId: sellerOrder.orderId,
+              sellerOrderId: sellerOrder._id?.toString?.() || "",
+              link: `/seller/orders`,
+            },
+          }
+        );
+      }
+    }
+  } catch (error) {
+    logger.warn(`notifySellerOrderCancelled failed: ${error.message}`);
+  }
+}
+
+
 async function listNearbyOnlineDeliveryPartners(
   restaurantId,
   { maxKm = 15, limit = 25 } = {},
@@ -2505,6 +2596,11 @@ export async function cancelOrder(orderId, userId, reason, refundTo) {
 
   await order.save();
 
+  // Sync mixed order seller legs if applicable
+  if (order.orderType === 'mixed' || order.orderType === 'quick') {
+    await cancelSellerOrdersForParent(order, "Cancelled by user");
+  }
+
   enqueueOrderEvent("order_cancelled_by_user", {
     orderMongoId: order._id?.toString?.(),
     orderId: order.orderId,
@@ -2738,6 +2834,12 @@ export async function updateOrderStatusRestaurant(
       // Update payment status for cancellation
       if (!isOnlinePaid) {
         order.payment.status = "cancelled";
+      }
+
+      // Sync mixed order seller legs
+      if (order.orderType === 'mixed' || order.orderType === 'quick') {
+        console.log(`[MIXED-SYNC] Order ${order.orderId} (type: ${order.orderType}) cancelled by restaurant. Propagating to seller legs...`);
+        await cancelSellerOrdersForParent(order, "Cancelled by restaurant");
       }
     }
 
@@ -4300,6 +4402,11 @@ export async function recoverStuckOrders() {
         });
 
         await order.save({ validateBeforeSave: false });
+        
+        // Sync mixed order seller legs
+        if (order.orderType === 'mixed' || order.orderType === 'quick') {
+          await cancelSellerOrdersForParent(order, "Cancelled by system watchdog");
+        }
         
         // Enqueue event for housekeeping/finance
         enqueueOrderEvent('order_cancelled_by_watchdog', {

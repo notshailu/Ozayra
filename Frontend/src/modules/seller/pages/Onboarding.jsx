@@ -187,7 +187,12 @@ export default function SellerOnboarding() {
     return `${done}/9 core fields filled`;
   }, [form]);
 
-  const updateField = (key, value) => {
+  const initialLocation = useMemo(
+    () => (form.lat && form.lng ? { lat: Number(form.lat), lng: Number(form.lng) } : null),
+    [form.lat, form.lng],
+  );
+
+  const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -252,7 +257,7 @@ export default function SellerOnboarding() {
       ...prev,
       lat: Number.isFinite(location?.lat) ? Number(location.lat.toFixed(6)) : prev.lat,
       lng: Number.isFinite(location?.lng) ? Number(location.lng.toFixed(6)) : prev.lng,
-      radius: location?.radius || prev.radius,
+      radius: location?.radius !== undefined ? location.radius : prev.radius,
       address: location?.address || prev.address,
     }));
   };
@@ -629,18 +634,18 @@ export default function SellerOnboarding() {
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Coverage</p>
-                      <p className="mt-2 text-2xl font-black text-slate-900">{form.radius || 5} km</p>
+                      <p className="mt-2 text-2xl font-black text-slate-900">{(form.radius !== null && form.radius !== undefined) ? form.radius : 5} km</p>
                       <p className="mt-1 text-xs font-medium text-slate-500">Adjust this inside the map picker.</p>
                     </div>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Latitude</p>
-                      <p className="mt-1 font-semibold text-slate-700">{form.lat || "Not selected"}</p>
+                      <p className="mt-1 font-semibold text-slate-700">{(form.lat !== null && form.lat !== "") ? form.lat : "Not selected"}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Longitude</p>
-                      <p className="mt-1 font-semibold text-slate-700">{form.lng || "Not selected"}</p>
+                      <p className="mt-1 font-semibold text-slate-700">{(form.lng !== null && form.lng !== "") ? form.lng : "Not selected"}</p>
                     </div>
                   </div>
                 </div>
@@ -868,11 +873,7 @@ export default function SellerOnboarding() {
           isOpen={isMapOpen}
           onClose={() => setIsMapOpen(false)}
           onConfirm={handleLocationSelect}
-          initialLocation={
-            form.lat && form.lng
-              ? { lat: Number(form.lat), lng: Number(form.lng) }
-              : null
-          }
+          initialLocation={initialLocation}
           initialRadius={Number(form.radius) || 5}
           maxRadius={100}
           zoneCoordinates={selectedZone?.coordinates || []}

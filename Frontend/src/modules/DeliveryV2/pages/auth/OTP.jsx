@@ -242,11 +242,22 @@ export default function DeliveryOTP() {
 
       if (needsRegistration) {
         // No DB record yet; redirect to registration details page WITHOUT creating anything in DB.
+        const existingDetailsRaw = sessionStorage.getItem("deliverySignupDetails")
+        let existingDetails = {}
+        try {
+          if (existingDetailsRaw) {
+            existingDetails = JSON.parse(existingDetailsRaw)
+          }
+        } catch (e) {
+          debugError("Error parsing existing signup details:", e)
+        }
+
         sessionStorage.removeItem("deliveryAuthData")
         sessionStorage.setItem("deliveryNeedsRegistration", "true")
         const digits = String(phone || "").replace(/\D/g, "")
         const details = {
-          name: "",
+          ...existingDetails,
+          name: existingDetails.name || "",
           phone: digits.slice(-10),
           countryCode: "+91",
         }

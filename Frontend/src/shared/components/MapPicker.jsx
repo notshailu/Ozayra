@@ -63,32 +63,30 @@ const MapPicker = ({
     libraries,
   });
 
-  useEffect(() => {
-    if (initialLocation) {
-      setCenter(initialLocation);
-      setMarker(initialLocation);
-    }
-  }, [initialLocation]);
-
+  // Initialize map state only once when modal opens
   useEffect(() => {
     if (!isOpen) return;
 
+    // Use initialLocation only for first-time initialization when modal opens
     if (initialLocation) {
       setCenter(initialLocation);
       setMarker(initialLocation);
-      return;
-    }
-
-    if (zonePath.length > 0) {
+    } else if (zonePath.length > 0) {
       const avgLat =
         zonePath.reduce((sum, point) => sum + point.lat, 0) / zonePath.length;
       const avgLng =
         zonePath.reduce((sum, point) => sum + point.lng, 0) / zonePath.length;
       setCenter({ lat: avgLat, lng: avgLng });
+      setMarker(null);
     } else {
       setCenter(defaultCenter);
+      setMarker(null);
     }
-  }, [initialLocation, isOpen, zonePath]);
+    
+    if (initialRadius !== undefined) {
+      setRadius(initialRadius);
+    }
+  }, [isOpen]); // Only run when modal opens
 
   useEffect(() => {
     if (!isLoaded || !isOpen || !mapRef.current || zonePath.length < 3 || !window.google) {

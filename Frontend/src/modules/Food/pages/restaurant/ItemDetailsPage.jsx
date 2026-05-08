@@ -22,6 +22,7 @@ import api from "@food/api"
 import { restaurantAPI, uploadAPI } from "@food/api"
 import { toast } from "sonner"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
+import Cropper from "react-easy-crop"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 import { getFoodVariants } from "@food/utils/foodVariants"
 const debugLog = (...args) => { }
@@ -89,6 +90,11 @@ export default function ItemDetailsPage() {
   const [uploadingImages, setUploadingImages] = useState(false)
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [imageToCrop, setImageToCrop] = useState(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
+  const [isCropping, setIsCropping] = useState(false)
   const [touchStart, setTouchStart] = useState(null)
   const [touchEnd, setTouchEnd] = useState(null)
   const [direction, setDirection] = useState(0)
@@ -100,8 +106,32 @@ export default function ItemDetailsPage() {
   const [isTagsPopupOpen, setIsTagsPopupOpen] = useState(false)
   const [categories, setCategories] = useState([])
   const [loadingCategories, setLoadingCategories] = useState(true)
-  const [loadingItem, setLoadingItem] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
+  const [isPureVegRestaurant, setIsPureVegRestaurant] = useState(false)
+
+  // Restore draft if exists
+  useEffect(() => {
+    const savedDraft = sessionStorage.getItem('item_form_draft')
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft)
+        if (draft.itemName) setItemName(draft.itemName)
+        if (draft.category) setCategory(draft.category)
+        if (draft.selectedCategoryId) setSelectedCategoryId(draft.selectedCategoryId)
+        if (draft.itemDescription) setItemDescription(draft.itemDescription)
+        if (draft.foodType) setFoodType(draft.foodType)
+        if (draft.basePrice) setBasePrice(draft.basePrice)
+        if (draft.variants) setVariants(draft.variants)
+        if (draft.preparationTime) setPreparationTime(draft.preparationTime)
+        if (draft.images) setImages(draft.images)
+        
+        // Clear draft after restoring
+        sessionStorage.removeItem('item_form_draft')
+      } catch (e) {
+        debugError('Error parsing item draft:', e)
+      }
+    }
+  }, [])
 
   const maxNameLength = 70
   const maxDescriptionLength = 1000
@@ -299,6 +329,34 @@ export default function ItemDetailsPage() {
     }
   }, [])
 
+  // Fetch restaurant profile to check for Pure Veg status
+  useEffect(() => {
+    let isMounted = true
+    const fetchRestaurantProfile = async () => {
+      try {
+        const response = await restaurantAPI.getCurrentRestaurant()
+        const profile =
+          response?.data?.data?.restaurant ||
+          response?.data?.restaurant ||
+          response?.data?.data ||
+          null
+        if (!isMounted) return
+        const pureVeg = profile?.pureVegRestaurant === true
+        setIsPureVegRestaurant(pureVeg)
+        if (pureVeg) {
+          setFoodType("Veg")
+        }
+      } catch (error) {
+        debugWarn("Failed to load restaurant profile:", error)
+      }
+    }
+
+    fetchRestaurantProfile()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   // Track virtual keyboard height and push footer above keyboard
   useEffect(() => {
     const viewport = window.visualViewport
@@ -362,25 +420,78 @@ export default function ItemDetailsPage() {
   const handleImageAdd = (file) => {
     if (!file) return
 
-    // Single-image mode: keep only the first selected valid file
-    const previewUrl = URL.createObjectURL(file)
-
-    images.forEach((img) => {
-      if (img && img.startsWith('blob:')) {
-        URL.revokeObjectURL(img)
-      }
+    const reader = new FileReader()
+    reader.addEventListener("load", () => {
+      setImageToCrop(reader.result)
+      setIsCropping(true)
     })
-
-    const newImageFilesMap = new Map()
-    newImageFilesMap.set(previewUrl, file)
-
-    setImages([previewUrl])
-    setImageFiles(newImageFilesMap)
-    setCurrentImageIndex(0)
+    reader.readAsDataURL(file)
 
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
+  }
+
+  const onCropComplete = (croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels)
+  }
+
+  const handleCropSave = async () => {
+    try {
+      const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels)
+      
+      // Single-image mode: keep only the first selected valid file
+      const previewUrl = URL.createObjectURL(croppedImage)
+
+      images.forEach((img) => {
+        if (img && img.startsWith('blob:')) {
+          URL.revokeObjectURL(img)
+        }
+      })
+
+      const newImageFilesMap = new Map()
+      newImageFilesMap.set(previewUrl, croppedImage)
+
+      setImages([previewUrl])
+      setImageFiles(newImageFilesMap)
+      setCurrentImageIndex(0)
+      setIsCropping(false)
+      setImageToCrop(null)
+    } catch (e) {
+      debugError('Error cropping image:', e)
+      toast.error('Failed to crop image')
+    }
+  }
+
+  // Helper to create cropped image
+  const getCroppedImg = async (imageSrc, pixelCrop) => {
+    const image = new Image()
+    image.src = imageSrc
+    await new Promise((resolve) => (image.onload = resolve))
+
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+
+    canvas.width = pixelCrop.width
+    canvas.height = pixelCrop.height
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    )
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob)
+      }, "image/jpeg")
+    })
   }
 
   const handleCameraClick = () => {
@@ -1192,17 +1303,34 @@ export default function ItemDetailsPage() {
               <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-bold text-gray-900">Select category</h2>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setIsCategoryPopupOpen(false)
-                      navigate('/restaurant/menu-categories')
-                    }}
-                    className="p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5"
-                    title="Add Category"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-medium">Add</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        const currentDraft = {
+                          itemName,
+                          category,
+                          selectedCategoryId,
+                          itemDescription,
+                          foodType,
+                          basePrice,
+                          variants,
+                          preparationTime,
+                          images,
+                        }
+                        sessionStorage.setItem('item_form_draft', JSON.stringify(currentDraft))
+                        setIsCategoryPopupOpen(false)
+                        navigate('/food/restaurant/menu-categories', {
+                          state: {
+                            backTo: location.pathname,
+                            id: id, // Pass current ID to help return
+                          }
+                        })
+                      }}
+                      className="p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                      title="Add Category"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium">Add</span>
+                    </button>
                   <button
                     onClick={() => setIsCategoryPopupOpen(false)}
                     className="p-1 rounded-full hover:bg-gray-100"
@@ -1357,6 +1485,54 @@ export default function ItemDetailsPage() {
         fileNamePrefix="item-photo"
         galleryInputRef={fileInputRef}
       />
+
+      {/* Crop Modal */}
+      <AnimatePresence>
+        {isCropping && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex flex-col bg-black"
+          >
+            <div className="flex items-center justify-between p-4 bg-black/50 text-white z-10">
+              <button onClick={() => setIsCropping(false)} className="p-2">
+                <X className="w-6 h-6" />
+              </button>
+              <h2 className="text-lg font-bold">Crop Image</h2>
+              <button onClick={handleCropSave} className="px-4 py-2 bg-white text-black rounded-lg font-bold">
+                Done
+              </button>
+            </div>
+            <div className="relative flex-1">
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={4 / 3}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            <div className="p-6 bg-black/50 z-10">
+              <div className="flex items-center gap-4">
+                <span className="text-white text-sm">Zoom</span>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(e.target.value)}
+                  className="flex-1 accent-white"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   User,
@@ -57,8 +57,8 @@ const SellerProfile = () => {
         shopName: data.shopName,
         phone: data.phone,
         email: data.email,
-        lat: data.location?.coordinates[1] || null,
-        lng: data.location?.coordinates[0] || null,
+        lat: (data.location?.coordinates && data.location.coordinates[1] !== undefined) ? data.location.coordinates[1] : null,
+        lng: (data.location?.coordinates && data.location.coordinates[0] !== undefined) ? data.location.coordinates[0] : null,
         radius: data.serviceRadius || 5,
         address: data.address || "",
       });
@@ -98,6 +98,11 @@ const SellerProfile = () => {
       setFormData({ ...formData, [name]: value });
     }
   };
+
+  const initialLocation = useMemo(
+    () => (formData.lat ? { lat: formData.lat, lng: formData.lng } : null),
+    [formData.lat, formData.lng],
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -353,7 +358,7 @@ const SellerProfile = () => {
                   )}
                 </div>
 
-                {formData.lat && (
+                {formData.lat !== null && formData.lat !== undefined && (
                   <div className="pt-6 border-t border-slate-200/60 flex flex-wrap gap-8">
                     <div className="space-y-2">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
@@ -455,9 +460,7 @@ const SellerProfile = () => {
           isOpen={isMapOpen}
           onClose={() => setIsMapOpen(false)}
           onConfirm={handleLocationSelect}
-          initialLocation={
-            formData.lat ? { lat: formData.lat, lng: formData.lng } : null
-          }
+          initialLocation={initialLocation}
           initialRadius={formData.radius}
         />
       )}

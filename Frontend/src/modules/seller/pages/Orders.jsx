@@ -30,7 +30,6 @@ import { MagicCard } from "@/components/ui/magic-card";
 import { BlurFade } from "@/components/ui/blur-fade";
 import ShimmerButton from "@/components/ui/shimmer-button";
 import { sellerApi } from "../services/sellerApi";
-import { restaurantAPI } from "@/services/api";
 import { useToast } from "@shared/components/ui/Toast";
 import { getLegacyStatusFromOrder } from "@/shared/utils/orderStatus";
 import { Loader2 } from "lucide-react";
@@ -171,20 +170,15 @@ const Orders = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, startDate, endDate]);
 
-  // Initial load: show full-page loader once
+  // Reactive load: fetch orders when page or filters change
   useEffect(() => {
-    fetchOrders(page, true).finally(() => {
+    fetchOrders(page, !hasMountedRef.current).finally(() => {
       hasMountedRef.current = true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Subsequent changes (page, date filters): update data without full page "refresh"
-  useEffect(() => {
-    if (!hasMountedRef.current) return;
-    fetchOrders(page, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, startDate, endDate]);
+
+
 
   const fetchOrders = async (requestedPage = 1, showPageLoader = false) => {
     try {
@@ -195,7 +189,7 @@ const Orders = () => {
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
-      const response = await restaurantAPI.getOrders(params);
+      const response = await sellerApi.getOrders(params);
 
       // Backend returns handleResponse(..., { items, page, limit, total, totalPages })
       const payload = response.data.result || response.data.data || {};

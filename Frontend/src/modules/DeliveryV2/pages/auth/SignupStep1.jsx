@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import useDeliveryBackNavigation from "../../hooks/useDeliveryBackNavigation"
@@ -11,13 +11,17 @@ const debugError = (...args) => {}
 export default function SignupStep1() {
   const navigate = useNavigate()
   const goBack = useDeliveryBackNavigation()
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  const queryRef = searchParams.get("ref") || ""
+
   const [formData, setFormData] = useState(() => {
     const saved = sessionStorage.getItem("deliverySignupDetails")
     const base = {
       name: "",
       phone: "",
       countryCode: "+91",
-      ref: "",
+      ref: queryRef,
       email: "",
       address: "",
       city: "",
@@ -31,7 +35,8 @@ export default function SignupStep1() {
     }
     if (saved) {
       try {
-        return { ...base, ...JSON.parse(saved) }
+        const parsed = JSON.parse(saved)
+        return { ...base, ...parsed, ref: parsed.ref || queryRef }
       } catch (e) {
         debugError("Error parsing saved details:", e)
       }

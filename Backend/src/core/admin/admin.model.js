@@ -72,5 +72,5 @@ adminSchema.methods.comparePassword = function (candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
 };
 
-export const FoodAdmin = mongoose.model('CommonAdmin', adminSchema, 'common_admins');
+export const FoodAdmin = mongoose.model('FoodAdmin', adminSchema, 'common_admins');
 

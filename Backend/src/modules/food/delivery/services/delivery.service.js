@@ -76,8 +76,22 @@ export const registerDeliveryPartner = async (payload, files) => {
     }
 
     // Store referredBy (no credit here; credit happens on admin approval).
-    if (refRaw && mongoose.Types.ObjectId.isValid(refRaw) && String(refRaw) !== String(partner._id)) {
-        const referrer = await FoodDeliveryPartner.findById(refRaw).select('_id').lean();
+    if (refRaw && String(refRaw) !== String(partner._id)) {
+        // Search by ID if it's a valid ObjectId, otherwise search by referralCode field
+        let referrer = null;
+        if (mongoose.Types.ObjectId.isValid(refRaw)) {
+            referrer = await FoodDeliveryPartner.findById(refRaw).select('_id').lean();
+        }
+
+        if (!referrer) {
+            referrer = await FoodDeliveryPartner.findOne({ 
+                $or: [
+                    { referralCode: refRaw },
+                    { phone: refRaw }
+                ]
+            }).select('_id').lean();
+        }
+
         if (referrer) {
             partner.referredBy = referrer._id;
         }

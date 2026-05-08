@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import SellerOrdersContext from '@/modules/seller/context/SellerOrdersContext';
 import SellerEarningsContext, { defaultEarnings } from '@/modules/seller/context/SellerEarningsContext';
-import { getOrderSocket, onSellerOrderNew, onOrderStatusUpdate } from '@/core/services/orderSocket';
+import { getOrderSocket, onSellerOrderNew, onOrderStatusUpdate, onOrderCancelled } from '@/core/services/orderSocket';
 import alertSound from '@/modules/Food/assets/audio/alert.mp3';
 
 const POLL_INTERVAL_MS = 15000;
@@ -115,6 +115,18 @@ const DashboardLayout = ({ children, navItems, title }) => {
                 }
 
                 const newOrder = pendingOrders.find((o) => !shownOrderIdsRef.current.has(o.orderId));
+                // CRITICAL FIX: If a modal is showing, but the order is no longer in the pending list, clear it.
+                // This handles cases where the parent (restaurant) rejected the mixed order and it disappeared from polling.
+                if (newOrderAlertRef.current) {
+                    const currentId = String(newOrderAlertRef.current.orderId);
+                    const stillPending = pendingOrders.some(o => String(o.orderId) === currentId);
+                    if (!stillPending) {
+                        console.log(`[DashboardLayout] Clearing stale order modal: #${currentId} is no longer pending.`);
+                        setNewOrderAlert(null);
+                        newOrderAlertRef.current = null;
+                    }
+                }
+
                 if (!newOrder || newOrderAlertRef.current) return;
 
                 setNewOrderAlert(newOrder);
@@ -151,6 +163,15 @@ const DashboardLayout = ({ children, navItems, title }) => {
             if (!orderId) return;
             const raw = String(payload?.sellerStatus || payload?.orderStatus || '').trim().toLowerCase();
             if (!raw) return;
+
+            // Terminal cancellation check – clear modal if this specific order is cancelled
+            if (raw.includes('cancel')) {
+                if (newOrderAlertRef.current && String(newOrderAlertRef.current.orderId) === orderId) {
+                    setNewOrderAlert(null);
+                    toast.error(`Order #${orderId} was cancelled by the customer/system.`);
+                }
+            }
+
             const nextStatus =
                 raw === 'picked_up' ? 'out_for_delivery' :
                     raw === 'placed' || raw === 'created' ? 'pending' :
@@ -170,9 +191,23 @@ const DashboardLayout = ({ children, navItems, title }) => {
             );
         });
 
+        const offCancel = onOrderCancelled(getToken, (payload) => {
+            const orderId = String(payload?.orderId || '').trim();
+            if (!orderId) return;
+            
+            if (newOrderAlertRef.current && String(newOrderAlertRef.current.orderId) === orderId) {
+                setNewOrderAlert(null);
+                toast.error(`Order #${orderId} has been cancelled.`);
+            }
+            
+            // Also refresh orders to update list
+            if (fetchOrdersRef.current) fetchOrdersRef.current();
+        });
+
         return () => {
             offNew?.();
             offStatus?.();
+            offCancel?.();
         };
     }, [role]);
 

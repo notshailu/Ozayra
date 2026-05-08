@@ -134,14 +134,39 @@ const buildSellerOrderFromParentOrder = async (order, sellerId) => {
     Number((sellerSubtotal - commissionAmount).toFixed(2)),
   );
 
+  const parentStatus = String(order?.orderStatus || "pending").toLowerCase();
+  let sellerStatus = "pending";
+  let workflowStatus = "SELLER_PENDING";
+
+  if (parentStatus === "delivered") {
+    sellerStatus = "delivered";
+    workflowStatus = "DELIVERED";
+  } else if (parentStatus.startsWith("cancel")) {
+    sellerStatus = "cancelled";
+    workflowStatus = "CANCELLED";
+  } else if (
+    ["confirmed", "preparing", "ready_for_pickup", "ready", "picked_up", "out_for_delivery"].includes(
+      parentStatus,
+    )
+  ) {
+    sellerStatus = parentStatus;
+    workflowStatus = parentStatus.toUpperCase();
+  }
+
+  const addr = order?.deliveryAddress;
+
   return {
     orderType: order?.orderType === "mixed" ? "mixed" : "quick",
     parentOrderId: order?._id || null,
     sellerId,
     orderId: order?.orderId,
     customer: {
-      name: "Customer",
-      phone: String(order?.deliveryAddress?.phone || "").trim(),
+      name:
+        order?.userId?.name ||
+        addr?.name ||
+        order?.customer?.name ||
+        "Customer",
+      phone: addr?.phone || order?.customer?.phone || "",
     },
     items: quickItems.map((item) => ({
       productId: mongoose.isValidObjectId(String(item?.itemId || ""))
@@ -158,10 +183,23 @@ const buildSellerOrderFromParentOrder = async (order, sellerId) => {
       total: sellerSubtotal + allocatedDeliveryFee,
       receivable: sellerReceivable,
     },
-    status: "pending",
-    workflowStatus: "SELLER_PENDING",
+    status: sellerStatus,
+    workflowStatus: workflowStatus,
+    deliveredAt: order?.deliveryState?.deliveredAt || (parentStatus === "delivered" ? order.updatedAt : null),
     sellerPendingExpiresAt: new Date(Date.now() + 2 * 60 * 1000),
-    address: buildSellerAddressFromParentOrder(order),
+    address: {
+      address:
+        [addr?.street, addr?.additionalDetails].filter(Boolean).join(", ") ||
+        addr?.address ||
+        "",
+      city: addr?.city || "",
+      location: addr?.location
+        ? {
+            lat: addr.location.coordinates?.[1],
+            lng: addr.location.coordinates?.[0],
+          }
+        : undefined,
+    },
     payment: {
       method: ["cash", "cod"].includes(
         String(order?.payment?.method || "").toLowerCase(),
@@ -201,19 +239,19 @@ const resolveParentQuickOrder = (
   return query;
 };
 
-const backfillSellerOrdersForMixedParentOrders = async (sellerId) => {
+const backfillSellerOrdersFromParentOrders = async (sellerId) => {
   const sellerKey = String(sellerId || "").trim();
   if (!sellerKey) return;
 
   const [existingSellerOrders, mixedOrders] = await Promise.all([
     SellerOrder.find({ sellerId }).select("orderId").lean(),
     QuickOrder.find({
-      orderType: "mixed",
+      orderType: { $in: ["mixed", "quick"] },
       items: { $elemMatch: { type: "quick", sourceId: sellerKey } },
     })
       .select("_id orderId orderType items pricing deliveryAddress payment")
       .sort({ createdAt: -1 })
-      .limit(200)
+      .limit(500)
       .lean(),
   ]);
 
@@ -1156,25 +1194,31 @@ export const updateSellerProfileController = async (req, res) => {
     );
 
     seller.serviceRadius = Math.max(1, Math.min(100, radius || 5));
-
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
       seller.location = {
         type: "Point",
         coordinates: [lng, lat],
         latitude: lat,
         longitude: lng,
-        formattedAddress: address,
-        address,
+        formattedAddress: address || (seller.location ? (seller.location.formattedAddress || seller.location.address) : ""),
+        address: address || (seller.location ? seller.location.address : ""),
       };
-    } else if (address && seller.location) {
-      seller.location.formattedAddress = address;
-      seller.location.address = address;
+      seller.markModified("location");
     } else if (address) {
-      seller.location = {
-        type: "Point",
-        formattedAddress: address,
-        address,
-      };
+      if (!seller.location) {
+        seller.location = {
+          type: "Point",
+          coordinates: [0, 0], // Default coordinates if missing but address provided
+          latitude: 0,
+          longitude: 0,
+          formattedAddress: address,
+          address: address,
+        };
+      } else {
+        seller.location.formattedAddress = address;
+        seller.location.address = address;
+      }
+      seller.markModified("location");
     }
 
     seller.bankInfo = seller.bankInfo || {};
@@ -1497,49 +1541,102 @@ export const markAllSellerNotificationsReadController = async (req, res) => {
 export const getSellerOrdersController = async (req, res) => {
   try {
     const sellerId = sellerScope(req);
-    await backfillSellerOrdersForMixedParentOrders(sellerId);
+    const sellerKey = String(sellerId);
+    
     const page = Math.max(1, num(req.query?.page, 1));
     const limit = Math.max(1, Math.min(100, num(req.query?.limit, 50)));
     const skip = (page - 1) * limit;
-    const query = { sellerId };
+
+    // Use parent collection as the source of truth as requested
+    const parentQuery = {
+      items: { $elemMatch: { sourceId: sellerKey, type: "quick" } }
+    };
 
     if (req.query?.startDate || req.query?.endDate) {
-      query.createdAt = {};
+      parentQuery.createdAt = {};
       if (req.query?.startDate) {
-        query.createdAt.$gte = new Date(`${req.query.startDate}T00:00:00.000Z`);
+        parentQuery.createdAt.$gte = new Date(`${req.query.startDate}T00:00:00.000Z`);
       }
       if (req.query?.endDate) {
-        query.createdAt.$lte = new Date(`${req.query.endDate}T23:59:59.999Z`);
+        parentQuery.createdAt.$lte = new Date(`${req.query.endDate}T23:59:59.999Z`);
       }
     }
 
-    const [items, total] = await Promise.all([
-      SellerOrder.find(query)
+    const [parentOrders, total] = await Promise.all([
+      QuickOrder.find(parentQuery)
+        .populate("userId", "name phone email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      SellerOrder.countDocuments(query),
+      QuickOrder.countDocuments(parentQuery),
     ]);
 
-    const orderIds = items
-      .map((item) => String(item.orderId || "").trim())
-      .filter(Boolean);
+    if (!parentOrders.length) {
+      return res.json({
+        success: true,
+        result: { items: [], total: 0, page, limit, totalPages: 0 },
+      });
+    }
 
-    const quickOrders = orderIds.length
-      ? await QuickOrder.find({
-          orderType: { $in: ["quick", "mixed"] },
-          orderId: { $in: orderIds },
-        })
-          .select("orderId dispatch orderType orderStatus")
-          .lean()
-      : [];
+    const parentIds = parentOrders.map((p) => p._id);
+    const existingSellerOrders = await SellerOrder.find({
+      parentOrderId: { $in: parentIds },
+      sellerId,
+    }).lean();
 
-    const quickOrderMap = new Map(
-      quickOrders.map((order) => [String(order.orderId), order]),
+    const existingMap = new Map(
+      existingSellerOrders.map((so) => [String(so.parentOrderId), so]),
     );
 
-    const deliveryPartnerIds = quickOrders
+    const items = await Promise.all(
+      parentOrders.map(async (po) => {
+        let so = existingMap.get(String(po._id));
+        const parentStatus = String(po?.orderStatus || "").toLowerCase();
+
+        if (!so) {
+          const doc = await buildSellerOrderFromParentOrder(po, sellerId);
+          if (doc) {
+            so = await SellerOrder.findOneAndUpdate(
+              { parentOrderId: po._id, sellerId },
+              { $set: doc },
+              { upsert: true, new: true, setDefaultsOnInsert: true },
+            ).lean();
+          }
+        } else if (parentStatus === "delivered" && so.status !== "delivered") {
+          so = await SellerOrder.findOneAndUpdate(
+            { _id: so._id },
+            {
+              $set: {
+                status: "delivered",
+                workflowStatus: "DELIVERED",
+                deliveredAt:
+                  po.deliveryState?.deliveredAt || po.updatedAt || new Date(),
+              },
+            },
+            { new: true },
+          ).lean();
+        } else if (
+          parentStatus.startsWith("cancel") &&
+          so.status !== "cancelled"
+        ) {
+          so = await SellerOrder.findOneAndUpdate(
+            { _id: so._id },
+            { $set: { status: "cancelled", workflowStatus: "CANCELLED" } },
+            { new: true },
+          ).lean();
+        }
+        return so;
+      }),
+    );
+
+    const filteredItems = items.filter(Boolean);
+
+    const quickOrderMap = new Map(
+      parentOrders.map((order) => [String(order.orderId), order]),
+    );
+
+    const deliveryPartnerIds = parentOrders
       .map((order) => order?.dispatch?.deliveryPartnerId)
       .filter(Boolean);
 
@@ -1553,13 +1650,12 @@ export const getSellerOrdersController = async (req, res) => {
       deliveryPartners.map((partner) => [String(partner._id), partner]),
     );
 
-    const enrichedItems = items.map((item) => {
+    const enrichedItems = filteredItems.map((item) => {
       const quickOrder = quickOrderMap.get(String(item.orderId));
       const acceptedPartner = quickOrder?.dispatch?.deliveryPartnerId
         ? deliveryPartnerMap.get(String(quickOrder.dispatch.deliveryPartnerId))
         : null;
 
-      // Use receivable as the display amount in the seller panel
       const subtotal = num(item.pricing?.subtotal);
       const commission = num(item.pricing?.commission);
       const receivable =
@@ -1569,8 +1665,7 @@ export const getSellerOrdersController = async (req, res) => {
         ...item,
         pricing: {
           ...item.pricing,
-          total: receivable, // Show net earnings to the seller
-          receivable: receivable,
+          receivable,
         },
         orderType: item.orderType || quickOrder?.orderType || "quick",
         dispatchStatus: quickOrder?.dispatch?.status || "unassigned",

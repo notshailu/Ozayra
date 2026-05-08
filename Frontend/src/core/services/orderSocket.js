@@ -154,3 +154,13 @@ export function onDeliveryOtpValidated(getToken, handler) {
     s.off("delivery:otp:validated", wrappedHandler);
   };
 }
+export function onOrderCancelled(getToken, handler) {
+  const s = getOrderSocket(getToken);
+  if (!s || typeof handler !== "function") return () => {};
+  s.on("order_cancelled", handler);
+  s.on("order:cancelled", handler);
+  return () => {
+    s.off("order_cancelled", handler);
+    s.off("order:cancelled", handler);
+  };
+}

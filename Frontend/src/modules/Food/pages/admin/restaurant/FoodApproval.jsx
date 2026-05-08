@@ -410,6 +410,21 @@ export default function FoodApproval() {
                   </div>
                 )}
 
+                {/* Variants */}
+                {selectedRequest.variants && selectedRequest.variants.length > 0 && (
+                  <div className="col-span-full">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Variants / Sizes</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedRequest.variants.map((variant, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <span className="text-sm font-medium text-gray-900">{variant.name || variant.variantName || '-'}</span>
+                          <span className="text-sm font-bold text-green-600">₹{variant.price || 0}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Images */}
                 {(() => {
                   const allImages = (selectedRequest.images || []).filter(img => img && typeof img === 'string');

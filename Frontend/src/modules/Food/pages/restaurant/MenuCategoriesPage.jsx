@@ -328,23 +328,22 @@ export default function MenuCategoriesPage() {
                   <div className="mt-4 flex items-center gap-2">
                     <button
                       onClick={() => handleToggleActive(category)}
-                      className="rounded-xl bg-slate-100 p-2 text-slate-700 disabled:opacity-50"
-                      disabled={!isEditable}
+                      className="rounded-xl bg-slate-100 p-2 text-slate-700 hover:bg-slate-200 transition-colors"
                       title={category?.isActive !== false ? "Deactivate" : "Activate"}
                     >
                       {category?.isActive !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     </button>
-                    <button
-                      onClick={() => openEditModal(category)}
-                      className="rounded-xl bg-blue-50 p-2 text-blue-700 disabled:opacity-50"
-                      disabled={!isEditable}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
+                    {status !== "approved" && (
+                      <button
+                        onClick={() => openEditModal(category)}
+                        className="rounded-xl bg-blue-50 p-2 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeleteCategory(category)}
-                      className="rounded-xl bg-rose-50 p-2 text-rose-700 disabled:opacity-50"
-                      disabled={!category?.canDelete}
+                      className="rounded-xl bg-rose-50 p-2 text-rose-700 hover:bg-rose-100 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

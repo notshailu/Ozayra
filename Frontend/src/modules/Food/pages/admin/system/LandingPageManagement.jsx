@@ -18,6 +18,46 @@ const getZoneName = (zone) => {
   return zone?.name || zone?.zoneName || zone?.serviceLocation || "Unnamed zone"
 }
 
+const formatRestaurantId = (id) => {
+  if (!id) return "REST000000"
+
+  const idString = String(id)
+  // Extract last 6 digits from the ID
+  // Handle formats like "REST-1768045396242-2829" or "1768045396242-2829"
+  const parts = idString.split(/[-.]/)
+  let lastDigits = ""
+
+  // Get the last part and extract digits
+  if (parts.length > 0) {
+    const lastPart = parts[parts.length - 1]
+    // Extract only digits from the last part
+    const digits = lastPart.match(/\d+/g)
+    if (digits && digits.length > 0) {
+      // Get last 6 digits from all digits found
+      const allDigits = digits.join("")
+      lastDigits = allDigits.slice(-6).padStart(6, "0")
+    } else {
+      // If no digits in last part, look for digits in all parts
+      const allParts = parts.join("")
+      const allDigits = allParts.match(/\d+/g)
+      if (allDigits && allDigits.length > 0) {
+        const combinedDigits = allDigits.join("")
+        lastDigits = combinedDigits.slice(-6).padStart(6, "0")
+      }
+    }
+  }
+
+  // If no digits found, use a hash of the ID
+  if (!lastDigits) {
+    const hash = idString.split("").reduce((acc, char) => {
+      return ((acc << 5) - acc) + char.charCodeAt(0) | 0
+    }, 0)
+    lastDigits = Math.abs(hash).toString().slice(-6).padStart(6, "0")
+  }
+
+  return `REST${lastDigits}`
+}
+
 
 export default function LandingPageManagement() {
   const [activeTab, setActiveTab] = useState('banners')
@@ -1981,7 +2021,7 @@ export default function LandingPageManagement() {
                             >
                               <div className="min-w-0">
                                 <p className="text-sm font-medium text-slate-800 truncate">{restaurant.name}</p>
-                                 <p className="text-xs text-slate-500 truncate">{restaurant._id || "No ID"}</p>
+                                 <p className="text-xs text-slate-500 truncate">ID #{formatRestaurantId(restaurant.restaurantId || restaurant._id)}</p>
                               </div>
                               <Checkbox
                                 checked={isChecked}
@@ -2301,7 +2341,7 @@ export default function LandingPageManagement() {
                                 {restaurant.name || 'Unnamed Restaurant'}
                               </h3>
                               <p className="text-sm text-slate-500 truncate">
-                                ID: {restaurant.restaurantId || restaurant._id}
+                                ID #{formatRestaurantId(restaurant.restaurantId || restaurant._id)}
                               </p>
                               {restaurant.rating && (
                                 <div className="flex items-center gap-1 mt-1">

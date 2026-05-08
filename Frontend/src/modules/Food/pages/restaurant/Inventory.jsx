@@ -1194,8 +1194,8 @@ export default function Inventory() {
       return
     }
 
-    // Don't handle swipe if starting on topbar
-    if (tabBarRef.current?.contains(target)) return
+    // Don't handle swipe if starting on topbar or horizontal filter chips
+    if (tabBarRef.current?.contains(target) || filterChipsRef.current?.contains(target)) return
 
     touchStartX.current = startX
     touchStartY.current = e.touches[0].clientY
@@ -1887,8 +1887,8 @@ export default function Inventory() {
         onTouchEnd={handleTouchEnd}
         onMouseDown={(e) => {
           const target = e.target
-          // Don't handle swipe if starting on topbar
-          if (tabBarRef.current?.contains(target)) return
+          // Don't handle swipe if starting on topbar or horizontal filter chips
+          if (tabBarRef.current?.contains(target) || filterChipsRef.current?.contains(target)) return
 
           mouseStartX.current = e.clientX
           mouseEndX.current = e.clientX
@@ -2504,14 +2504,15 @@ export default function Inventory() {
                 </div>
 
                 <div className="flex gap-3">
-                  {selectedFilter !== "all" && (
-                    <button
-                      onClick={handleFilterClear}
-                      className="flex-1 border border-gray-300 text-gray-900 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                    >
-                      Clear
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedFilter("all")
+                      setFilterOpen(false)
+                    }}
+                    className="flex-1 border border-gray-300 text-gray-900 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Back
+                  </button>
                   <button
                     onClick={handleFilterApply}
                     className={`${selectedFilter !== "all" ? 'flex-1' : 'w-full'} bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors`}
@@ -2756,95 +2757,116 @@ export default function Inventory() {
         )}
       </AnimatePresence>
 
-      {/* Floating Menu Button & Popup (hidden on Add-ons tab) */}
-      {activeTab !== "add-ons" && (
-        <div className="fixed right-4 bottom-24 z-30 flex flex-col items-end gap-2">
+      {/* Floating Action Buttons */}
+      <div className="fixed right-4 bottom-24 z-30 flex flex-col items-end gap-2">
+        {activeTab === "add-ons" ? (
           <motion.button
             whileTap={{ scale: 0.96 }}
-            onClick={() => setIsAddPopupOpen(true)}
+            onClick={() => {
+              setIsAddAddonOpen(true)
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            }}
+            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_22px_40px_-24px_rgba(15,23,42,0.85)]"
+          >
+            + Add add-on
+          </motion.button>
+        ) : (
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => {
+              navigate(`/food/restaurant/hub-menu/item/new`, {
+                state: {
+                  backTo: "/food/restaurant/inventory",
+                },
+              })
+            }}
             className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_22px_40px_-24px_rgba(15,23,42,0.85)]"
           >
             + Add item
           </motion.button>
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.96 }}
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            className="flex items-center gap-2 rounded-full border border-white/80 bg-white/95 px-4 py-3 text-sm font-semibold text-slate-800 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.55)]"
-          >
-            <span className="w-5 h-5 flex items-center justify-center">
-              {isMenuOpen ? (
-                <X className="w-4 h-4 text-slate-900" />
-              ) : (
-                <Utensils className="w-4 h-4 text-slate-900" />
-              )}
-            </span>
-            <span>{isMenuOpen ? "Close" : "Menu"}</span>
-          </motion.button>
+        )}
 
-          <AnimatePresence>
-            {isMenuOpen && (
-              <>
-                {/* Backdrop */}
-                <motion.div
-                  className="fixed inset-0 bg-black/40 z-30"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setIsMenuOpen(false)}
-                />
-
-                {/* Menu Popup */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.2 }}
-                  className="fixed right-4 bottom-36 z-30 h-[45vh] w-[60vw] max-w-sm overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.55)]"
-                >
-                  <div className="h-full flex flex-col">
-                    <div className="bg-[linear-gradient(135deg,#f8fbff_0%,#eef6ff_100%)] px-4 pt-4 pb-3">
-                      <p className="text-sm font-semibold text-slate-950">Jump to category</p>
-                    </div>
-                    <div className="mx-4 h-px bg-slate-200" />
-                    <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-                      {categories.map((category, index) => {
-                        const itemCount =
-                          category.itemCount || (category.items?.length || 0)
-                        const isLast = index === categories.length - 1
-
-                        return (
-                          <button
-                            key={category.id}
-                            type="button"
-                            onClick={() => {
-                              setIsMenuOpen(false)
-                              setTimeout(() => scrollToCategory(category.id), 200)
-                            }}
-                            className="w-full text-left py-3 focus:outline-none"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-slate-900">
-                                {category.name}
-                              </span>
-                              <span className="flex h-7 min-w-[28px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700">
-                                {itemCount}
-                              </span>
-                            </div>
-                            {!isLast && (
-                              <div className="mt-3 border-t border-dashed border-slate-200" />
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </motion.div>
-              </>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.96 }}
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+          className="flex items-center gap-2 rounded-full border border-white/80 bg-white/95 px-4 py-3 text-sm font-semibold text-slate-800 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.55)]"
+        >
+          <span className="w-5 h-5 flex items-center justify-center">
+            {isMenuOpen ? (
+              <X className="w-4 h-4 text-slate-900" />
+            ) : (
+              <Utensils className="w-4 h-4 text-slate-900" />
             )}
-          </AnimatePresence>
-        </div>
-      )}
+          </span>
+          <span>{isMenuOpen ? "Close" : "Menu"}</span>
+        </motion.button>
+
+        <AnimatePresence>
+          {isMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                className="fixed inset-0 bg-black/40 z-30"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMenuOpen(false)}
+              />
+
+              {/* Menu Popup */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.2 }}
+                className="fixed right-4 bottom-36 z-30 h-[45vh] w-[60vw] max-w-sm overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.55)]"
+              >
+                <div className="h-full flex flex-col">
+                  <div className="bg-[linear-gradient(135deg,#f8fbff_0%,#eef6ff_100%)] px-4 pt-4 pb-3">
+                    <p className="text-sm font-semibold text-slate-950">Jump to category</p>
+                  </div>
+                  <div className="mx-4 h-px bg-slate-200" />
+                  <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
+                    {categories.map((category, index) => {
+                      const itemCount =
+                        category.itemCount || (category.items?.length || 0)
+                      const isLast = index === categories.length - 1
+
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => {
+                            setIsMenuOpen(false)
+                            if (activeTab === "add-ons") {
+                              setActiveTab("all-items")
+                            }
+                            setTimeout(() => scrollToCategory(category.id), 200)
+                          }}
+                          className="w-full text-left py-3 focus:outline-none"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-slate-900">
+                              {category.name}
+                            </span>
+                            <span className="flex h-7 min-w-[28px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700">
+                              {itemCount}
+                            </span>
+                          </div>
+                          {!isLast && (
+                            <div className="mt-3 border-t border-dashed border-slate-200" />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Bottom Navigation */}
       <BottomNavOrders />

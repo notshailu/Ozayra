@@ -10,10 +10,17 @@ export default function ReferralSettings() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState({
-    referralRewardUser: "",
-    referralRewardDelivery: "",
-    referralLimitUser: "",
-    referralLimitDelivery: "",
+    user: {
+      referrerReward: "",
+      refereeReward: "",
+      limit: "",
+    },
+    delivery: {
+      referrerReward: "",
+      refereeReward: "",
+      limit: "",
+    },
+    isActive: true,
   })
 
   const fetchSettings = async () => {
@@ -23,17 +30,17 @@ export default function ReferralSettings() {
       const s = res?.data?.data?.referralSettings
       if (res?.data?.success && s) {
         setSettings({
-          referralRewardUser: s.referralRewardUser ?? "",
-          referralRewardDelivery: s.referralRewardDelivery ?? "",
-          referralLimitUser: s.referralLimitUser ?? "",
-          referralLimitDelivery: s.referralLimitDelivery ?? "",
-        })
-      } else {
-        setSettings({
-          referralRewardUser: "",
-          referralRewardDelivery: "",
-          referralLimitUser: "",
-          referralLimitDelivery: "",
+          user: {
+            referrerReward: s.user?.referrerReward ?? "",
+            refereeReward: s.user?.refereeReward ?? "",
+            limit: s.user?.limit ?? "",
+          },
+          delivery: {
+            referrerReward: s.delivery?.referrerReward ?? "",
+            refereeReward: s.delivery?.refereeReward ?? "",
+            limit: s.delivery?.limit ?? "",
+          },
+          isActive: s.isActive !== false,
         })
       }
     } catch (e) {
@@ -52,24 +59,22 @@ export default function ReferralSettings() {
     try {
       setSaving(true)
       const body = {
-        referralRewardUser: settings.referralRewardUser === "" ? 0 : Number(settings.referralRewardUser),
-        referralRewardDelivery: settings.referralRewardDelivery === "" ? 0 : Number(settings.referralRewardDelivery),
-        referralLimitUser: settings.referralLimitUser === "" ? 0 : Number(settings.referralLimitUser),
-        referralLimitDelivery: settings.referralLimitDelivery === "" ? 0 : Number(settings.referralLimitDelivery),
-        isActive: true,
+        user: {
+          referrerReward: Number(settings.user.referrerReward) || 0,
+          refereeReward: Number(settings.user.refereeReward) || 0,
+          limit: Number(settings.user.limit) || 0,
+        },
+        delivery: {
+          referrerReward: Number(settings.delivery.referrerReward) || 0,
+          refereeReward: Number(settings.delivery.refereeReward) || 0,
+          limit: Number(settings.delivery.limit) || 0,
+        },
+        isActive: settings.isActive,
       }
       const res = await adminAPI.createOrUpdateReferralSettings(body)
       if (res?.data?.success) {
         toast.success("Referral settings saved successfully")
-        const saved = res?.data?.data?.referralSettings
-        if (saved) {
-          setSettings({
-            referralRewardUser: saved.referralRewardUser ?? "",
-            referralRewardDelivery: saved.referralRewardDelivery ?? "",
-            referralLimitUser: saved.referralLimitUser ?? "",
-            referralLimitDelivery: saved.referralLimitDelivery ?? "",
-          })
-        }
+        fetchSettings()
       } else {
         toast.error(res?.data?.message || "Failed to save referral settings")
       }
@@ -81,11 +86,17 @@ export default function ReferralSettings() {
     }
   }
 
-  const onChange = (key) => (e) => {
+  const onChange = (section, key) => (e) => {
     const v = String(e.target.value ?? "")
       .replace(/[^\d.]/g, "")
       .replace(/^0+(\d)/, "$1")
-    setSettings((prev) => ({ ...prev, [key]: v }))
+    setSettings((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [key]: v,
+      },
+    }))
   }
 
   return (
@@ -137,43 +148,79 @@ export default function ReferralSettings() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="border border-slate-200 rounded-xl p-4">
-                <h3 className="font-semibold text-slate-900 mb-3">User Referral</h3>
-                <label className="block text-sm text-slate-600 mb-1">Reward amount (₹)</label>
-                <input
-                  value={settings.referralRewardUser}
-                  onChange={onChange("referralRewardUser")}
-                  inputMode="numeric"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  placeholder="e.g. 50"
-                />
-                <label className="block text-sm text-slate-600 mb-1 mt-3">Max credits per referrer</label>
-                <input
-                  value={settings.referralLimitUser}
-                  onChange={onChange("referralLimitUser")}
-                  inputMode="numeric"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  placeholder="e.g. 10"
-                />
+                <h3 className="font-semibold text-slate-900 mb-3 text-lg border-b pb-2">User Referral</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Referrer Reward (₹)</label>
+                    <input
+                      value={settings.user.referrerReward}
+                      onChange={onChange("user", "referrerReward")}
+                      inputMode="numeric"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      placeholder="e.g. 200"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Amount the person who shares gets</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Referee Reward (₹)</label>
+                    <input
+                      value={settings.user.refereeReward}
+                      onChange={onChange("user", "refereeReward")}
+                      inputMode="numeric"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      placeholder="e.g. 50"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Amount the new user gets</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Max referrals per user</label>
+                    <input
+                      value={settings.user.limit}
+                      onChange={onChange("user", "limit")}
+                      inputMode="numeric"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      placeholder="e.g. 10"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="border border-slate-200 rounded-xl p-4">
-                <h3 className="font-semibold text-slate-900 mb-3">Delivery Partner Referral</h3>
-                <label className="block text-sm text-slate-600 mb-1">Reward amount (₹)</label>
-                <input
-                  value={settings.referralRewardDelivery}
-                  onChange={onChange("referralRewardDelivery")}
-                  inputMode="numeric"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  placeholder="e.g. 2000"
-                />
-                <label className="block text-sm text-slate-600 mb-1 mt-3">Max credits per referrer</label>
-                <input
-                  value={settings.referralLimitDelivery}
-                  onChange={onChange("referralLimitDelivery")}
-                  inputMode="numeric"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  placeholder="e.g. 5"
-                />
+                <h3 className="font-semibold text-slate-900 mb-3 text-lg border-b pb-2">Delivery Partner Referral</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Referrer Reward (₹)</label>
+                    <input
+                      value={settings.delivery.referrerReward}
+                      onChange={onChange("delivery", "referrerReward")}
+                      inputMode="numeric"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      placeholder="e.g. 1000"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Amount the existing delivery boy gets</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Referee Reward (₹)</label>
+                    <input
+                      value={settings.delivery.refereeReward}
+                      onChange={onChange("delivery", "refereeReward")}
+                      inputMode="numeric"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      placeholder="e.g. 60"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Amount the new delivery boy gets</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Max referrals per partner</label>
+                    <input
+                      value={settings.delivery.limit}
+                      onChange={onChange("delivery", "limit")}
+                      inputMode="numeric"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      placeholder="e.g. 5"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
