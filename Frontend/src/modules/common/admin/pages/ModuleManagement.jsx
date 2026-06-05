@@ -63,10 +63,10 @@ const ModuleManagement = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modules, setModules] = useState({
-    food: true,
+    food: false,
     taxi: true,
     quickCommerce: true,
-    hotel: true
+    hotel: false
   });
 
   const fetchSettings = async () => {
@@ -77,10 +77,10 @@ const ModuleManagement = () => {
 
       if (settings?.modules) {
         setModules({
-          food: settings.modules.food ?? true,
+          food: false,
           taxi: settings.modules.taxi ?? true,
           quickCommerce: settings.modules.quickCommerce ?? true,
-          hotel: settings.modules.hotel ?? true
+          hotel: false
         });
       }
     } catch (err) {
@@ -105,7 +105,12 @@ const ModuleManagement = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await adminAPI.updateBusinessSettings({ modules });
+      const payload = {
+        ...modules,
+        food: false,
+        hotel: false
+      };
+      const response = await adminAPI.updateBusinessSettings({ modules: payload });
       const updatedSettings = response?.data?.data || response?.data;
 
       if (updatedSettings) {
@@ -153,14 +158,6 @@ const ModuleManagement = () => {
           <div className="p-8 lg:p-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
               <ModuleCard 
-                title="Food Delivery" 
-                description="Manage restaurants, menus, and food delivery workflows." 
-                icon={Zap} 
-                enabled={modules.food} 
-                onToggle={() => handleToggle('food')}
-                color="orange"
-              />
-              <ModuleCard 
                 title="Taxi / Ride Hailing" 
                 description="Enable cab bookings, driver tracking, and fare management." 
                 icon={Zap} 
@@ -175,14 +172,6 @@ const ModuleManagement = () => {
                 enabled={modules.quickCommerce} 
                 onToggle={() => handleToggle('quickCommerce')}
                 color="green"
-              />
-              <ModuleCard 
-                title="Hotel Booking" 
-                description="Allow users to search and book stays and accommodations." 
-                icon={Zap} 
-                enabled={modules.hotel} 
-                onToggle={() => handleToggle('hotel')}
-                color="blue"
               />
             </div>
 

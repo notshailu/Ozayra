@@ -10,7 +10,7 @@ import { getCachedSettings, loadBusinessSettings } from "@common/utils/businessS
 export default function Home() {
   const navigate = useNavigate()
   const [logoUrl, setLogoUrl] = useState(() => getCachedSettings()?.logo?.url || null)
-  const [companyName, setCompanyName] = useState(() => getCachedSettings()?.companyName || "Appzeto Food")
+  const [companyName, setCompanyName] = useState(() => getCachedSettings()?.companyName || "Ishsys Food")
 
   useEffect(() => {
     const loadLogo = async () => {
@@ -58,7 +58,7 @@ export default function Home() {
               </div>
             )}
           </div>
-          <CardTitle className="text-3xl font-bold text-center">{companyName || "Appzeto Food"}</CardTitle>
+          <CardTitle className="text-3xl font-bold text-center">{companyName || "Ishsys Food"}</CardTitle>
           <CardDescription className="text-lg">
             Welcome to the Food Delivery Platform
           </CardDescription>

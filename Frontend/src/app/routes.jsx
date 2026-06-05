@@ -5,7 +5,7 @@ import {
   AuthPortalSkeleton,
   ContentPageSkeleton,
   HotelShellSkeleton,
-} from '@food/components/ui/loading-skeletons'
+} from '../modules/Food/components/ui/loading-skeletons'
 import TaxiPageLoader from '../modules/taxi/shared/components/TaxiPageLoader'
 import ProtectedRoute from '@core/guards/ProtectedRoute'
 import RoleGuard from '@core/guards/RoleGuard'

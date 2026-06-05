@@ -7,11 +7,30 @@ export async function getGlobalSettings(req, res, next) {
         let settings = await GlobalSettings.findOne().lean();
         if (!settings) {
             // Create default settings if none exist
-            settings = await GlobalSettings.create({
-                companyName: 'Appzeto',
-                email: 'admin@appzeto.com'
+            const newSettings = await GlobalSettings.create({
+                companyName: 'Ishsys',
+                email: 'admin@ishsys.com',
+                modules: {
+                    food: false,
+                    taxi: true,
+                    quickCommerce: true,
+                    hotel: false
+                }
             });
+            settings = newSettings.toObject ? newSettings.toObject() : newSettings;
         }
+        
+        // Force food and hotel modules to be false
+        if (settings) {
+            if (!settings.modules) {
+                settings.modules = {};
+            }
+            settings.modules.food = false;
+            settings.modules.hotel = false;
+            settings.modules.taxi = settings.modules.taxi ?? true;
+            settings.modules.quickCommerce = settings.modules.quickCommerce ?? true;
+        }
+
         return sendResponse(res, 200, 'Global settings fetched successfully', settings);
     } catch (error) {
         next(error);
@@ -83,10 +102,10 @@ export async function updateGlobalSettings(req, res, next) {
         }
         if (modules !== undefined) {
             settings.modules = {
-                food: modules.food !== undefined ? modules.food : settings.modules?.food,
+                food: false,
                 taxi: modules.taxi !== undefined ? modules.taxi : settings.modules?.taxi,
                 quickCommerce: modules.quickCommerce !== undefined ? modules.quickCommerce : settings.modules?.quickCommerce,
-                hotel: modules.hotel !== undefined ? modules.hotel : settings.modules?.hotel
+                hotel: false
             };
         }
 

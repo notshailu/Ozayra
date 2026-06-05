@@ -29,7 +29,7 @@ const isTaxiPayload = (payload) =>
 const buildTaxiUserPatch = (masterUser) => ({
   phone: String(masterUser.phone || '').trim(),
   countryCode: String(masterUser.countryCode || '+91').trim(),
-  name: String(masterUser.name || 'AppZeto User').trim(),
+  name: String(masterUser.name || 'Ishsys User').trim(),
   email: String(masterUser.email || '').trim().toLowerCase(),
   profileImage: String(masterUser.profileImage || '').trim(),
   addresses: Array.isArray(masterUser.addresses) ? masterUser.addresses : [],

@@ -3,7 +3,7 @@ dotenv.config();
 import { v2 as cloudinary } from 'cloudinary';
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'appzeto-master-product',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'ishsys-master-product',
   api_key: process.env.CLOUDINARY_API_KEY || '162394882262924',
   api_secret: process.env.CLOUDINARY_API_SECRET || '4ez2ejhlzVxtoiiZ4ZOFuvX7V3E'
 });

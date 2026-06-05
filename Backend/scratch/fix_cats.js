@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { QuickCategory } from '../src/modules/quick-commerce/models/category.model.js';
 
 async function fixCategories() {
-  const uri = "mongodb+srv://Appzeto:Appzeto123@cluster0.jkxcmhk.mongodb.net/Appzeto-Master-Product";
+  const uri = "mongodb+srv://Ishsys:Ishsys123@cluster0.jkxcmhk.mongodb.net/Ishsys-Master-Product";
   try {
     console.log('Connecting to MongoDB...');
     await mongoose.connect(uri);

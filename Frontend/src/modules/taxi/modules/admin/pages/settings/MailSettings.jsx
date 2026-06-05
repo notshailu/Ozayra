@@ -207,7 +207,7 @@ const MailSettings = () => {
                           className={inputClass}
                           value={settings.mail_from_address || ''}
                           onChange={(e) => updateField('mail_from_address', e.target.value)}
-                          placeholder="noreply@appzeto.com"
+                          placeholder="noreply@ishsys.com"
                           required
                          />
                       </div>
@@ -217,7 +217,7 @@ const MailSettings = () => {
                           className={inputClass}
                           value={settings.mail_from_name || ''}
                           onChange={(e) => updateField('mail_from_name', e.target.value)}
-                          placeholder="Appzeto Admin"
+                          placeholder="Ishsys Admin"
                           required
                          />
                       </div>

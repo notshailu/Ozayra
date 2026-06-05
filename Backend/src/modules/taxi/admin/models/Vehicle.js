@@ -35,7 +35,7 @@ const vehicleSchema = new mongoose.Schema(
     },
     transport_type: {
       type: String,
-      enum: ['taxi', 'delivery'],
+      enum: ['taxi', 'delivery', 'both'],
       required: true,
       trim: true,
     },
@@ -55,15 +55,7 @@ const vehicleSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    size: {
-      type: String,
-      default: '',
-    },
-    is_taxi: {
-      type: String,
-      enum: ['taxi', 'delivery', 'both'],
-      default: 'taxi',
-    },
+
     is_accept_share_ride: {
       type: Number,
       enum: [0, 1],

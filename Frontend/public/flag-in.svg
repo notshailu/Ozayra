@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+  <rect width="900" height="200" fill="#FF9933"/>
+  <rect y="200" width="900" height="200" fill="#FFFFFF"/>
+  <rect y="400" width="900" height="200" fill="#128807"/>
+  <g transform="translate(450, 300)" stroke="#000080">
+    <circle r="90" fill="none" stroke-width="10"/>
+    <circle r="16" fill="#000080"/>
+    <g id="spoke">
+      <line x1="0" y1="0" x2="0" y2="-90" stroke-width="4"/>
+      <polygon points="0,-90 -6,-60 0,-30 6,-60" fill="#000080" stroke="none"/>
+    </g>
+    <use href="#spoke" transform="rotate(15)"/>
+    <use href="#spoke" transform="rotate(30)"/>
+    <use href="#spoke" transform="rotate(45)"/>
+    <use href="#spoke" transform="rotate(60)"/>
+    <use href="#spoke" transform="rotate(75)"/>
+    <use href="#spoke" transform="rotate(90)"/>
+    <use href="#spoke" transform="rotate(105)"/>
+    <use href="#spoke" transform="rotate(120)"/>
+    <use href="#spoke" transform="rotate(135)"/>
+    <use href="#spoke" transform="rotate(150)"/>
+    <use href="#spoke" transform="rotate(165)"/>
+    <use href="#spoke" transform="rotate(180)"/>
+    <use href="#spoke" transform="rotate(195)"/>
+    <use href="#spoke" transform="rotate(210)"/>
+    <use href="#spoke" transform="rotate(225)"/>
+    <use href="#spoke" transform="rotate(240)"/>
+    <use href="#spoke" transform="rotate(255)"/>
+    <use href="#spoke" transform="rotate(270)"/>
+    <use href="#spoke" transform="rotate(285)"/>
+    <use href="#spoke" transform="rotate(300)"/>
+    <use href="#spoke" transform="rotate(315)"/>
+    <use href="#spoke" transform="rotate(330)"/>
+    <use href="#spoke" transform="rotate(345)"/>
+  </g>
+</svg>

@@ -49,7 +49,6 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [enablePeakZoneGlobal, setEnablePeakZoneGlobal] = useState(true);
   const [editingId, setEditingId] = useState(id || null);
   const [mapCenter, setMapCenter] = useState({ lat: 21.1458, lng: 79.0882 }); 
   const [autocomplete, setAutocomplete] = useState(null);
@@ -57,8 +56,6 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
   const [boundaryLoading, setBoundaryLoading] = useState(false);
   const mapRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('English');
-
   // Map & Drawing States
   const [polygonCoords, setPolygonCoords] = useState([]);
   const { isLoaded, loadError } = useAppGoogleMapsLoader();
@@ -66,15 +63,8 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
   // Form State
   const [formData, setFormData] = useState({
     service_location_id: '',
-    name: { English: '', Arabic: '', French: '', Spanish: '' },
+    name: '',
     unit: '',
-    peak_zone_ride_count: '',
-    peak_zone_radius: '',
-    peak_zone_selection_duration: '',
-    peak_zone_duration: '',
-    peak_zone_surge_percentage: '',
-    maximum_distance_for_regular_rides: '',
-    maximum_distance_for_outstation_rides: '',
     status: 'active'
   });
 
@@ -182,7 +172,7 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
   };
 
   const handleSave = async () => {
-    if (!formData.name.English.trim() || polygonCoords.length === 0) {
+    if (!formData.name.trim() || polygonCoords.length === 0) {
       alert("Please add a zone name and draw a polygon on the map.");
       return;
     }
@@ -191,7 +181,6 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
       const payload = {
         ...formData,
         coordinates: polygonCoords,
-        name: formData.name.English
       };
       const res = editingId 
         ? await adminService.updateZone(editingId, payload)
@@ -215,15 +204,8 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
     setEditingId(null);
     setFormData({
       service_location_id: '',
-      name: { English: '', Arabic: '', French: '', Spanish: '' },
+      name: '',
       unit: '',
-      peak_zone_ride_count: '',
-      peak_zone_radius: '',
-      peak_zone_selection_duration: '',
-      peak_zone_duration: '',
-      peak_zone_surge_percentage: '',
-      maximum_distance_for_regular_rides: '',
-      maximum_distance_for_outstation_rides: '',
       status: 'active'
     });
     setPolygonCoords([]);
@@ -259,15 +241,8 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
     let zoneName = typeof zone.name === 'string' ? zone.name : (zone.name?.English || zone.zone_name || '');
     setFormData({
       service_location_id: zone.service_location_id || '',
-      name: { English: zoneName, Arabic: '', French: '', Spanish: '' },
+      name: zoneName,
       unit: zone.unit || '',
-      peak_zone_ride_count: zone.peak_zone_ride_count || '',
-      peak_zone_radius: zone.peak_zone_radius || '',
-      peak_zone_selection_duration: zone.peak_zone_selection_duration || '',
-      peak_zone_duration: zone.peak_zone_duration || '',
-      peak_zone_surge_percentage: zone.peak_zone_surge_percentage || '',
-      maximum_distance_for_regular_rides: zone.maximum_distance_for_regular_rides || '',
-      maximum_distance_for_outstation_rides: zone.maximum_distance_for_outstation_rides || '',
       status: zone.active ? 'active' : 'inactive'
     });
     let parsedCoords = [];
@@ -338,23 +313,7 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-between shadow-sm">
-               <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${enablePeakZoneGlobal ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-300'}`}>
-                     <Zap size={20} className={enablePeakZoneGlobal ? 'animate-pulse' : ''} />
-                  </div>
-                  <div>
-                     <h3 className="text-sm font-semibold text-gray-900">Dynamic Peak Pricing</h3>
-                     <p className="text-[11px] text-gray-400">Toggle surge modifiers across all zones globally</p>
-                  </div>
-               </div>
-               <button 
-                 onClick={() => setEnablePeakZoneGlobal(!enablePeakZoneGlobal)}
-                 className={`relative w-11 h-6 rounded-full transition-colors ${enablePeakZoneGlobal ? 'bg-indigo-600' : 'bg-gray-200'}`}
-               >
-                 <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${enablePeakZoneGlobal ? 'translate-x-5' : ''}`} />
-               </button>
-            </div>
+
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
               <div className="p-4 border-b border-gray-100 bg-gray-50/50">
@@ -490,31 +449,14 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
                       </div>
 
                       <div>
-                        <div className="flex items-center gap-1 border-b border-gray-100 mb-4">
-                          {['English', 'Arabic', 'French', 'Spanish'].map(lang => (
-                            <button
-                              key={lang}
-                              onClick={() => setActiveTab(lang)}
-                              className={`px-4 py-2 text-xs font-medium transition-colors relative ${activeTab === lang ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                              {lang}
-                              {activeTab === lang && (
-                                <motion.div layoutId="activeTab" className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-indigo-600" />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                        
-                        <div>
-                          <label className={labelClass}>Zone Name *</label>
-                          <input 
-                            type="text" 
-                            value={formData.name[activeTab] || ''}
-                            onChange={(e) => setFormData({...formData, name: { ...formData.name, [activeTab]: e.target.value }})}
-                            placeholder={`Name in ${activeTab}`}
-                            className={inputClass}
-                          />
-                        </div>
+                        <label className={labelClass}>Zone Name *</label>
+                        <input 
+                          type="text" 
+                          value={formData.name || ''}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          placeholder="Zone Name"
+                          className={inputClass}
+                        />
                       </div>
 
                       <div>
@@ -528,58 +470,6 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
                            <option value="km">KM</option>
                            <option value="miles">Miles</option>
                         </select>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div>
-                            <label className={labelClass}>Peak Zone Ride Count *</label>
-                            <input 
-                              type="number" value={formData.peak_zone_ride_count}
-                              onChange={(e) => setFormData({...formData, peak_zone_ride_count: e.target.value})}
-                              placeholder="Ride Count"
-                              className={inputClass}
-                            />
-                         </div>
-                         <div>
-                            <label className={labelClass}>Peak Zone Radius *</label>
-                            <input 
-                              type="number" value={formData.peak_zone_radius}
-                              onChange={(e) => setFormData({...formData, peak_zone_radius: e.target.value})}
-                              placeholder="Radius"
-                              className={inputClass}
-                            />
-                         </div>
-                         <div>
-                            <label className={labelClass}>Peak Selection Duration (mins) *</label>
-                            <input 
-                              type="number" value={formData.peak_zone_selection_duration}
-                              onChange={(e) => setFormData({...formData, peak_zone_selection_duration: e.target.value})}
-                              placeholder="Duration in mins"
-                              className={inputClass}
-                            />
-                         </div>
-                         <div>
-                            <label className={labelClass}>Peak Zone Duration (mins) *</label>
-                            <input 
-                              type="number" value={formData.peak_zone_duration}
-                              onChange={(e) => setFormData({...formData, peak_zone_duration: e.target.value})}
-                              placeholder="Duration in mins"
-                              className={inputClass}
-                            />
-                         </div>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                           <label className={labelClass + " mb-0"}>Peak Zone Surge percentage *</label>
-                           <button className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 tracking-wider uppercase">How It Works</button>
-                        </div>
-                        <input 
-                           type="number" value={formData.peak_zone_surge_percentage}
-                           onChange={(e) => setFormData({...formData, peak_zone_surge_percentage: e.target.value})}
-                           placeholder="Enter Surge percentage"
-                           className={inputClass}
-                        />
                       </div>
                    </div>
                 </div>
@@ -609,16 +499,23 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
                        <div className="absolute left-6 top-6 z-10 w-full max-w-md pr-12">
                             <div className="flex h-12 w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white/95 px-4 shadow-2xl backdrop-blur-sm">
                                <Search className="text-gray-400" size={18} />
-                               <Autocomplete 
-                                  onLoad={a => setAutocomplete(a)} 
-                                  onPlaceChanged={onPlaceChanged}
-                                  className="flex-1"
-                                >
-                                  <input 
-                                    type="text" placeholder="Search for a city" 
-                                    className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none placeholder:text-gray-400"
-                                  />
-                               </Autocomplete>
+                               {window.google?.maps?.places ? (
+                                 <Autocomplete 
+                                    onLoad={a => setAutocomplete(a)} 
+                                    onPlaceChanged={onPlaceChanged}
+                                    className="flex-1"
+                                  >
+                                    <input 
+                                      type="text" placeholder="Search for a city" 
+                                      className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none placeholder:text-gray-400"
+                                    />
+                                 </Autocomplete>
+                               ) : (
+                                 <input 
+                                   type="text" placeholder="Search for a city (Places API disabled)" 
+                                   className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none placeholder:text-gray-400"
+                                 />
+                               )}
                             </div>
                        </div>
 
@@ -648,23 +545,25 @@ const ZoneManagement = ({ mode: initialMode = "list" }) => {
                             fullscreenControl: true
                          }}
                        >
-                         <DrawingManager
-                           onPolygonComplete={onPolygonComplete}
-                           options={{
-                             drawingControl: true,
-                             drawingControlOptions: {
-                               position: window.google.maps.ControlPosition.RIGHT_TOP,
-                               drawingModes: [window.google.maps.drawing.OverlayType.POLYGON],
-                             },
-                             polygonOptions: {
-                               fillColor: '#4f46e5',
-                               fillOpacity: 0.15,
-                               strokeColor: '#4f46e5',
-                               strokeWeight: 2,
-                               editable: true,
-                             },
-                           }}
-                         />
+                          {window.google?.maps?.drawing && (
+                            <DrawingManager
+                              onPolygonComplete={onPolygonComplete}
+                              options={{
+                                drawingControl: true,
+                                drawingControlOptions: {
+                                  position: window.google ? window.google.maps.ControlPosition.RIGHT_TOP : 6,
+                                  drawingModes: ['polygon'],
+                                },
+                                polygonOptions: {
+                                  fillColor: '#4f46e5',
+                                  fillOpacity: 0.15,
+                                  strokeColor: '#4f46e5',
+                                  strokeWeight: 2,
+                                  editable: true,
+                                },
+                              }}
+                            />
+                          )}
                          {polygonCoords.length > 0 && (
                            <Polygon
                              paths={polygonCoords}

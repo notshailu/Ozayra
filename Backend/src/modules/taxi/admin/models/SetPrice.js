@@ -214,6 +214,17 @@ const setPriceSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+    parcel_weight_ranges: {
+      type: [{
+        weight_range: { type: String, required: true },
+        base_price: { type: Number, required: true },
+        base_distance: { type: Number, required: true },
+        price_per_distance: { type: Number, required: true },
+        admin_commission_type: { type: Number, default: 1 },
+        admin_commission: { type: Number, default: 0 }
+      }],
+      default: []
+    },
     status: {
       type: String,
       default: 'active',

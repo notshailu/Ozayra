@@ -102,7 +102,10 @@ const IntercityVehicle = () => {
 
         const nextVehicles = getVehicleTypes(response)
           .filter((type) => type.active !== false && Number(type.status ?? 1) !== 0)
-          .filter((type) => String(type.transport_type || 'taxi').toLowerCase() === 'taxi')
+          .filter((type) => {
+            const tType = String(type.transport_type || 'taxi').toLowerCase();
+            return tType === 'taxi' || tType === 'both' || tType === 'all';
+          })
           .map(normalizeVehicleType);
 
         setVehicles(nextVehicles);

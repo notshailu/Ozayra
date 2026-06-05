@@ -200,7 +200,7 @@ const Home = () => {
           : 'Ride booked';
 
   const footerIllustrationBg = {
-    backgroundImage: 'url(/home_footer_gemini.png)',
+    backgroundImage: 'url(/varanasi_footer.png)',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center calc(100% + 65px)',
     backgroundSize: 'cover',
@@ -208,9 +208,9 @@ const Home = () => {
 
   const footerIllustrationFadeMask = {
     WebkitMaskImage:
-      'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 100%)',
+      'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%)',
     maskImage:
-      'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 100%)',
+      'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%)',
     WebkitMaskRepeat: 'no-repeat',
     maskRepeat: 'no-repeat',
     WebkitMaskSize: '100% 100%',
@@ -261,7 +261,7 @@ const Home = () => {
         >
           <div
             aria-hidden="true"
-            className="absolute inset-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none mix-blend-multiply"
             style={{
               filter: 'grayscale(1) contrast(1.08)',
               ...footerIllustrationFadeMask,

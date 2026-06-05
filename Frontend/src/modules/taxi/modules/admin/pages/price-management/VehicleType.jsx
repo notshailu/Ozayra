@@ -76,8 +76,6 @@ const defaultFormData = {
   icon_types: 'car',
   image: '',
   capacity: 0,
-  size: '',
-  is_taxi: 'taxi',
   is_accept_share_ride: 0,
   status: 1,
   active: true,
@@ -230,8 +228,6 @@ const VehicleType = ({ mode: propMode }) => {
               icon_types: normalizeIconType(selectedVehicle.icon_types || selectedVehicle.icon_types_for),
               image: selectedVehicle.icon || selectedVehicle.image || '',
               capacity: Number(selectedVehicle.capacity || 0),
-              size: String(selectedVehicle.size || ''),
-              is_taxi: selectedVehicle.is_taxi || 'taxi',
               is_accept_share_ride: Number(selectedVehicle.is_accept_share_ride || 0),
               status: Number(selectedVehicle.status ?? (selectedVehicle.active !== false ? 1 : 0)),
               active: selectedVehicle.active !== false && Number(selectedVehicle.status ?? 1) !== 0,
@@ -313,8 +309,6 @@ const VehicleType = ({ mode: propMode }) => {
         image: formData.image || '',
         icon: formData.image || '',
         capacity: Number(formData.capacity || 0),
-        size: formData.size,
-        is_taxi: formData.is_taxi,
         is_accept_share_ride: Number(formData.is_accept_share_ride || 0),
         status: formData.active ? 1 : 0,
         active: formData.active,
@@ -617,26 +611,6 @@ const VehicleType = ({ mode: propMode }) => {
             </select>
           </div>
 
-          <div>
-            <label className={labelClass}>Size *</label>
-            <input
-              type="text"
-              value={formData.size}
-              onChange={(e) => updateForm('size', e.target.value)}
-              className={inputClass}
-              placeholder="2"
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Operational Scope *</label>
-            <select value={formData.is_taxi} onChange={(e) => updateForm('is_taxi', e.target.value)} className={inputClass}>
-              <option value="">Select Scope</option>
-              {transportTypes.map(t => (
-                <option key={t.id || t._id} value={t.name}>{t.display_name}</option>
-              ))}
-            </select>
-          </div>
 
           <div className="lg:col-span-2">
             <label className={labelClass}>Description *</label>

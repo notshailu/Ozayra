@@ -556,7 +556,8 @@ const SelectVehicle = () => {
         const nextVehicles = getVehicleTypes(response)
           .filter((type) => {
             const isActive = type.active !== false && Number(type.status ?? 1) !== 0;
-            return isActive && String(type.transport_type || 'taxi').toLowerCase() === 'taxi';
+            const tType = String(type.transport_type || 'taxi').toLowerCase();
+            return isActive && (tType === 'taxi' || tType === 'both' || tType === 'all');
           })
           .map(normalizeVehicleType);
 
@@ -585,7 +586,7 @@ const SelectVehicle = () => {
 
     const loadPricingRules = async () => {
       try {
-        const response = await api.get('/admin/types/set-prices');
+        const response = await api.get('/users/set-prices');
 
         if (!active) {
           return;

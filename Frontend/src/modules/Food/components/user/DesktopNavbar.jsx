@@ -186,7 +186,7 @@ export default function DesktopNavbar({ showLogo = true }) {
                                         />
                                     ) : (
                                         <span className="text-xl font-bold text-gray-900 dark:text-white">
-                                          {companyName || "Appzeto"}
+                                          {companyName || "Ishsys"}
                                         </span>
                                     )}
                                 </Link>

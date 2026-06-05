@@ -183,13 +183,6 @@ const serializeZone = (zone) => ({
   name: zone.name || '',
   service_location_id: zone.service_location_id?._id || zone.service_location_id || '',
   unit: zone.unit || 'km',
-  peak_zone_ride_count: zone.peak_zone_ride_count,
-  peak_zone_radius: zone.peak_zone_radius,
-  peak_zone_selection_duration: zone.peak_zone_selection_duration,
-  peak_zone_duration: zone.peak_zone_duration,
-  peak_zone_surge_percentage: zone.peak_zone_surge_percentage,
-  maximum_distance_for_regular_rides: zone.maximum_distance_for_regular_rides,
-  maximum_distance_for_outstation_rides: zone.maximum_distance_for_outstation_rides,
   active: zone.active !== false,
   status: zone.status || (zone.active === false ? 'inactive' : 'active'),
   coordinates: Array.isArray(zone.geometry?.coordinates?.[0])
@@ -3323,7 +3316,18 @@ export const deleteVehicleType = async (id) => {
 
     const zone_id = toObjectId(payload.zone_id?._id || payload.zone_id?.id || payload.zone_id);
     const vehicle_type = toObjectId(payload.vehicle_type?._id || payload.vehicle_type?.id || payload.vehicle_type || payload.type_id);
-    const service_location_id = toObjectId(payload.service_location_id?._id || payload.service_location_id?.id || payload.service_location_id || payload.zone?._id || payload.zone?.service_location_id);
+    
+    let serviceLocId = payload.service_location_id?._id || payload.service_location_id?.id || payload.service_location_id || payload.zone?._id || payload.zone?.service_location_id;
+    if (!serviceLocId && zone_id) {
+      const zoneObj = await Zone.findById(zone_id).lean();
+      if (zoneObj) {
+        serviceLocId = zoneObj.service_location_id;
+      }
+    }
+    if (!serviceLocId) {
+      throw new ApiError(400, 'Service location ID is required and could not be resolved from Zone.');
+    }
+    const service_location_id = toObjectId(serviceLocId);
 
     const setPrice = await SetPrice.create({
       zone_id,
@@ -3379,6 +3383,7 @@ export const deleteVehicleType = async (id) => {
       // Meta
       order_number: Number(payload.order_number ?? payload.eta_sequence ?? 1),
       bill_status: Number(payload.bill_status ?? 1),
+      parcel_weight_ranges: payload.parcel_weight_ranges || [],
       status: payload.status || 'active',
     });
 
@@ -3388,6 +3393,20 @@ export const deleteVehicleType = async (id) => {
   export const updateSetPrice = async (id, payload) => {
     const setPrice = await SetPrice.findById(id);
     if (!setPrice) throw new ApiError(404, 'Set Price not found');
+
+    let serviceLocId = payload.service_location_id?._id || payload.service_location_id?.id || payload.service_location_id || payload.zone?._id || payload.zone?.service_location_id;
+    if (!serviceLocId) {
+      const zoneIdVal = payload.zone_id?._id || payload.zone_id?.id || payload.zone_id || setPrice.zone_id;
+      if (zoneIdVal) {
+        const zoneObj = await Zone.findById(zoneIdVal).lean();
+        if (zoneObj) {
+          serviceLocId = zoneObj.service_location_id;
+        }
+      }
+    }
+    if (serviceLocId) {
+      payload.service_location_id = serviceLocId;
+    }
 
     const fields = [
       'zone_id', 'vehicle_type', 'service_location_id', 'transport_type',
@@ -3404,7 +3423,7 @@ export const deleteVehicleType = async (id) => {
       'shared_price_per_distance', 'shared_cancel_fee',
       'user_cancellation_fee', 'driver_cancellation_fee', 'cancellation_fee_goes_to',
       'user_cancellation_fee_type', 'driver_cancellation_fee_type',
-      'order_number', 'bill_status', 'status'
+      'order_number', 'bill_status', 'parcel_weight_ranges', 'status'
     ];
 
     fields.forEach(field => {
@@ -4023,13 +4042,6 @@ export const deleteOwner = async (id) => {
       name: String(payload.name).trim(),
       service_location_id: payload.service_location_id ? toObjectId(payload.service_location_id) : null,
       unit: payload.unit || 'km',
-      peak_zone_ride_count: toNullableNumber(payload.peak_zone_ride_count),
-      peak_zone_radius: toNullableNumber(payload.peak_zone_radius),
-      peak_zone_selection_duration: toNullableNumber(payload.peak_zone_selection_duration),
-      peak_zone_duration: toNullableNumber(payload.peak_zone_duration),
-      peak_zone_surge_percentage: toNullableNumber(payload.peak_zone_surge_percentage),
-      maximum_distance_for_regular_rides: toNullableNumber(payload.maximum_distance_for_regular_rides),
-      maximum_distance_for_outstation_rides: toNullableNumber(payload.maximum_distance_for_outstation_rides),
       active: payload.status ? payload.status === 'active' : true,
       status: payload.status || 'active',
       geometry: {
@@ -4057,27 +4069,6 @@ export const deleteOwner = async (id) => {
     }
     if (payload.unit !== undefined) {
       zone.unit = payload.unit || 'km';
-    }
-    if (payload.peak_zone_ride_count !== undefined) {
-      zone.peak_zone_ride_count = toNullableNumber(payload.peak_zone_ride_count);
-    }
-    if (payload.peak_zone_radius !== undefined) {
-      zone.peak_zone_radius = toNullableNumber(payload.peak_zone_radius);
-    }
-    if (payload.peak_zone_selection_duration !== undefined) {
-      zone.peak_zone_selection_duration = toNullableNumber(payload.peak_zone_selection_duration);
-    }
-    if (payload.peak_zone_duration !== undefined) {
-      zone.peak_zone_duration = toNullableNumber(payload.peak_zone_duration);
-    }
-    if (payload.peak_zone_surge_percentage !== undefined) {
-      zone.peak_zone_surge_percentage = toNullableNumber(payload.peak_zone_surge_percentage);
-    }
-    if (payload.maximum_distance_for_regular_rides !== undefined) {
-      zone.maximum_distance_for_regular_rides = toNullableNumber(payload.maximum_distance_for_regular_rides);
-    }
-    if (payload.maximum_distance_for_outstation_rides !== undefined) {
-      zone.maximum_distance_for_outstation_rides = toNullableNumber(payload.maximum_distance_for_outstation_rides);
     }
     if (payload.status !== undefined) {
       zone.status = payload.status || 'active';

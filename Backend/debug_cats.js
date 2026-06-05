@@ -3,7 +3,7 @@ import { QuickCategory } from './src/modules/quick-commerce/models/category.mode
 
 async function debug() {
   try {
-    await mongoose.connect('mongodb+srv://Appzeto:Appzeto123@cluster0.jkxcmhk.mongodb.net/Appzeto-Master-Product');
+    await mongoose.connect('mongodb+srv://Ishsys:Ishsys123@cluster0.jkxcmhk.mongodb.net/Ishsys-Master-Product');
     const all = await QuickCategory.find({}).lean();
     console.log(`Total Categories: ${all.length}`);
     

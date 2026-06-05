@@ -135,7 +135,7 @@ export const WishlistProvider = ({ children }) => {
           try {
             localStorage.removeItem("recent_searches");
             localStorage.removeItem("search_history");
-            localStorage.removeItem("appzeto_recent_searches");
+            localStorage.removeItem("ishsys_recent_searches");
             localStorage.removeItem("user_recent_searches_v1");
           } catch (e) {
             // ignore cleanup errors

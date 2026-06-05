@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { GoogleMap } from '@react-google-maps/api';
+import api from '../../../../shared/api/axiosInstance';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../../admin/utils/googleMaps';
 import { userAuthService } from '../../services/authService';
 
@@ -437,6 +438,164 @@ const SenderReceiverDetails = () => {
   const [activeMapPicker, setActiveMapPicker] = useState(null);
   const [isLocatingPickup, setIsLocatingPickup] = useState(false);
   const [errors, setErrors] = useState({});
+  const [distanceMeters, setDistanceMeters] = useState(0);
+  const [pricingRules, setPricingRules] = useState([]);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      try {
+        const [pricingRes, vehiclesRes] = await Promise.all([
+          api.get('/users/set-prices'),
+          api.get('/users/vehicle-types'),
+        ]);
+        if (!active) return;
+        
+        const rules = pricingRes?.data?.results || pricingRes?.data?.data || (Array.isArray(pricingRes) ? pricingRes : []);
+        const catalog = vehiclesRes?.data?.results || vehiclesRes?.data?.vehicle_types || (Array.isArray(vehiclesRes) ? vehiclesRes : []);
+        
+        setPricingRules(rules);
+        setVehicleTypes(catalog);
+      } catch (err) {
+        console.error('Error fetching dynamic pricing info:', err);
+      }
+    };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const pickupLatLng = useMemo(() => coordPairToLatLng(pickupCoords), [pickupCoords]);
+  const dropLatLng = useMemo(() => coordPairToLatLng(dropCoords, null), [dropCoords]);
+
+  const calculateHaversineDistance = (fromCoords, toCoords) => {
+    const [fromLng, fromLat] = fromCoords || [];
+    const [toLng, toLat] = toCoords || [];
+    if (![fromLng, fromLat, toLng, toLat].every(Number.isFinite)) return 0;
+    
+    const toRad = (v) => (v * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = toRad(toLat - fromLat);
+    const dLng = toRad(toLng - fromLng);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(fromLat)) * Math.cos(toRad(toLat)) * Math.sin(dLng / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c);
+  };
+
+  useEffect(() => {
+    const fallbackMeters = calculateHaversineDistance(pickupCoords, dropCoords);
+    if (!dropLatLng) {
+      setDistanceMeters(fallbackMeters);
+      return;
+    }
+
+    if (!isGoogleMapsLoaded || !window.google?.maps?.DirectionsService) {
+      setDistanceMeters(fallbackMeters);
+      return;
+    }
+
+    let active = true;
+    const directionsService = new window.google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: pickupLatLng,
+        destination: dropLatLng,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: false,
+      },
+      (result, status) => {
+        if (!active) return;
+        if (status === 'OK' && result?.routes?.[0]?.legs?.[0]) {
+          const leg = result.routes[0].legs[0];
+          setDistanceMeters(leg.distance?.value || fallbackMeters);
+        } else {
+          setDistanceMeters(fallbackMeters);
+        }
+      }
+    );
+
+    return () => {
+      active = false;
+    };
+  }, [pickupCoords, dropCoords, pickupLatLng, dropLatLng, isGoogleMapsLoaded]);
+
+  const calculatedFare = useMemo(() => {
+    const activeTypes = vehicleTypes.filter((type) => type.active !== false && Number(type.status ?? 1) !== 0);
+    const preferredType = String(parcelState.goodsTypeFor || '').trim();
+    
+    const preferredLabels = preferredType
+      .split(',')
+      .map(entry => entry.trim().toLowerCase())
+      .filter(Boolean)
+      .filter(entry => entry !== 'both');
+
+    let matchedVehicle = null;
+    
+    for (const label of preferredLabels) {
+      matchedVehicle = activeTypes.find(type => String(type.name || type.vehicle_type || type.label).toLowerCase() === label);
+      if (matchedVehicle) break;
+    }
+    
+    if (!matchedVehicle) {
+      matchedVehicle = activeTypes.find(type => {
+        const val = `${type.name || ''} ${type.icon_types || ''} ${type.transport_type || ''}`.toLowerCase();
+        return val.includes('bike') || val.includes('delivery') || val.includes('parcel');
+      }) || activeTypes[0];
+    }
+
+    if (!matchedVehicle) {
+      return parcelState.weightRule?.base_price || 45;
+    }
+
+    const vehicleTypeId = matchedVehicle._id || matchedVehicle.id;
+    const deliveryRules = pricingRules.filter(
+      (rule) =>
+        Number(rule.active ?? 1) === 1 &&
+        String(rule.status || 'active').toLowerCase() !== 'inactive' &&
+        (String(rule.transport_type).toLowerCase() === 'delivery' ||
+          String(rule.transport_type).toLowerCase() === 'both') &&
+        String(rule.vehicle_type?._id || rule.vehicle_type || rule.type_id) === String(vehicleTypeId)
+    );
+
+    const activeRule = deliveryRules[0];
+
+    if (!activeRule) {
+      const rule = parcelState.weightRule;
+      if (rule) {
+        const distanceKm = distanceMeters / 1000;
+        const extraDistanceKm = Math.max(0, distanceKm - Number(rule.base_distance || 0));
+        const subtotal = Number(rule.base_price || 0) + (extraDistanceKm * Number(rule.price_per_distance || 0));
+        return Math.max(0, Math.round(subtotal));
+      }
+      return 45;
+    }
+
+    const selectedWeight = parcelState.weight || 'Under 5kg';
+    const weightRule = Array.isArray(activeRule.parcel_weight_ranges) && activeRule.parcel_weight_ranges.find(
+      (r) => String(r.weight_range).trim().toLowerCase() === String(selectedWeight).trim().toLowerCase()
+    );
+
+    const rule = weightRule || activeRule.parcel_weight_ranges?.[0] || parcelState.weightRule;
+
+    if (!rule) {
+      return 45;
+    }
+
+    const distanceKm = distanceMeters / 1000;
+    const basePrice = Number(rule.base_price || 0);
+    const baseDistance = Number(rule.base_distance || 0);
+    const pricePerDistance = Number(rule.price_per_distance || 0);
+    const extraDistanceKm = Math.max(0, distanceKm - baseDistance);
+    const serviceTax = Number(activeRule.service_tax || 0);
+
+    const subtotal = basePrice + (extraDistanceKm * pricePerDistance);
+    const total = subtotal + (subtotal * serviceTax) / 100;
+    return Math.max(0, Math.round(total));
+  }, [pricingRules, vehicleTypes, distanceMeters, parcelState.weight, parcelState.weightRule, parcelState.goodsTypeFor]);
 
   useEffect(() => {
     let active = true;
@@ -581,7 +740,7 @@ const SenderReceiverDetails = () => {
         receiverName,
         receiverMobile,
         paymentMethod: 'Cash',
-        fare: parcelState.estimatedFare?.min || 45,
+        fare: calculatedFare,
         deliveryScope: parcelState.deliveryScope || 'city',
         isOutstation: Boolean(parcelState.isOutstation || parcelState.deliveryScope === 'outstation'),
         parcel: {
@@ -776,14 +935,21 @@ const SenderReceiverDetails = () => {
             </div>
             <PhoneInput label="Receiver Mobile" value={receiverMobile} onChange={setReceiverMobile} error={errors.receiverMobile} name="receiverMobile" onClearError={clearError} />
 
-            {parcelState.estimatedFare && (
-              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase tracking-widest">Est. Delivery Fare</span>
-                <span className="text-[16px] font-black text-gray-900">
-                  Rs {parcelState.estimatedFare.min}-{parcelState.estimatedFare.max}
+            <div className="bg-slate-50/80 rounded-2xl p-4 border border-gray-100/60 flex flex-col gap-1">
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Est. Distance</span>
+                <span className="text-[14px] font-black text-gray-900">
+                  {(distanceMeters / 1000).toFixed(1)} km
                 </span>
               </div>
-            )}
+              <div className="h-px bg-gray-100 my-1" />
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase tracking-widest">Est. Delivery Fare</span>
+                <span className="text-[18px] font-black text-emerald-600">
+                  ₹{calculatedFare}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

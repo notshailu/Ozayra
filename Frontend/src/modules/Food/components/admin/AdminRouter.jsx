@@ -143,6 +143,12 @@ const HotelAdminRedirect = () => {
   return <Navigate to={`/hotel/admin${normalizedSuffix}${location.search}`} replace />;
 };
 
+const NavigateToTaxi = () => {
+  const location = useLocation();
+  const suffix = location.pathname.replace(/^\/admin/, "");
+  return <Navigate to={`/admin/taxi${suffix}${location.search}`} replace />;
+};
+
 export default function AdminRouter() {
   return (
     <Suspense fallback={<Loader />}>
@@ -172,6 +178,30 @@ export default function AdminRouter() {
 
           {/* Taxi Admin Routes */}
           <Route path="taxi/*" element={<TaxiAdminRoutes />} />
+
+          {/* Legacy/bare Taxi Admin Route redirects */}
+          <Route path="pricing/*" element={<NavigateToTaxi />} />
+          <Route path="users/*" element={<NavigateToTaxi />} />
+          <Route path="drivers/*" element={<NavigateToTaxi />} />
+          <Route path="owners/*" element={<NavigateToTaxi />} />
+          <Route path="fleet/*" element={<NavigateToTaxi />} />
+          <Route path="management/*" element={<NavigateToTaxi />} />
+          <Route path="dashboard" element={<NavigateToTaxi />} />
+          <Route path="chat" element={<NavigateToTaxi />} />
+          <Route path="trips" element={<NavigateToTaxi />} />
+          <Route path="deliveries" element={<NavigateToTaxi />} />
+          <Route path="ongoing" element={<NavigateToTaxi />} />
+          <Route path="wallet/*" element={<NavigateToTaxi />} />
+          <Route path="referrals/*" element={<NavigateToTaxi />} />
+          <Route path="promotions/*" element={<NavigateToTaxi />} />
+          <Route path="safety" element={<NavigateToTaxi />} />
+          <Route path="cms" element={<NavigateToTaxi />} />
+          <Route path="settings/*" element={<NavigateToTaxi />} />
+          <Route path="reports/*" element={<NavigateToTaxi />} />
+          <Route path="masters/*" element={<NavigateToTaxi />} />
+          <Route path="support/*" element={<NavigateToTaxi />} />
+          <Route path="geo/*" element={<NavigateToTaxi />} />
+          <Route path="finance" element={<NavigateToTaxi />} />
 
           {/* Global Application Settings (Common Module) */}
           <Route path="global-settings">

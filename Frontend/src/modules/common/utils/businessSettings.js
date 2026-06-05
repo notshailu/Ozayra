@@ -3,9 +3,9 @@
  * Handles loading and updating business settings (favicon, title, logo)
  */
 
-import apiClient from "@/services/api/axios";
-import { API_ENDPOINTS } from "@/services/api/config";
-import { searchAPI } from "@/services/api";
+import apiClient from "../../../services/api/axios";
+import { API_ENDPOINTS } from "../../../services/api/config";
+import { searchAPI } from "../../../services/api";
 
 const SETTINGS_KEY = 'global_business_settings';
 
@@ -145,7 +145,7 @@ export const getCachedSettings = () => {
  */
 export const getCompanyName = () => {
   const settings = getCachedSettings();
-  return settings?.companyName || "Appzeto";
+  return settings?.companyName || "Ishsys";
 };
 
 /**
@@ -154,8 +154,8 @@ export const getCompanyName = () => {
 export const getCompanyNameAsync = async () => {
   try {
     const settings = await loadBusinessSettings();
-    return settings?.companyName || "Appzeto";
+    return settings?.companyName || "Ishsys";
   } catch (error) {
-    return "Appzeto";
+    return "Ishsys";
   }
 };

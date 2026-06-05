@@ -44,7 +44,7 @@ const buildCategoryTree = (categories) => {
 
 async function testApiLogic() {
   try {
-    await mongoose.connect('mongodb+srv://Appzeto:Appzeto123@cluster0.jkxcmhk.mongodb.net/Appzeto-Master-Product');
+    await mongoose.connect('mongodb+srv://Ishsys:Ishsys123@cluster0.jkxcmhk.mongodb.net/Ishsys-Master-Product');
     const categories = await QuickCategory.find({}).sort({ sortOrder: 1, createdAt: -1 }).lean();
     
     let fullTree = buildCategoryTree(categories);

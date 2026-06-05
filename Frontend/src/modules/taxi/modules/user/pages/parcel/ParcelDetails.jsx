@@ -1,23 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Box, ShieldCheck, ChevronRight, Scale, AlertTriangle, Building2, Route } from 'lucide-react';
+import { ArrowLeft, Box, ShieldCheck, ChevronRight, Scale, AlertTriangle, Building2, Route, LoaderCircle } from 'lucide-react';
+import api from '../../../../shared/api/axiosInstance';
 
-const WEIGHT_PRICES = {
-  'Under 5kg': { min: 45, max: 80 },
-  'Above 5kg': { min: 90, max: 150 },
+const getWeightIcon = (label = '') => {
+  const normalized = label.toLowerCase();
+  if (normalized.includes('under') || normalized.includes('light') || normalized.includes('scale') || normalized.includes('5kg') || normalized.includes('2kg')) {
+    return Scale;
+  }
+  return Box;
 };
 
 const ParcelDetails = () => {
   const location = useLocation();
   const parcelState = location.state || {};
-  const [weight, setWeight] = useState(() => parcelState.weight || 'Under 5kg');
+  const [weightRanges, setWeightRanges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [weight, setWeight] = useState(() => parcelState.weight || '');
   const [deliveryScope, setDeliveryScope] = useState(() => parcelState.deliveryScope || 'city');
   const [description, setDescription] = useState(() => parcelState.description || '');
   const [descError, setDescError] = useState('');
   const navigate = useNavigate();
   const parcelType = parcelState.parcelType || 'Documents';
-  const priceRange = WEIGHT_PRICES[weight];
+
+  useEffect(() => {
+    let active = true;
+    const fetchWeightRanges = async () => {
+      try {
+        const response = await api.get('/users/set-prices');
+        const results = response?.data?.results || response?.data?.data || (Array.isArray(response) ? response : []);
+        
+        const activeRules = results.filter(
+          (rule) =>
+            Number(rule.active ?? 1) === 1 &&
+            String(rule.status || 'active').toLowerCase() !== 'inactive' &&
+            (String(rule.transport_type).toLowerCase() === 'delivery' ||
+              String(rule.transport_type).toLowerCase() === 'both')
+        );
+
+        const ranges = [];
+        const seen = new Set();
+        activeRules.forEach((rule) => {
+          if (Array.isArray(rule.parcel_weight_ranges)) {
+            rule.parcel_weight_ranges.forEach((r) => {
+              const name = String(r.weight_range || '').trim();
+              if (name && !seen.has(name.toLowerCase())) {
+                seen.add(name.toLowerCase());
+                ranges.push(r);
+              }
+            });
+          }
+        });
+
+        if (!active) return;
+
+        if (ranges.length > 0) {
+          setWeightRanges(ranges);
+          const defaultWeight = parcelState.weight || ranges[0].weight_range;
+          const matched = ranges.some(
+            (r) => String(r.weight_range).trim().toLowerCase() === String(defaultWeight).trim().toLowerCase()
+          );
+          setWeight(matched ? defaultWeight : ranges[0].weight_range);
+        } else {
+          const fallbackRanges = [
+            { weight_range: 'Under 5kg', base_price: 45, base_distance: 2, price_per_distance: 15 },
+            { weight_range: 'Above 5kg', base_price: 90, base_distance: 2, price_per_distance: 25 },
+          ];
+          setWeightRanges(fallbackRanges);
+          setWeight(parcelState.weight || fallbackRanges[0].weight_range);
+        }
+      } catch (err) {
+        console.error('Error fetching parcel pricing rules:', err);
+        if (active) {
+          const fallbackRanges = [
+            { weight_range: 'Under 5kg', base_price: 45, base_distance: 2, price_per_distance: 15 },
+            { weight_range: 'Above 5kg', base_price: 90, base_distance: 2, price_per_distance: 25 },
+          ];
+          setWeightRanges(fallbackRanges);
+          setWeight(parcelState.weight || fallbackRanges[0].weight_range);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchWeightRanges();
+    return () => {
+      active = false;
+    };
+  }, [parcelState.weight]);
+
+  const selectedRange = weightRanges.find(
+    (r) => String(r.weight_range).trim().toLowerCase() === String(weight).trim().toLowerCase()
+  );
   const isOutstation = deliveryScope === 'outstation';
 
   const handleNext = () => {
@@ -34,10 +112,21 @@ const ParcelDetails = () => {
         deliveryScope,
         isOutstation,
         description,
-        estimatedFare: priceRange,
+        weightRule: selectedRange,
       },
     });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_38%,#EEF2F7_100%)] max-w-lg mx-auto flex flex-col items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-3 text-slate-400">
+          <LoaderCircle size={32} className="animate-spin text-orange-500" />
+          <p className="text-[11px] font-black uppercase tracking-widest">Loading delivery options...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_38%,#EEF2F7_100%)] max-w-lg mx-auto flex flex-col font-sans relative overflow-hidden">
@@ -65,39 +154,46 @@ const ParcelDetails = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
           className="rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_14px_rgba(15,23,42,0.05)] p-4 space-y-3">
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Approximate Weight</p>
-          <div className="grid grid-cols-2 gap-2 bg-slate-50/80 p-1.5 rounded-[16px]">
-            {[
-              { key: 'Under 5kg', icon: Scale, label: 'Under 5 kg' },
-              { key: 'Above 5kg', icon: Box,   label: 'Above 5 kg' },
-            ].map(({ key, icon: Icon, label }) => (
-              <motion.button key={key} whileTap={{ scale: 0.97 }} onClick={() => setWeight(key)}
-                className={`flex flex-col items-center gap-2 py-4 rounded-[13px] transition-all ${
-                  weight === key
-                    ? 'bg-white shadow-[0_4px_12px_rgba(15,23,42,0.08)] text-slate-900'
-                    : 'text-slate-400'
-                }`}>
-                <div className={`w-9 h-9 rounded-[11px] flex items-center justify-center transition-all ${
-                  weight === key ? 'bg-orange-500 shadow-[0_4px_10px_rgba(249,115,22,0.25)]' : 'bg-slate-100'
-                }`}>
-                  <Icon size={17} className={weight === key ? 'text-white' : 'text-slate-400'} strokeWidth={2} />
-                </div>
-                <span className="text-[12px] font-black uppercase tracking-tight">{label}</span>
-              </motion.button>
-            ))}
+          <div className={`grid ${weightRanges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2 bg-slate-50/80 p-1.5 rounded-[16px]`}>
+            {weightRanges.map((range) => {
+              const key = range.weight_range;
+              const label = range.weight_range;
+              const Icon = getWeightIcon(label);
+              const isSelected = weight === key;
+              return (
+                <motion.button key={key} whileTap={{ scale: 0.97 }} onClick={() => setWeight(key)}
+                  className={`flex flex-col items-center gap-2 py-4 rounded-[13px] transition-all ${
+                    isSelected
+                      ? 'bg-white shadow-[0_4px_12px_rgba(15,23,42,0.08)] text-slate-900'
+                      : 'text-slate-400'
+                  }`}>
+                  <div className={`w-9 h-9 rounded-[11px] flex items-center justify-center transition-all ${
+                    isSelected ? 'bg-orange-500 shadow-[0_4px_10px_rgba(249,115,22,0.25)]' : 'bg-slate-100'
+                  }`}>
+                    <Icon size={17} className={isSelected ? 'text-white' : 'text-slate-400'} strokeWidth={2} />
+                  </div>
+                  <span className="text-[12px] font-black uppercase tracking-tight text-center px-1">{label}</span>
+                </motion.button>
+              );
+            })}
           </div>
 
           {/* Price preview */}
-          <AnimatePresence mode="wait">
-            <motion.div key={weight}
-              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
-              className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-100 rounded-[14px] px-3.5 py-2.5">
-              <ShieldCheck size={14} className="text-emerald-500 shrink-0" strokeWidth={2.5} />
-              <p className="text-[12px] font-black text-emerald-700">
-                Estimated fare: <span className="text-emerald-900">₹{priceRange.min} – ₹{priceRange.max}</span>
-                <span className="text-[10px] font-bold text-emerald-500 ml-1">based on distance</span>
-              </p>
-            </motion.div>
-          </AnimatePresence>
+          {selectedRange && (
+            <AnimatePresence mode="wait">
+              <motion.div key={weight}
+                initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+                className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-100 rounded-[14px] px-3.5 py-2.5">
+                <ShieldCheck size={14} className="text-emerald-500 shrink-0" strokeWidth={2.5} />
+                <p className="text-[12px] font-black text-emerald-700">
+                  Rate: <span className="text-emerald-900">₹{selectedRange.base_price} base fare</span>
+                  <span className="text-[10px] font-bold text-emerald-500 ml-1">
+                    (for first {selectedRange.base_distance} km, then ₹{selectedRange.price_per_distance}/km)
+                  </span>
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          )}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}

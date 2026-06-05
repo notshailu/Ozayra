@@ -17,34 +17,7 @@ const zoneSchema = new mongoose.Schema(
       default: 'km',
       trim: true,
     },
-    peak_zone_ride_count: {
-      type: Number,
-      default: null,
-    },
-    peak_zone_radius: {
-      type: Number,
-      default: null,
-    },
-    peak_zone_selection_duration: {
-      type: Number,
-      default: null,
-    },
-    peak_zone_duration: {
-      type: Number,
-      default: null,
-    },
-    peak_zone_surge_percentage: {
-      type: Number,
-      default: null,
-    },
-    maximum_distance_for_regular_rides: {
-      type: Number,
-      default: null,
-    },
-    maximum_distance_for_outstation_rides: {
-      type: Number,
-      default: null,
-    },
+
     active: {
       type: Boolean,
       default: true,

@@ -132,7 +132,7 @@ export default function Navbar() {
               />
             ) : (
               <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900">
-                {companyName || "Appzeto"}
+                {companyName || "Ishsys"}
               </span>
             )}
           </Link>

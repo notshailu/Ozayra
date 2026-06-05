@@ -7,21 +7,10 @@ import { cn } from "@food/utils/utils"
 
 const SERVICES = [
   {
-    id: "food",
-    name: "Foods",
-    description: "Delicious local favorites",
-    image: "/super-app/food.png",
-    path: "/food/user",
-    icon: UtensilsCrossed,
-    color: "from-[#FF4D4D] to-[#CB202D]",
-    badge: "Fast",
-    badgeIcon: "⚡"
-  },
-  {
     id: "grocery",
     name: "Quick Commerce",
     description: "20-Min Essentials",
-    image: "/super-app/grocery.png",
+    image: "/super-app/grocery_color.png",
     path: "/quick",
     icon: ShoppingBasket,
     color: "from-[#4CAF50] to-[#2DAB52]",
@@ -32,23 +21,12 @@ const SERVICES = [
     id: "taxi",
     name: "Taxi",
     description: "Safe city rides",
-    image: "/super-app/taxi.png",
+    image: "/super-app/taxi_color.png",
     path: "/taxi/user",
     icon: Car,
     color: "from-[#333333] to-[#000000]",
     badge: "Safe",
     badgeIcon: "🛡️"
-  },
-  {
-    id: "hotel",
-    name: "Hotel",
-    description: "Luxury book stays",
-    image: "/super-app/hotel.png",
-    path: "/hotel",
-    icon: Bed,
-    color: "from-[#64B5F6] to-[#4A90E2]",
-    badge: "Premium",
-    badgeIcon: "💎"
   }
 ]
 
@@ -76,16 +54,16 @@ export default function SuperAppPortal() {
   )
 
   const [enabledModules, setEnabledModules] = React.useState({
-    food: true,
+    food: false,
     taxi: true,
     quickCommerce: true,
-    hotel: true
+    hotel: false
   })
 
   React.useEffect(() => {
     const loadSettings = async () => {
       try {
-        const { getCachedSettings, loadBusinessSettings } = await import("@common/utils/businessSettings")
+        const { getCachedSettings, loadBusinessSettings } = await import("../../common/utils/businessSettings")
         let settings = getCachedSettings()
         if (!settings) {
           settings = await loadBusinessSettings()
@@ -119,16 +97,7 @@ export default function SuperAppPortal() {
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden bg-[#fafafa] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
-      {/* Floating profile action */}
-      <button
-        type="button"
-        onClick={() => navigate("/user/auth/login")}
-        className="absolute right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-40 flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-2 shadow-md transition-all hover:bg-gray-50 hover:shadow-lg sm:right-3 sm:top-3"
-      >
-        <User className="w-4 h-4 text-gray-500" />
-        <span className="font-bold text-xs sm:text-sm text-gray-700">Profile</span>
-      </button>
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
 
       {/* Lining Effect & Pattern Background */}
       {!isNativeLikeShell && (
@@ -173,114 +142,28 @@ export default function SuperAppPortal() {
       )}
 
       {/* Top Header Section */}
-      <div className="relative z-10 mt-14 flex flex-1 flex-col items-center justify-start space-y-3 text-center sm:mt-12 sm:space-y-4">
-        <motion.div
-          initial={isNativeLikeShell ? false : { opacity: 0, y: -20 }}
-          animate={isNativeLikeShell ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
-          className="bg-white border border-gray-200 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg shadow-gray-200/40 max-w-full"
-        >
-          <motion.div 
-            animate={isNativeLikeShell ? undefined : { rotate: [0, 10, -10, 0] }}
-            transition={isNativeLikeShell ? undefined : { duration: 4, repeat: Infinity }}
-            className="w-5 h-5 bg-gradient-to-br from-[#CB202D] to-red-700 rounded-md flex items-center justify-center shadow-md flex-shrink-0"
-          >
-             <span className="text-white text-[9px] font-black italic">A</span>
-          </motion.div>
-          <span className="text-[9px] sm:text-[10px] font-black tracking-[0.18em] text-[#BABCBD] uppercase whitespace-nowrap overflow-hidden text-ellipsis">
-            Everything you need, delivered
-          </span>
-        </motion.div>
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center text-center pb-2 min-h-0">
 
-        <motion.h1 
-          initial={isNativeLikeShell ? false : { opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={isNativeLikeShell ? { duration: 0.2 } : { type: "spring", damping: 12 }}
-          className="text-4xl sm:text-5xl md:text-7xl font-black text-[#1A202C] tracking-tight leading-[0.95]"
-        >
-          Welcome to <br />
-          <span className={`text-transparent bg-clip-text bg-gradient-to-r from-[#CB202D] via-rose-500 to-[#CB202D] bg-[length:200%_auto] block mt-1 sm:mt-2 ${isNativeLikeShell ? "" : "animate-gradient"}`}>AppZeto</span>
-        </motion.h1>
-
-        <motion.p 
-          initial={isNativeLikeShell ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={isNativeLikeShell ? { duration: 0.2 } : { delay: 0.3 }}
-          className="text-[#718096] text-[13px] sm:text-sm md:text-lg font-bold max-w-[250px] sm:max-w-[320px] mx-auto leading-snug"
-        >
-          Choose a service to continue
-        </motion.p>
-
-        {/* Main Service Grid - compact for mobile */}
-        <div className={cn(
-          "w-full max-w-[800px] mx-auto mt-3 sm:mt-4 grid gap-3 sm:gap-4 relative z-10",
-          filteredServices.length === 1 ? "grid-cols-1 max-w-[400px]" : "grid-cols-2"
-        )}>
+        {/* Minimal Flex Col Layout */}
+        <div className="w-full max-w-sm mx-auto mt-2 flex flex-col gap-4 relative z-10 px-4 pb-4 flex-1 min-h-0">
           {filteredServices.map((service, idx) => (
             <motion.div
               key={service.id}
-              initial={isNativeLikeShell ? false : { opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={isNativeLikeShell ? { duration: 0.18 } : { 
-                delay: 0.15 + idx * 0.06, 
-                type: "spring", 
-                stiffness: 120,
-                damping: 18
-              }}
-              whileTap={isNativeLikeShell ? undefined : { scale: 0.97 }}
+              initial={isNativeLikeShell ? false : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={isNativeLikeShell ? { duration: 0.15 } : { delay: 0.1 * idx }}
+              whileHover={isNativeLikeShell ? undefined : { scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => handleServiceClick(service)}
-              className="group cursor-pointer relative perspective"
+              className="group cursor-pointer flex flex-col flex-1 min-h-0 bg-white rounded-[32px] shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-300 overflow-hidden"
             >
-              <div className={`relative h-[175px] sm:h-[205px] w-full rounded-[1.5rem] overflow-hidden shadow-xl bg-white border border-white/30 ${isNativeLikeShell ? "" : "transition-all duration-500"}`}>
-                {/* Image Base */}
-                <div className="absolute inset-0 bg-gray-50 overflow-hidden">
-                  <img 
-                    src={service.image} 
-                    alt={service.name} 
-                    className={`w-full h-full object-cover ${isNativeLikeShell ? "" : "transition-transform duration-700 group-hover:scale-110"}`}
-                  />
-                  <div className={`absolute inset-0 bg-gradient-to-tr ${service.color.replace('from-', 'from-black/40 to-')} opacity-25`} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
-                </div>
-
-                {/* Service Icon floating */}
-                <div className="absolute top-3 left-3 z-30">
-                  <motion.div 
-                    animate={isNativeLikeShell ? undefined : { y: [0, -4, 0] }}
-                    transition={isNativeLikeShell ? undefined : { duration: 3, repeat: Infinity, delay: idx * 0.3 }}
-                    className={`p-2.5 rounded-xl border border-white/30 shadow-lg ${isNativeLikeShell ? "bg-white/25" : "bg-white/20 backdrop-blur-xl"}`}
-                  >
-                    <service.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                  </motion.div>
-                </div>
-
-                {/* Content Overlay */}
-                <div className="absolute bottom-3 left-3 right-3 z-30 space-y-0.5">
-                  <h2 className="text-[1.05rem] sm:text-xl font-black text-white tracking-tight leading-none">
-                    {service.name}
-                  </h2>
-                  <p className="text-white/80 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.08em]">
-                    {service.description}
-                  </p>
-                </div>
-
-                {/* Corner Badge */}
-                <div className="absolute top-0 right-0 z-30">
-                   <motion.div 
-                     initial={isNativeLikeShell ? false : { x: 12, opacity: 0 }}
-                     animate={{ x: 0, opacity: 1 }}
-                     transition={isNativeLikeShell ? { duration: 0.18 } : { delay: 0.25 + idx * 0.05 }}
-                     className={`px-3 py-1.5 rounded-bl-2xl border-l border-b border-white/20 shadow-lg flex items-center gap-1.5 ${isNativeLikeShell ? "bg-black/75" : "bg-black/80 backdrop-blur-xl"}`}
-                   >
-                      <span className="text-[9px] scale-110">{service.badgeIcon}</span>
-                      <span className="text-[9px] font-black text-white uppercase tracking-widest">{service.badge}</span>
-                   </motion.div>
-                </div>
+              <div className="w-full flex-1 min-h-0 bg-white relative flex items-center justify-center overflow-hidden">
+                <img 
+                  src={service.image} 
+                  alt={service.name} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
               </div>
-
-              {/* Neon Glow on Hover */}
-              {!isNativeLikeShell && (
-                <div className={`absolute inset-0 -z-10 rounded-[1.5rem] bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-25 blur-xl transition-all duration-500 scale-95`} />
-              )}
             </motion.div>
           ))}
         </div>
@@ -318,7 +201,7 @@ export default function SuperAppPortal() {
       <div className="mt-4 hidden sm:flex flex-col items-center gap-3 opacity-50">
          <div className="flex items-center gap-1.5 grayscale">
             <ShieldCheck className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Secure by AppZeto</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">Secure by Ishsys</span>
          </div>
       </div>
     </div>

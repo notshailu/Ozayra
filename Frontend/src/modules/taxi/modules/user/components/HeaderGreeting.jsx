@@ -53,13 +53,26 @@ const HeaderGreeting = () => {
               animate={{ opacity: [0.3, 0.75, 0.3], scale: [0.92, 1.06, 0.92] }}
               transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
             />
-            <motion.img
-              src={appLogo}
-              alt={appName}
-              className="relative z-10 h-10 object-contain drop-shadow-sm"
-              animate={{ y: [0, -2, 0], scale: [1, 1.02, 1] }}
-              transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            {appLogo ? (
+              <motion.img
+                src={appLogo}
+                alt={appName}
+                className="relative z-10 h-10 object-contain drop-shadow-sm"
+                animate={{ y: [0, -2, 0], scale: [1, 1.02, 1] }}
+                transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const sibling = e.target.nextSibling;
+                  if (sibling) sibling.style.display = 'block';
+                }}
+              />
+            ) : null}
+            <span 
+              className="relative z-10 text-sm font-black text-slate-900 tracking-tight px-1"
+              style={{ display: appLogo ? 'none' : 'block' }}
+            >
+              {appName}
+            </span>
           </motion.div>
 
           <motion.button

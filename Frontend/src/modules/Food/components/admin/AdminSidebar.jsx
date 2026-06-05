@@ -143,11 +143,14 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const [badges, setBadges] = useState({})
-  const [enabledModules, setEnabledModules] = useState(() => getCachedSettings()?.modules || {
-    food: true,
-    taxi: true,
-    quickCommerce: true,
-    hotel: true
+  const [enabledModules, setEnabledModules] = useState(() => {
+    const modules = getCachedSettings()?.modules
+    return {
+      food: modules?.food ?? false,
+      taxi: modules?.taxi ?? true,
+      quickCommerce: modules?.quickCommerce ?? true,
+      hotel: modules?.hotel ?? false
+    }
   })
 
   useEffect(() => {
@@ -753,7 +756,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                     />
                   ) : (
                     <span className="text-xs font-semibold text-white px-2 truncate">
-                      {companyName || "Appzeto"}
+                      {companyName || "Ishsys"}
                     </span>
                   )}
                 </div>

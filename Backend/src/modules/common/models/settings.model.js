@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const globalSettingsSchema = new mongoose.Schema(
     {
-        companyName: { type: String, required: true, default: 'Appzeto' },
-        email: { type: String, required: true, default: 'admin@appzeto.com' },
+        companyName: { type: String, required: true, default: 'Ishsys' },
+        email: { type: String, required: true, default: 'admin@ishsys.com' },
         phone: {
             countryCode: { type: String, default: '+91' },
             number: { type: String, default: '' }
@@ -22,10 +22,10 @@ const globalSettingsSchema = new mongoose.Schema(
         },
         themeColor: { type: String, default: '#0a0a0a' },
         modules: {
-            food: { type: Boolean, default: true },
+            food: { type: Boolean, default: false },
             taxi: { type: Boolean, default: true },
             quickCommerce: { type: Boolean, default: true },
-            hotel: { type: Boolean, default: true }
+            hotel: { type: Boolean, default: false }
         }
     },
     { timestamps: true }

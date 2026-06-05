@@ -262,7 +262,7 @@ export default function AdminSignup() {
                   />
                 ) : (
                   <span className="text-xs font-bold text-gray-900 truncate px-2">
-                    {companyName || "Appzeto"}
+                    {companyName || "Ishsys"}
                   </span>
                 )}
               </div>

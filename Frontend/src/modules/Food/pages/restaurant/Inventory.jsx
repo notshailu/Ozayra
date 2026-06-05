@@ -1132,7 +1132,7 @@ export default function Inventory() {
     try {
       let imageUrl = ""
       if (addonImageFile) {
-        const uploadRes = await uploadAPI.uploadMedia(addonImageFile, { folder: "appzeto/restaurant/addons" })
+        const uploadRes = await uploadAPI.uploadMedia(addonImageFile, { folder: "ishsys/restaurant/addons" })
         imageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || ""
       }
       const payload = {

@@ -1003,7 +1003,7 @@ export default function PageNavbar({
               />
             ) : (
               <span className={`text-lg font-bold text-${textColor} scale-[1.8] sm:scale-[2] origin-left inline-block`}>
-                {companyName || "Appzeto"}
+                {companyName || "Ishsys"}
               </span>
             )}
           </Link>

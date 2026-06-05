@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  NAME: 'AppZeto Master',
+  NAME: 'Ishsys Master',
   VERSION: '1.0.0',
 };
 

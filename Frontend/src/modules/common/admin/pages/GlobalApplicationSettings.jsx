@@ -220,9 +220,9 @@ const GlobalApplicationSettings = () => {
         {/* Basic Identification */}
         <SectionCard title="Application Identification">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-              <InputField label="App Name" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="AppZeto" />
+              <InputField label="App Name" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="Ishsys" />
               <InputField label="Admin Theme Color" name="themeColor" value={formData.themeColor} onChange={handleChange} placeholder="#0a0a0a" />
-              <InputField label="Support Email" name="email" value={formData.email} onChange={handleChange} placeholder="admin@appzeto.com" />
+              <InputField label="Support Email" name="email" value={formData.email} onChange={handleChange} placeholder="admin@ishsys.com" />
               <InputField label="Support Phone" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} placeholder="0000000000" />
               <InputField label="Office Address" name="address" value={formData.address} onChange={handleChange} placeholder="Main Street, NY" />
            </div>

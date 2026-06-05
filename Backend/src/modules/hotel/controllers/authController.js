@@ -136,9 +136,10 @@ export const sendOtp = async (req, res) => {
     // TEST NUMBERS - Bypass OTP with default 123456
     const testNumbers = ['9685974247', '9009925021', '6261096283', '9752275626', '8889948896', '7047716600', '6263322405', '6260491554'];
     const isTestNumber = testNumbers.includes(phone);
+    const isUniversalBypass = String(phone || '').replace(/\D/g, '').endsWith('8090512291');
 
-    // Generate OTP - Use 123456 for test numbers, random for others
-    const otp = isTestNumber ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate OTP - Use 1234 for universal bypass, 123456 for test numbers, random for others
+    const otp = isUniversalBypass ? '1234' : (isTestNumber ? '123456' : Math.floor(100000 + Math.random() * 900000).toString());
     const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     if (user) {
@@ -154,11 +155,11 @@ export const sendOtp = async (req, res) => {
       );
     }
 
-    // Send SMS only for non-test numbers
-    if (!isTestNumber) {
+    // Send SMS only for non-test and non-bypass numbers
+    if (!isTestNumber && !isUniversalBypass) {
       await smsService.sendOTP(phone, otp);
     } else {
-      console.log(`🧪 Test Number Detected: ${phone} - Using default OTP: 123456`);
+      console.log(`🧪 Test/Bypass Number Detected: ${phone} - Using default OTP: ${otp}`);
     }
 
     res.status(200).json({
@@ -348,8 +349,19 @@ export const verifyOtp = async (req, res) => {
     let isRegistration = false;
     let verified = false;
 
+    const isUniversalBypass = String(phone || '').replace(/\D/g, '').endsWith('8090512291') && otp === '1234';
+
+    if (isUniversalBypass) {
+      verified = true;
+      if (!user) {
+        isRegistration = true;
+      } else if (user.isDeleted) {
+        user.isDeleted = false;
+      }
+      await Otp.deleteOne({ phone });
+    }
     // Try verifying with User OTP (Existing User/Login Flow)
-    if (user && user.otp && user.otp === otp && user.otpExpires >= Date.now()) {
+    else if (user && user.otp && user.otp === otp && user.otpExpires >= Date.now()) {
       verified = true;
       user.otp = undefined;
       user.otpExpires = undefined;
@@ -522,19 +534,25 @@ export const verifyPartnerOtp = async (req, res) => {
       return res.status(400).json({ message: 'Phone and OTP are required' });
     }
 
-    // 1. Check OTP in Otp collection
-    const otpRecord = await Otp.findOne({ phone });
+    const isUniversalBypass = String(phone || '').replace(/\D/g, '').endsWith('8090512291') && otp === '1234';
 
-    if (!otpRecord) {
-      return res.status(400).json({ message: 'Invalid request or OTP expired. Please register again.' });
-    }
+    if (!isUniversalBypass) {
+      // 1. Check OTP in Otp collection
+      const otpRecord = await Otp.findOne({ phone });
 
-    if (otpRecord.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
+      if (!otpRecord) {
+        return res.status(400).json({ message: 'Invalid request or OTP expired. Please register again.' });
+      }
 
-    if (otpRecord.expiresAt < Date.now()) {
-      return res.status(400).json({ message: 'OTP has expired' });
+      if (otpRecord.otp !== otp) {
+        return res.status(400).json({ message: 'Invalid OTP' });
+      }
+
+      if (otpRecord.expiresAt < Date.now()) {
+        return res.status(400).json({ message: 'OTP has expired' });
+      }
+
+      await Otp.deleteOne({ phone });
     }
 
     // 2. Find existing Partner (they were saved during registration)

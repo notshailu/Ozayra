@@ -421,17 +421,25 @@ const Airport = ({ mode: initialMode = "list" }) => {
                        <div className="absolute left-6 top-6 z-10 w-full max-w-md pr-12">
         <div className="flex h-12 w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white/95 px-4 shadow-2xl backdrop-blur-sm">
           <Search className="text-gray-400" size={18} />
-          <Autocomplete
-            onLoad={(a) => setAutocomplete(a)}
-            onPlaceChanged={handlePlaceChanged}
-            className="flex-1"
-          >
-            <input
-              type="text"
-              placeholder="Search for a city or airport"
-              className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none placeholder:text-gray-400"
-            />
-          </Autocomplete>
+          {window.google?.maps?.places ? (
+             <Autocomplete
+               onLoad={(a) => setAutocomplete(a)}
+               onPlaceChanged={handlePlaceChanged}
+               className="flex-1"
+             >
+               <input
+                 type="text"
+                 placeholder="Search for a city or airport"
+                 className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none placeholder:text-gray-400"
+               />
+             </Autocomplete>
+           ) : (
+             <input
+               type="text"
+               placeholder="Search for a city or airport (Places API disabled)"
+               className="w-full bg-transparent text-sm font-semibold text-gray-800 outline-none placeholder:text-gray-400"
+             />
+           )}
         </div>
       </div>
 
@@ -478,17 +486,19 @@ const Airport = ({ mode: initialMode = "list" }) => {
                             } : undefined}
                          />
 
-                         <DrawingManager
-                            onPolygonComplete={handleBoundaryComplete}
-                            options={{
-                              drawingControl: true,
-                              drawingControlOptions: {
-                                position: window.google ? window.google.maps.ControlPosition.RIGHT_TOP : 6,
-                                drawingModes: ['polygon']
-                              },
-                              polygonOptions: { fillColor: '#4f46e5', strokeColor: '#4f46e5', fillOpacity: 0.1, strokeWeight: 2 }
-                            }}
-                         />
+                          {window.google?.maps?.drawing && (
+                            <DrawingManager
+                               onPolygonComplete={handleBoundaryComplete}
+                               options={{
+                                 drawingControl: true,
+                                 drawingControlOptions: {
+                                   position: window.google ? window.google.maps.ControlPosition.RIGHT_TOP : 6,
+                                   drawingModes: ['polygon']
+                                 },
+                                 polygonOptions: { fillColor: '#4f46e5', strokeColor: '#4f46e5', fillOpacity: 0.1, strokeWeight: 2 }
+                               }}
+                            />
+                          )}
                        </GoogleMap>
                     </div>
                   ) : (

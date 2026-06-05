@@ -10,7 +10,7 @@ const emptyResponse = (result = {}) =>
   });
 
 const mapBusinessSettings = (raw = {}) => ({
-  appName: raw.companyName || 'Appzeto',
+  appName: raw.companyName || 'Ishsys',
   supportEmail: raw.email || '',
   supportPhone: raw.phone?.number || '',
   currencySymbol: 'Rs',
@@ -30,7 +30,7 @@ const mapBusinessSettings = (raw = {}) => ({
   youtube: '',
   playStoreLink: '',
   appStoreLink: '',
-  metaTitle: raw.companyName || 'Appzeto',
+  metaTitle: raw.companyName || 'Ishsys',
   metaDescription: '',
   metaKeywords: '',
   keywords: [],
@@ -38,8 +38,8 @@ const mapBusinessSettings = (raw = {}) => ({
 });
 
 const buildSettingsPayload = (data = {}) => ({
-  companyName: data.companyName || data.appName || 'Appzeto',
-  email: data.supportEmail || 'admin@appzeto.com',
+  companyName: data.companyName || data.appName || 'Ishsys',
+  email: data.supportEmail || 'admin@ishsys.com',
   phoneCountryCode: '+91',
   phoneNumber: String(data.supportPhone || '').replace(/\D/g, '') || '9999999999',
   address: data.address || '',

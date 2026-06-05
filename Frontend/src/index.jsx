@@ -10,7 +10,7 @@ const NATIVE_LAST_ROUTE_KEY = 'native_last_route'
 // ─── Quick-spicy Food Module Initialization ───────────────────────────────────
 
 // Load global business settings (favicon, title) — non-critical
-import('@common/utils/businessSettings')
+import('./modules/common/utils/businessSettings')
   .then(({ loadBusinessSettings }) => loadBusinessSettings())
   .catch(() => { /* Silently fail — settings load when admin authenticates */ })
 
@@ -38,7 +38,7 @@ function isNativeLikeShell() {
 }
 
 function resolveNativeInitialRoute() {
-  if (typeof window === 'undefined') return '/food/user'
+  if (typeof window === 'undefined') return '/quick'
 
   const rawPathname = String(window.location?.pathname || '')
   const pathname = rawPathname.replace(/\/index\.html$/i, '') || '/'
@@ -58,9 +58,9 @@ function resolveNativeInitialRoute() {
   if (isModuleAuthenticated('restaurant')) return '/food/restaurant'
   if (isModuleAuthenticated('delivery')) return '/food/delivery'
   if (isModuleAuthenticated('admin')) return '/admin'
-  if (isModuleAuthenticated('user')) return '/food/user'
+  if (isModuleAuthenticated('user')) return '/quick'
 
-  return '/food/user'
+  return '/quick'
 }
 
 function bootstrapNativeHashRoute() {

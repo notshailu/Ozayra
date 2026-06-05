@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const mongoUri = 'mongodb+srv://Appzeto:Appzeto123@cluster0.jkxcmhk.mongodb.net/Appzeto-Master-Product';
+const mongoUri = 'mongodb+srv://Ishsys:Ishsys123@cluster0.jkxcmhk.mongodb.net/Ishsys-Master-Product';
 
 async function dropIndex() {
     try {

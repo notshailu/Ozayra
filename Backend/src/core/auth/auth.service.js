@@ -249,7 +249,7 @@ export const adminLogin = async (email, password) => {
     throw new AuthError("Invalid credentials");
   }
 
-  const payload = { userId: admin._id.toString(), role: admin.role };
+  const payload = { userId: admin._id.toString(), role: ROLES.ADMIN };
 
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);

@@ -231,6 +231,29 @@ const syncDeliveryWithRide = async (ride) => {
   return delivery;
 };
 
+const EARTH_RADIUS_METERS = 6371000;
+const toRadians = (value) => (Number(value) * Math.PI) / 180;
+
+const calculateDistanceMeters = (fromCoords = [], toCoords = []) => {
+  const [fromLng, fromLat] = fromCoords;
+  const [toLng, toLat] = toCoords;
+
+  if (![fromLng, fromLat, toLng, toLat].every((value) => Number.isFinite(Number(value)))) {
+    return 0;
+  }
+
+  const latDelta = toRadians(toLat - fromLat);
+  const lngDelta = toRadians(toLng - fromLng);
+  const startLat = toRadians(fromLat);
+  const endLat = toRadians(toLat);
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(startLat) * Math.cos(endLat) * Math.sin(lngDelta / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return Math.round(EARTH_RADIUS_METERS * c);
+};
+
 export const createRideRecord = async ({
   userId,
   pickupCoords,
@@ -259,13 +282,9 @@ export const createRideRecord = async ({
 
   await clearUserActiveRideIfPresent(user);
 
-  const safeFare = Number(fare);
+  const safeFare = Number(fare || 0);
   const safeEstimatedDistanceMeters = Math.max(0, Number(estimatedDistanceMeters || 0));
   const safeEstimatedDurationMinutes = Math.max(0, Number(estimatedDurationMinutes || 0));
-
-  if (!Number.isFinite(safeFare) || safeFare < 0) {
-    throw new ApiError(400, 'fare must be a positive number or zero');
-  }
 
   const dispatchVehicleTypeIds = normalizeVehicleTypeIds(vehicleTypeIds, vehicleTypeId);
 
@@ -291,6 +310,36 @@ export const createRideRecord = async ({
     resolvedAt: pricingRule ? new Date() : null,
   };
 
+  const resolvedServiceType = normalizeServiceType(serviceType);
+
+  let finalDistanceMeters = safeEstimatedDistanceMeters;
+  if (finalDistanceMeters <= 0 && pickupCoords && dropCoords) {
+    finalDistanceMeters = calculateDistanceMeters(pickupCoords, dropCoords) || 0;
+  }
+
+  let calculatedFare = safeFare;
+  if (resolvedServiceType === 'parcel' && pricingRule) {
+    const weightLabel = parcel?.weight || 'Under 5kg';
+    const weightRule = Array.isArray(pricingRule.parcel_weight_ranges) && pricingRule.parcel_weight_ranges.find(
+      r => String(r.weight_range).trim().toLowerCase() === String(weightLabel).trim().toLowerCase()
+    );
+    if (weightRule) {
+      const distanceKm = finalDistanceMeters / 1000;
+      const basePrice = Number(weightRule.base_price || 0);
+      const baseDistance = Number(weightRule.base_distance || 0);
+      const pricePerDistance = Number(weightRule.price_per_distance || 0);
+      const extraDistanceKm = Math.max(0, distanceKm - baseDistance);
+      const serviceTax = Number(pricingRule.service_tax || 0);
+
+      const subtotal = basePrice + (extraDistanceKm * pricePerDistance);
+      calculatedFare = Math.round(subtotal + (subtotal * serviceTax) / 100);
+    }
+  }
+
+  if (!Number.isFinite(calculatedFare) || calculatedFare < 0) {
+    throw new ApiError(400, 'fare must be a positive number or zero');
+  }
+
   const promoCode = typeof promo_code === 'string' ? promo_code.trim() : '';
 
   if (!promoCode) {
@@ -299,13 +348,13 @@ export const createRideRecord = async ({
       vehicleTypeId: primaryVehicleTypeId,
       dispatchVehicleTypeIds,
       vehicleIconType: vehicleIconType || '',
-      serviceType: normalizeServiceType(serviceType),
+      serviceType: resolvedServiceType,
       pickupLocation: toPoint(pickupCoords, 'pickup'),
       pickupAddress: normalizeAddress(pickupAddress),
       dropLocation: toPoint(dropCoords, 'drop'),
       dropAddress: normalizeAddress(dropAddress),
-      fare: safeFare,
-      estimatedDistanceMeters: safeEstimatedDistanceMeters,
+      fare: calculatedFare,
+      estimatedDistanceMeters: finalDistanceMeters,
       estimatedDurationMinutes: safeEstimatedDurationMinutes,
       paymentMethod: normalizeRidePaymentMethod(paymentMethod),
       service_location_id: resolvedServiceLocationId,
@@ -339,13 +388,13 @@ export const createRideRecord = async ({
             vehicleTypeId: primaryVehicleTypeId,
             dispatchVehicleTypeIds,
             vehicleIconType: vehicleIconType || '',
-            serviceType: normalizeServiceType(serviceType),
+            serviceType: resolvedServiceType,
             pickupLocation: toPoint(pickupCoords, 'pickup'),
             pickupAddress: normalizeAddress(pickupAddress),
             dropLocation: toPoint(dropCoords, 'drop'),
             dropAddress: normalizeAddress(dropAddress),
-            fare: safeFare,
-            estimatedDistanceMeters: safeEstimatedDistanceMeters,
+            fare: calculatedFare,
+            estimatedDistanceMeters: finalDistanceMeters,
             estimatedDurationMinutes: safeEstimatedDurationMinutes,
             paymentMethod: normalizeRidePaymentMethod(paymentMethod),
             service_location_id: resolvedServiceLocationId,
@@ -370,7 +419,7 @@ export const createRideRecord = async ({
         ride: rideDoc,
         userId,
         code: promoCode,
-        fare: safeFare,
+        fare: calculatedFare,
         service_location_id,
         transport_type: transport_type || 'taxi',
       });

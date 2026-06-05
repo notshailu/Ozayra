@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axiosInstance';
+import { API_BASE_URL } from '../api/runtimeConfig';
 
 const SettingsContext = createContext(null);
 
@@ -20,7 +21,9 @@ export const SettingsProvider = ({ children }) => {
   const fetchSettings = async () => {
     try {
       // Use the global business settings endpoint which serves all modules
-      const res = await api.get('/admin/business-settings/public');
+      const res = await api.get('/common/settings/public', {
+        baseURL: API_BASE_URL.replace('/taxi', '')
+      });
       const data = res?.data || res;
 
       if (data) {

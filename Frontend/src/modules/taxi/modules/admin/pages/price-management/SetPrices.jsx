@@ -50,6 +50,7 @@ const StatusToggle = ({ active, onToggle }) => (
 
 const initialFormState = {
   zone_id: '',
+  service_location_id: '',
   transport_type: '',
   vehicle_type: '',
   payment_type: ['cash'],
@@ -87,7 +88,8 @@ const initialFormState = {
   driver_cancellation_fee_type: 'percentage',
   cancellation_fee_goes_to: 'admin',
   status: 'active',
-  active: 1
+  active: 1,
+  parcel_weight_ranges: []
 };
 
 const SetPrices = ({ mode }) => {
@@ -124,6 +126,7 @@ const SetPrices = ({ mode }) => {
           ...initialFormState,
           ...pData,
           zone_id: pData.zone_id?._id || pData.zone_id || '',
+          service_location_id: pData.service_location_id?._id || pData.service_location_id || '',
           vehicle_type: pData.vehicle_type?._id || pData.vehicle_type || '',
           admin_commision: pData.admin_commision ?? pData.customer_commission ?? '',
           admin_commision_type: String(pData.admin_commision_type ?? 1),
@@ -135,6 +138,7 @@ const SetPrices = ({ mode }) => {
           payment_type: Array.isArray(pData.payment_type) ? pData.payment_type : (pData.payment_type ? [pData.payment_type] : ['cash']),
           user_cancellation_fee_type: pData.user_cancellation_fee_type || 'percentage',
           driver_cancellation_fee_type: pData.driver_cancellation_fee_type || 'percentage',
+          parcel_weight_ranges: pData.parcel_weight_ranges || [],
         });
       }
     } else if (mode === 'create') {
@@ -349,7 +353,20 @@ const SetPrices = ({ mode }) => {
                      <div>
                         <label className={labelClass}>Zone <span className="text-rose-500">*</span></label>
                         <div className="relative">
-                           <select required className={inputClass + " appearance-none cursor-pointer"} value={formData.zone_id} onChange={e => setFormData(p=>({...p, zone_id: e.target.value}))}>
+                           <select 
+                              required 
+                              className={inputClass + " appearance-none cursor-pointer"} 
+                              value={formData.zone_id} 
+                              onChange={e => {
+                                 const val = e.target.value;
+                                 const matched = zones.find(z => String(z._id || z.id) === String(val));
+                                 setFormData(p => ({
+                                    ...p, 
+                                    zone_id: val,
+                                    service_location_id: matched?.service_location_id || ''
+                                 }));
+                              }}
+                           >
                               <option value="">Select Zone</option>
                               {zones.map(z => <option key={z._id || z.id} value={z._id || z.id}>{z.name}</option>)}
                            </select>
@@ -367,6 +384,11 @@ const SetPrices = ({ mode }) => {
                             </select>
                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         </div>
+                        {formData.transport_type === 'delivery' ? (
+                          <p className="text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1"><Info size={11} /> Weight-based rates configuration is enabled below.</p>
+                        ) : (
+                          <p className="text-[11px] font-semibold text-slate-400 mt-1.5 flex items-center gap-1"><Info size={11} /> Select "Delivery" to configure weight-specific pricing brackets.</p>
+                        )}
                      </div>
                      <div>
                         <label className={labelClass}>Vehicle Type <span className="text-rose-500">*</span></label>
@@ -530,6 +552,149 @@ const SetPrices = ({ mode }) => {
                      )}
                   </div>
 
+                  {/* Section: Parcel Weight Pricing (Only for Delivery) */}
+                  {formData.transport_type === 'delivery' && (
+                     <div className="space-y-6 pt-6 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                           <h2 className="text-base font-bold text-[#1E293B] uppercase tracking-wider">Parcel Weight Pricing Brackets</h2>
+                           <button
+                              type="button"
+                              onClick={() => {
+                                 const ranges = [...(formData.parcel_weight_ranges || [])];
+                                 ranges.push({
+                                    weight_range: '',
+                                    base_price: '',
+                                    base_distance: '',
+                                    price_per_distance: '',
+                                    admin_commission_type: 1,
+                                    admin_commission: ''
+                                 });
+                                 setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                              }}
+                              className="flex items-center gap-2 px-4 py-1.5 bg-indigo-600 text-white rounded text-xs font-bold shadow-sm hover:bg-indigo-700 transition-colors"
+                           >
+                              <Plus size={14} /> Add Bracket
+                           </button>
+                        </div>
+
+                        {(!formData.parcel_weight_ranges || formData.parcel_weight_ranges.length === 0) ? (
+                           <div className="bg-slate-50 border border-gray-100 rounded-lg p-6 text-center text-slate-400 text-sm font-medium">
+                              No weight brackets configured yet. Click "Add Bracket" to configure weight-specific rates.
+                           </div>
+                        ) : (
+                           <div className="space-y-6">
+                              {formData.parcel_weight_ranges.map((bracket, index) => (
+                                 <div key={index} className="bg-slate-50/50 rounded-lg border border-gray-100 p-6 relative">
+                                    <button
+                                       type="button"
+                                       onClick={() => {
+                                          const ranges = (formData.parcel_weight_ranges || []).filter((_, i) => i !== index);
+                                          setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                                       }}
+                                       className="absolute top-4 right-4 text-gray-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded transition-colors"
+                                    >
+                                       <Trash2 size={16} />
+                                    </button>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 pr-8">
+                                       <div>
+                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Weight Range (e.g. Under 5kg)</label>
+                                          <input
+                                             type="text"
+                                             required
+                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                             value={bracket.weight_range}
+                                             onChange={e => {
+                                                const ranges = [...formData.parcel_weight_ranges];
+                                                ranges[index].weight_range = e.target.value;
+                                                setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                                             }}
+                                             placeholder="Under 5kg"
+                                          />
+                                       </div>
+                                       <div>
+                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Base Price (₹)</label>
+                                          <input
+                                             type="number"
+                                             required
+                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                             value={bracket.base_price}
+                                             onChange={e => {
+                                                const ranges = [...formData.parcel_weight_ranges];
+                                                ranges[index].base_price = e.target.value;
+                                                setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                                             }}
+                                             placeholder="45"
+                                          />
+                                       </div>
+                                       <div>
+                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Base Distance (Km)</label>
+                                          <input
+                                             type="number"
+                                             required
+                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                             value={bracket.base_distance}
+                                             onChange={e => {
+                                                const ranges = [...formData.parcel_weight_ranges];
+                                                ranges[index].base_distance = e.target.value;
+                                                setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                                             }}
+                                             placeholder="2"
+                                          />
+                                       </div>
+                                       <div>
+                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Price Per Km (₹)</label>
+                                          <input
+                                             type="number"
+                                             required
+                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                             value={bracket.price_per_distance}
+                                             onChange={e => {
+                                                const ranges = [...formData.parcel_weight_ranges];
+                                                ranges[index].price_per_distance = e.target.value;
+                                                setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                                             }}
+                                             placeholder="10"
+                                          />
+                                       </div>
+                                       <div>
+                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Commission Type</label>
+                                          <select
+                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer"
+                                             value={bracket.admin_commission_type}
+                                             onChange={e => {
+                                                const ranges = [...formData.parcel_weight_ranges];
+                                                ranges[index].admin_commission_type = Number(e.target.value);
+                                                setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                                             }}
+                                          >
+                                             <option value="1">Percentage (%)</option>
+                                             <option value="2">Fixed Amount</option>
+                                          </select>
+                                       </div>
+                                       <div>
+                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Admin Commission</label>
+                                          <input
+                                             type="number"
+                                             required
+                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                             value={bracket.admin_commission}
+                                             onChange={e => {
+                                                const ranges = [...formData.parcel_weight_ranges];
+                                                ranges[index].admin_commission = e.target.value;
+                                                setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
+                                             }}
+                                             placeholder="10"
+                                          />
+                                       </div>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        )}
+                     </div>
+                  )}
+
                   {/* Section: Cancellation Fee */}
                   <div className="space-y-6 pt-6 border-t border-gray-100">
                      <h2 className="text-base font-bold text-[#1E293B] uppercase tracking-wider">Cancellation Fee</h2>
@@ -605,18 +770,7 @@ const SetPrices = ({ mode }) => {
                      </button>
                   </div>
                </form>
-
-               {/* Design Floating Action Button */}
-               <div className="absolute right-8 top-[380px] z-50">
-                  <button type="button" className="w-14 h-14 bg-[#00BFA5] text-white rounded-full flex items-center justify-center shadow-2xl hover:rotate-[360deg] transition-all duration-700">
-                     <div className="flex flex-col gap-1.5 items-center">
-                        <div className="w-6 h-[2.5px] bg-white rounded-full"></div>
-                        <div className="w-6 h-[2px] bg-white/70 rounded-full"></div>
-                        <div className="w-6 h-[1.5px] bg-white/40 rounded-full"></div>
-                     </div>
-                  </button>
-               </div>
-            </div>
+             </div>
           </motion.div>
         )}
       </AnimatePresence>

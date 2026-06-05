@@ -162,7 +162,7 @@ const persistQuickCartSnapshot = (items) => {
           "cart",
           "recent_searches",
           "search_history",
-          "appzeto_recent_searches",
+          "ishsys_recent_searches",
           "user_recent_searches_v1",
         ];
         legacyKeys.forEach(key => {

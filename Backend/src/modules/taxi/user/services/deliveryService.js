@@ -58,6 +58,7 @@ export const createDeliveryRecord = async ({
     vehicleIconType,
     paymentMethod,
     serviceType: 'parcel',
+    transport_type: 'delivery',
     parcel,
   });
 

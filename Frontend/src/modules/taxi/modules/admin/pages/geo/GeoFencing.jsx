@@ -111,7 +111,7 @@ const formatZone = (zone, index) => {
   return {
     id: zone._id || zone.id || `zone-${index}`,
     name: zone.name || zone.zone_name || 'Unnamed Zone',
-    surge: Number(zone.surge_multiplier || zone.peak_zone_surge_percentage || 1).toFixed(1),
+    surge: Number(zone.surge_multiplier || 1).toFixed(1),
     status: isActive ? 'Active' : 'Inactive',
     type: zone.type || 'Main',
     center,
@@ -335,14 +335,14 @@ const GeoFencing = () => {
               position={zone.center}
               onClick={() => setSelectedZoneId(zone.id)}
               title={zone.name}
-              icon={{
+              icon={window.google ? {
                 path: window.google.maps.SymbolPath.CIRCLE,
                 scale: zone.id === selectedZone?.id ? 9 : 7,
                 fillColor: zone.palette.marker,
                 fillOpacity: 1,
                 strokeColor: '#ffffff',
                 strokeWeight: 2
-              }}
+              } : undefined}
             />
           ))}
 
@@ -352,14 +352,14 @@ const GeoFencing = () => {
                 key={marker.id}
                 position={marker.position}
                 title={marker.label}
-                icon={{
+                icon={window.google ? {
                   path: window.google.maps.SymbolPath.CIRCLE,
                   scale: marker.kind === 'driver' ? 6 : 5,
                   fillColor: marker.kind === 'driver' ? '#10B981' : '#F97316',
                   fillOpacity: 1,
                   strokeColor: '#ffffff',
                   strokeWeight: 2
-                }}
+                } : undefined}
               />
             ))}
         </GoogleMap>
@@ -375,7 +375,7 @@ const GeoFencing = () => {
           <h3 className="text-2xl font-black text-gray-900 tracking-tight">Google Maps is ready to plug in</h3>
           <p className="mt-3 text-sm leading-6 text-gray-500">
             This page now uses the Google Maps loader and your admin zones API. Add a real browser key in
-            [frontend/.env](/z:/projects/appzeto-taxi/frontend/.env) to render the live map on `/admin/geo/gods-eye`.
+            [frontend/.env](/z:/projects/ishsys-taxi/frontend/.env) to render the live map on `/admin/geo/gods-eye`.
           </p>
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
@@ -491,19 +491,27 @@ const GeoFencing = () => {
 
             <div className="w-full max-w-sm">
               {HAS_VALID_GOOGLE_MAPS_KEY && isLoaded ? (
-                <Autocomplete onLoad={setAutocomplete} onPlaceChanged={handlePlaceChanged}>
-                  <div className="relative">
-                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-                    <input
-                      type="text"
-                      placeholder="Search city or locality"
-                      className="w-full rounded-2xl border border-white/10 bg-white/90 backdrop-blur-md py-3.5 pl-11 pr-4 text-[13px] font-semibold text-gray-700 shadow-lg focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/10 outline-none"
-                    />
-                  </div>
-                </Autocomplete>
+                window.google?.maps?.places ? (
+                  <Autocomplete onLoad={setAutocomplete} onPlaceChanged={handlePlaceChanged}>
+                    <div className="relative">
+                      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                      <input
+                        type="text"
+                        placeholder="Search city or locality"
+                        className="w-full rounded-2xl border border-white/10 bg-white/90 backdrop-blur-md py-3.5 pl-11 pr-4 text-[13px] font-semibold text-gray-700 shadow-lg focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/10 outline-none"
+                      />
+                    </div>
+                  </Autocomplete>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="Search city or locality (Places API disabled)"
+                    className="w-full rounded-2xl border border-white/10 bg-white/90 backdrop-blur-md py-3.5 pl-4 pr-4 text-[13px] font-semibold text-gray-700 shadow-lg outline-none"
+                  />
+                )
               ) : (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] font-semibold text-amber-800 shadow-sm">
-                  Set `VITE_GOOGLE_MAPS_API_KEY` in [frontend/.env](/z:/projects/appzeto-taxi/frontend/.env) to load the live map here.
+                  Set `VITE_GOOGLE_MAPS_API_KEY` in [frontend/.env](/z:/projects/ishsys-taxi/frontend/.env) to load the live map here.
                 </div>
               )}
             </div>
@@ -708,19 +716,27 @@ const GeoFencing = () => {
 
           <div className="w-full md:w-[340px]">
             {HAS_VALID_GOOGLE_MAPS_KEY && isLoaded ? (
-              <Autocomplete onLoad={setAutocomplete} onPlaceChanged={handlePlaceChanged}>
-                <div className="relative">
-                  <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-                  <input
-                    type="text"
-                    placeholder="Search city or locality"
-                    className="w-full rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-md py-3.5 pl-11 pr-4 text-[13px] font-semibold text-gray-700 shadow-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none"
-                  />
-                </div>
-              </Autocomplete>
+              window.google?.maps?.places ? (
+                <Autocomplete onLoad={setAutocomplete} onPlaceChanged={handlePlaceChanged}>
+                  <div className="relative">
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                    <input
+                      type="text"
+                      placeholder="Search city or locality"
+                      className="w-full rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-md py-3.5 pl-11 pr-4 text-[13px] font-semibold text-gray-700 shadow-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none"
+                    />
+                  </div>
+                </Autocomplete>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Search city or locality (Places API disabled)"
+                  className="w-full rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-md py-3.5 pl-4 pr-4 text-[13px] font-semibold text-gray-700 shadow-lg outline-none"
+                />
+              )
             ) : (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] font-semibold text-amber-800 shadow-sm">
-                Set `VITE_GOOGLE_MAPS_API_KEY` in [frontend/.env](/z:/projects/appzeto-taxi/frontend/.env) to load the live map here.
+                Set `VITE_GOOGLE_MAPS_API_KEY` in [frontend/.env](/z:/projects/ishsys-taxi/frontend/.env) to load the live map here.
               </div>
             )}
           </div>
