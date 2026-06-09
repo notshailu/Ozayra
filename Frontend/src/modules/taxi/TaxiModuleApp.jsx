@@ -185,10 +185,16 @@ const UserAccountInvalidationListener = () => {
 
   useEffect(() => {
     const isUserRoute = location.pathname.startsWith('/taxi/user');
+    const isDriverRoute = location.pathname.startsWith('/taxi/driver');
+    const isAdminRoute = location.pathname.startsWith('/taxi/admin');
     const redirectTo = `${location.pathname || '/taxi/user'}${location.search || ''}${location.hash || ''}`;
 
-    if (!isUserRoute) {
+    if (!isUserRoute && !isDriverRoute && !isAdminRoute) {
       socketService.disconnect();
+      return undefined;
+    }
+
+    if (isDriverRoute || isAdminRoute) {
       return undefined;
     }
 
@@ -302,6 +308,7 @@ function App() {
             
             {/* Driver Module Routes - Centralized under DriverLayout for Theme & Styling */}
             <Route path="driver" element={<DriverLayout />}>
+              <Route index element={<Navigate to="home" replace />} />
               <Route path="lang-select" element={<LanguageSelect />} />
               <Route path="welcome" element={<DriverWelcome />} />
               <Route path="login" element={<PhoneRegistration />} />
@@ -320,6 +327,7 @@ function App() {
               <Route path="wallet" element={<DriverWallet />} />
               <Route path="profile" element={<DriverProfile />} />
               <Route path="history" element={<RideRequests />} />
+              <Route path="ride/chat" element={<Chat />} />
 
               <Route path="edit-profile" element={<EditProfile />} />
               <Route path="documents" element={<DriverDocuments />} />

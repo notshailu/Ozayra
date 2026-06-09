@@ -444,18 +444,14 @@ const MainLocationHeader = ({
           {embedded ? (
             <>
               <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
-                  <circle cx="10%" cy="10%" r="20" fill="white" />
-                  <circle cx="90%" cy="20%" r="15" fill="white" />
-                  <circle cx="50%" cy="80%" r="25" fill="white" />
+                <svg viewBox="0 30 100 70" preserveAspectRatio="none" className="h-full w-full">
+                  <circle cx="10" cy="10" r="20" fill="white" />
+                  <circle cx="90" cy="20" r="15" fill="white" />
+                  <circle cx="50" cy="80" r="25" fill="white" />
                   <path d="M 0 50 Q 25 30 50 50 T 100 50" stroke="white" strokeWidth="0.5" fill="none" />
                   <path d="M 0 70 Q 25 50 50 70 T 100 70" stroke="white" strokeWidth="0.5" fill="none" />
                 </svg>
               </div>
-              <div
-                className="absolute top-0 left-1/4 h-24 w-24 rounded-full blur-[48px] pointer-events-none"
-                style={{ backgroundColor: "rgba(255,255,255,0.22)" }}
-              />
               <div className="absolute bottom-0 right-1/4 h-28 w-28 rounded-full bg-yellow-400/10 blur-[64px] pointer-events-none" />
             </>
           ) : (

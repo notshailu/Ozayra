@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Phone, User, AlertTriangle, ShieldAlert, X, CheckCircle2 } from 'lucide-react';
 
 const MAX_CONTACTS = 5;
-const PHONE_REGEX = /^[6-9]\d{9}$/;
+const PHONE_REGEX = /^\d{3,15}$/;
 
 const MOCK_CONTACTS = [
   { id: '1', name: 'Rahul Verma',  phone: '9876543210' },
@@ -26,7 +26,7 @@ const SOSContacts = () => {
   const validate = () => {
     const e = {};
     if (!name.trim())              e.name  = 'Name is required';
-    if (!PHONE_REGEX.test(phone))  e.phone = 'Enter a valid 10-digit mobile number';
+    if (!PHONE_REGEX.test(phone))  e.phone = 'Enter a valid mobile or emergency number';
     if (contacts.some(c => c.phone === phone)) e.phone = 'This number is already added';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -186,8 +186,8 @@ const SOSContacts = () => {
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Mobile Number</label>
                   <div className={`flex items-center gap-3 rounded-[14px] px-4 py-3 border-2 transition-all ${errors.phone ? 'border-red-200 bg-red-50' : 'border-slate-100 bg-slate-50'}`}>
                     <Phone size={16} className="text-slate-400 shrink-0" strokeWidth={2} />
-                    <input type="tel" maxLength={10} value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, '')); setErrors(p => ({ ...p, phone: '' })); }}
-                      placeholder="10-digit mobile number" className="flex-1 bg-transparent border-none text-[15px] font-bold text-slate-900 focus:outline-none placeholder:text-slate-300" />
+                    <input type="tel" maxLength={15} value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 15)); setErrors(p => ({ ...p, phone: '' })); }}
+                      placeholder="Mobile or emergency number" className="flex-1 bg-transparent border-none text-[15px] font-bold text-slate-900 focus:outline-none placeholder:text-slate-300" />
                     {PHONE_REGEX.test(phone) && <CheckCircle2 size={16} className="text-emerald-500 shrink-0" strokeWidth={2.5} />}
                   </div>
                   {errors.phone && <p className="text-[11px] font-black text-red-500 ml-1 mt-1">{errors.phone}</p>}

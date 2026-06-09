@@ -286,11 +286,13 @@ const ParcelSearchingDriver = () => {
         const vehicleCatalogResponse = await api.get('/users/vehicle-types');
         const vehicleCatalog = unwrap(vehicleCatalogResponse);
         const vehicleTypes = vehicleCatalog?.vehicle_types || vehicleCatalog?.results || (Array.isArray(vehicleCatalog) ? vehicleCatalog : []);
-        const selectedVehicleTypes = pickParcelVehicles(vehicleTypes, preferredVehicleType);
-        const selectedVehicleType = selectedVehicleTypes[0];
-        const selectedVehicleTypeIds = selectedVehicleTypes
-          .map((type) => type?._id || type?.id)
-          .filter(Boolean);
+        const hasSelectedVehicle = Boolean(routeState.vehicle);
+        const selectedVehicleType = hasSelectedVehicle
+          ? (routeState.vehicle.raw || routeState.vehicle)
+          : pickParcelVehicles(vehicleTypes, preferredVehicleType)[0];
+        const selectedVehicleTypeIds = hasSelectedVehicle
+          ? [routeState.vehicle.vehicleTypeId || routeState.vehicle.id]
+          : pickParcelVehicles(vehicleTypes, preferredVehicleType).map((type) => type?._id || type?.id).filter(Boolean);
 
         if (selectedVehicleTypeIds.length === 0) {
           throw new Error('No active vehicle type available for parcel dispatch.');
@@ -321,10 +323,11 @@ const ParcelSearchingDriver = () => {
           fare: routeState.fare || routeState.estimatedFare?.min || 45,
           vehicleTypeId: selectedVehicleTypeIds[0],
           vehicleTypeIds: selectedVehicleTypeIds,
-          vehicleIconType: selectedVehicleType.icon_types || 'bike',
+          vehicleIconType: selectedVehicleType?.icon_types || selectedVehicleType?.iconType || 'bike',
           paymentMethod: routeState.paymentMethod || 'Cash',
           type: 'parcel',
           parcel: parcelPayload,
+          otp,
         }, rideRequestConfig);
 
         const payload = unwrap(response);

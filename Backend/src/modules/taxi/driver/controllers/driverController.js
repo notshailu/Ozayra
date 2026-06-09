@@ -55,7 +55,7 @@ const MAX_EMERGENCY_CONTACTS = 5;
 const sanitizeEmergencyPhone = (value) =>
   String(value || "")
     .replace(/\D/g, "")
-    .slice(-10);
+    .slice(0, 15);
 
 const serializeEmergencyContact = (contact = {}) => ({
   id: String(contact._id || contact.id || ""),
@@ -358,8 +358,8 @@ export const addDriverEmergencyContact = async (req, res) => {
     throw new ApiError(400, "Contact name is required");
   }
 
-  if (!/^\d{10}$/.test(phone)) {
-    throw new ApiError(400, "A valid 10-digit contact number is required");
+  if (!/^\d{3,15}$/.test(phone)) {
+    throw new ApiError(400, "A valid mobile or emergency contact number is required");
   }
 
   const driver = await Driver.findById(req.auth.sub);

@@ -173,63 +173,7 @@ let isSeedingVerified = false;
 let seedingPromise = null;
 
 export const ensureQuickCommerceSeedData = async () => {
-  if (isSeedingVerified) return;
-  if (seedingPromise) return seedingPromise;
-
-  seedingPromise = (async () => {
-    try {
-      const existingCategories = await QuickCategory.countDocuments();
-      const existingProducts = await QuickProduct.countDocuments();
-
-      if (existingCategories > 0 && existingProducts > 0) {
-        isSeedingVerified = true;
-        return;
-      }
-
-    let categories = await QuickCategory.find({}).lean();
-
-    if (existingCategories === 0) {
-      await QuickCategory.insertMany(categoriesSeed);
-      categories = await QuickCategory.find({}).lean();
-    }
-
-    if (existingProducts === 0) {
-      const categoryBySlug = categories.reduce((acc, category) => {
-        acc[category.slug] = category;
-        return acc;
-      }, {});
-
-      const products = productSeeds
-        .map((product) => {
-          const category = categoryBySlug[product.categorySlug];
-          if (!category) return null;
-          return {
-            name: product.name,
-            slug: product.slug,
-            image: product.image,
-            categoryId: category._id,
-            price: product.price,
-            mrp: product.mrp,
-            unit: product.unit,
-            deliveryTime: '10 mins',
-            badge: product.badge,
-            rating: 4.2,
-            isActive: true,
-          };
-        })
-        .filter(Boolean);
-
-      if (products.length > 0) {
-        await QuickProduct.insertMany(products);
-      }
-      isSeedingVerified = true;
-      }
-    } catch (err) {
-      console.error('Quick Commerce seeding failed:', err);
-    } finally {
-      seedingPromise = null;
-    }
-  })();
-
-  return seedingPromise;
+  isSeedingVerified = true;
+  return Promise.resolve();
 };
+

@@ -9,6 +9,7 @@ import { AdminBusinessSetting } from '../models/AdminBusinessSetting.js';
 // AppModule import removed
 import { createDefaultBusinessSettings } from '../data/defaultBusinessSettings.js';
 import { Airport } from '../models/Airport.js';
+import { ExplorerDestination } from '../models/ExplorerDestination.js';
 import { DriverNeededDocument } from '../models/DriverNeededDocument.js';
 import { GoodsType } from '../models/GoodsType.js';
 import { OwnerNeededDocument } from '../models/OwnerNeededDocument.js';
@@ -520,6 +521,22 @@ const serializeAirport = (item) => ({
   boundary_coordinates: Array.isArray(item.boundary?.coordinates?.[0])
     ? item.boundary.coordinates[0].map(([lng, lat]) => ({ lat: Number(lat), lng: Number(lng) }))
     : [],
+  status: item.status || (item.active === false ? 'inactive' : 'active'),
+  active: item.active !== false,
+  createdAt: item.createdAt,
+  updatedAt: item.updatedAt,
+});
+
+const serializeExplorerDestination = (item) => ({
+  _id: item._id,
+  id: item._id,
+  title: item.title || '',
+  code: item.code || '',
+  label: item.label || '',
+  image: item.image || '',
+  address: item.address || '',
+  latitude: item.latitude,
+  longitude: item.longitude,
   status: item.status || (item.active === false ? 'inactive' : 'active'),
   active: item.active !== false,
   createdAt: item.createdAt,
@@ -2979,6 +2996,46 @@ export const listOngoingRides = async (query = {}) => {
   return buildPaginator(rows, page, limit);
 };
 
+export const listRideRequests = async (query = {}) => {
+  const page = Number(query.page || 1);
+  const limit = Number(query.limit || 10);
+  const tab = String(query.tab || 'all').toLowerCase();
+  const search = String(query.search || '').trim().toLowerCase();
+
+  const rides = await Ride.find({ serviceType: { $nin: ['parcel', 'intercity'] } })
+    .sort({ createdAt: -1 })
+    .populate('userId', 'name phone')
+    .populate('driverId', 'name phone vehicleType vehicleNumber')
+    .lean();
+
+  let rows = rides.map(toAdminRideRow);
+
+  if (tab === 'completed') {
+    rows = rows.filter((row) => row.tripStatus === 'COMPLETED');
+  } else if (tab === 'cancelled') {
+    rows = rows.filter((row) => row.tripStatus === 'CANCELLED');
+  } else if (tab === 'upcoming') {
+    rows = rows.filter((row) => row.tripStatus === 'UPCOMING');
+  } else if (tab === 'ongoing' || tab === 'on trip' || tab === 'on_trip') {
+    rows = rows.filter((row) => ['ONGOING', 'ON_TRIP', 'ACCEPTED'].includes(row.tripStatus));
+  }
+
+  if (search) {
+    rows = rows.filter((row) =>
+      [
+        row.requestId,
+        row.userName,
+        row.driverName,
+        row.transportType,
+        row.pickupLabel,
+        row.dropLabel,
+      ].some((value) => String(value || '').toLowerCase().includes(search)),
+    );
+  }
+
+  return buildPaginator(rows, page, limit);
+};
+
 export const listDeliveries = async (query = {}) => {
   const page = Number(query.page || 1);
   const limit = Number(query.limit || 10);
@@ -4236,6 +4293,95 @@ export const deleteOwner = async (id) => {
   export const deleteAirport = async (id) => {
     const item = await Airport.findByIdAndDelete(id);
     if (!item) throw new ApiError(404, 'Airport not found');
+    return true;
+  };
+
+  export const listExplorerDestinations = async (query = {}) => {
+    const filter = {};
+    if (query.status) {
+      filter.status = query.status;
+    }
+    if (query.active !== undefined) {
+      filter.active = normalizeBoolean(query.active);
+    }
+    const items = await ExplorerDestination.find(filter).sort({ createdAt: -1 }).lean();
+    return items.map(serializeExplorerDestination);
+  };
+
+  export const createExplorerDestination = async (payload) => {
+    if (!payload.title?.trim()) {
+      throw new ApiError(400, 'Title is required');
+    }
+    const latitude = Number(payload.latitude);
+    const longitude = Number(payload.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      throw new ApiError(400, 'Valid latitude and longitude are required');
+    }
+    const status = payload.status || (normalizeBoolean(payload.active ?? true) ? 'active' : 'inactive');
+
+    const item = await ExplorerDestination.create({
+      title: String(payload.title).trim(),
+      code: String(payload.code || '').trim().toUpperCase(),
+      label: String(payload.label || '').trim(),
+      image: String(payload.image || '').trim(),
+      address: String(payload.address || '').trim(),
+      latitude,
+      longitude,
+      location: {
+        type: 'Point',
+        coordinates: [longitude, latitude],
+      },
+      status,
+      active: status === 'active',
+    });
+
+    return serializeExplorerDestination(item.toObject());
+  };
+
+  export const updateExplorerDestination = async (id, payload) => {
+    const item = await ExplorerDestination.findById(id);
+    if (!item) throw new ApiError(404, 'Explorer destination not found');
+
+    if (payload.title !== undefined) {
+      item.title = String(payload.title || '').trim();
+    }
+    if (payload.code !== undefined) {
+      item.code = String(payload.code || '').trim().toUpperCase();
+    }
+    if (payload.label !== undefined) {
+      item.label = String(payload.label || '').trim();
+    }
+    if (payload.image !== undefined) {
+      item.image = String(payload.image || '').trim();
+    }
+    if (payload.address !== undefined) {
+      item.address = String(payload.address || '').trim();
+    }
+    if (payload.latitude !== undefined) {
+      item.latitude = Number(payload.latitude);
+    }
+    if (payload.longitude !== undefined) {
+      item.longitude = Number(payload.longitude);
+    }
+    if (payload.status !== undefined || payload.active !== undefined) {
+      item.status = payload.status || (normalizeBoolean(payload.active) ? 'active' : 'inactive');
+      item.active = item.status === 'active';
+    }
+
+    if (Number.isFinite(item.latitude) && Number.isFinite(item.longitude)) {
+      item.location = {
+        type: 'Point',
+        coordinates: [item.longitude, item.latitude],
+      };
+    }
+
+    await item.save();
+    return serializeExplorerDestination(item.toObject());
+  };
+
+  export const deleteExplorerDestination = async (id) => {
+    const item = await ExplorerDestination.findByIdAndDelete(id);
+    if (!item) throw new ApiError(404, 'Explorer destination not found');
     return true;
   };
 

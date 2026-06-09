@@ -384,11 +384,11 @@ const SetPrices = ({ mode }) => {
                             </select>
                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         </div>
-                        {formData.transport_type === 'delivery' ? (
-                          <p className="text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1"><Info size={11} /> Weight-based rates configuration is enabled below.</p>
-                        ) : (
-                          <p className="text-[11px] font-semibold text-slate-400 mt-1.5 flex items-center gap-1"><Info size={11} /> Select "Delivery" to configure weight-specific pricing brackets.</p>
-                        )}
+                         {['delivery', 'both', 'all'].includes(String(formData.transport_type).toLowerCase()) ? (
+                           <p className="text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1"><Info size={11} /> Weight-based rates configuration is enabled below.</p>
+                         ) : (
+                           <p className="text-[11px] font-semibold text-slate-400 mt-1.5 flex items-center gap-1"><Info size={11} /> Select "Delivery" or "Both" to configure weight-specific pricing brackets.</p>
+                         )}
                      </div>
                      <div>
                         <label className={labelClass}>Vehicle Type <span className="text-rose-500">*</span></label>
@@ -553,7 +553,7 @@ const SetPrices = ({ mode }) => {
                   </div>
 
                   {/* Section: Parcel Weight Pricing (Only for Delivery) */}
-                  {formData.transport_type === 'delivery' && (
+                  {['delivery', 'both', 'all'].includes(String(formData.transport_type).toLowerCase()) && (
                      <div className="space-y-6 pt-6 border-t border-gray-100">
                         <div className="flex items-center justify-between">
                            <h2 className="text-base font-bold text-[#1E293B] uppercase tracking-wider">Parcel Weight Pricing Brackets</h2>

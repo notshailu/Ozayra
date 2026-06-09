@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation } from 'lucide-react';
-import { GoogleMap } from '@react-google-maps/api';
+import { GoogleMap, MarkerF } from '@react-google-maps/api';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../admin/utils/googleMaps';
 import {
   getSavedTaxiLocation,
@@ -11,9 +11,99 @@ const DEFAULT_CENTER = { lat: 17.385, lon: 78.4867 };
 const DEFAULT_ZOOM = 16;
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 
+const UBER_MAP_STYLE = [
+  {
+    elementType: 'geometry',
+    stylers: [{ color: '#f5f5f5' }],
+  },
+  {
+    elementType: 'labels.icon',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#616161' }],
+  },
+  {
+    elementType: 'labels.text.stroke',
+    stylers: [{ color: '#f5f5f5' }],
+  },
+  {
+    featureType: 'administrative.land_parcel',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#bdbdbd' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'geometry',
+    stylers: [{ color: '#eeeeee' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#757575' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#e5e5e5' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#9e9e9e' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#ffffff' }],
+  },
+  {
+    featureType: 'road.arterial',
+    elementType: 'geometry',
+    stylers: [{ color: '#ffffff' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#e9e9e9' }],
+  },
+  {
+    featureType: 'road.highway.controlled_control',
+    elementType: 'geometry',
+    stylers: [{ color: '#e0e0e0' }],
+  },
+  {
+    featureType: 'road.local',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#9e9e9e' }],
+  },
+  {
+    featureType: 'transit.line',
+    elementType: 'geometry',
+    stylers: [{ color: '#e5e5e5' }],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'geometry',
+    stylers: [{ color: '#eeeeee' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#c5d7e3' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#9e9e9e' }],
+  },
+];
+
 const LocationMapSection = () => {
   const [coords, setCoords] = useState(null);
-  const [centerCoords, setCenterCoords] = useState(DEFAULT_CENTER);
+  const [markerCoords, setMarkerCoords] = useState(DEFAULT_CENTER);
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [status, setStatus] = useState('idle');
   const [isDragging, setIsDragging] = useState(false);
   const [map, setMap] = useState(null);
@@ -22,7 +112,7 @@ const LocationMapSection = () => {
 
   const persistCoords = (next) => {
     setCoords(next);
-    setCenterCoords(next);
+    setMarkerCoords(next);
     setStatus('ready');
     saveTaxiLocation(next);
   };
@@ -36,17 +126,18 @@ const LocationMapSection = () => {
     if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lng)) {
       const next = { lat: saved.lat, lon: saved.lng };
       setCoords(next);
-      setCenterCoords(next);
+      setMarkerCoords(next);
+      setMapCenter(next);
       setStatus('ready');
     }
   }, []);
 
   useEffect(() => {
     if (coords && map) {
-      map.panTo({ lat: coords.lat, lng: coords.lon });
+      map.panTo({ lat: mapCenter.lat, lng: mapCenter.lon });
       map.setZoom(DEFAULT_ZOOM);
     }
-  }, [coords, map]);
+  }, [mapCenter, map]);
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -63,6 +154,7 @@ const LocationMapSection = () => {
         };
 
         persistCoords(next);
+        setMapCenter(next);
         if (map) {
           map.panTo({ lat: next.lat, lng: next.lon });
           map.setZoom(DEFAULT_ZOOM);
@@ -96,9 +188,9 @@ const LocationMapSection = () => {
     if (status === 'loading') return 'Pinning your current location...';
     if (status === 'denied') return 'Location permission denied. Tap to try again.';
     if (status === 'error') return 'Unable to fetch location. Tap to retry.';
-    if (isDragging) return 'Move the map to set the pin.';
-    if (status === 'ready') return 'Drag the map to fine-tune. Tap Update to refresh GPS.';
-    return 'Pin your current location, then adjust by dragging.';
+    if (isDragging) return 'Move the marker to set the pin.';
+    if (status === 'ready') return 'Drag the marker to fine-tune. Tap Update to refresh GPS.';
+    return 'Pin your current location, then adjust by dragging the marker.';
   })();
 
   return (
@@ -196,107 +288,65 @@ const LocationMapSection = () => {
             )}
 
             {HAS_VALID_GOOGLE_MAPS_KEY && !loadError && isLoaded && (
-              <GoogleMap
-                mapContainerStyle={MAP_CONTAINER_STYLE}
-                center={{ lat: centerCoords.lat, lng: centerCoords.lon }}
-                zoom={DEFAULT_ZOOM}
-                onLoad={(nextMap) => setMap(nextMap)}
-                onUnmount={() => setMap(null)}
-                onDragStart={() => {
-                  isDraggingRef.current = true;
-                  setIsDragging(true);
-                }}
-                onDragEnd={() => {
-                  isDraggingRef.current = false;
-                  setIsDragging(false);
-                  if (!map) {
-                    return;
-                  }
+              <>
+                <style>{`
+                  .gm-style-cc { display: none !important; }
+                  .gmnoprint { display: none !important; }
+                  a[href^="https://maps.google.com/maps"] { display: none !important; }
+                `}</style>
+                <GoogleMap
+                  mapContainerStyle={MAP_CONTAINER_STYLE}
+                  center={{ lat: mapCenter.lat, lng: mapCenter.lon }}
+                  zoom={DEFAULT_ZOOM}
+                  onLoad={(nextMap) => setMap(nextMap)}
+                  onUnmount={() => setMap(null)}
+                  options={{
+                    disableDefaultUI: true,
+                    zoomControl: false,
+                    keyboardShortcuts: false,
+                    clickableIcons: false,
+                    streetViewControl: false,
+                    fullscreenControl: false,
+                    mapTypeControl: false,
+                    gestureHandling: 'none',
+                    styles: UBER_MAP_STYLE,
+                  }}
+                >
+                  <MarkerF
+                    draggable={true}
+                    position={{ lat: markerCoords.lat, lng: markerCoords.lon }}
+                    icon={{
+                      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000000" width="36" height="36"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>'),
+                      scaledSize: new window.google.maps.Size(36, 36),
+                      anchor: new window.google.maps.Point(18, 36)
+                    }}
+                    onDragStart={() => {
+                      isDraggingRef.current = true;
+                      setIsDragging(true);
+                    }}
+                    onDragEnd={(e) => {
+                      isDraggingRef.current = false;
+                      setIsDragging(false);
+                      const next = { lat: e.latLng.lat(), lon: e.latLng.lng() };
+                      setMarkerCoords(next);
+                      persistCoords(next);
 
-                  const center = map.getCenter();
-                  if (!center) {
-                    return;
-                  }
-
-                  persistCoords({ lat: center.lat(), lon: center.lng() });
-                  if (window.google?.maps?.Geocoder) {
-                    const geocoder = new window.google.maps.Geocoder();
-                    geocoder.geocode(
-                      { location: { lat: center.lat(), lng: center.lng() } },
-                      (results, geocodeStatus) => {
-                        if (geocodeStatus === 'OK' && results?.[0]?.formatted_address) {
-                          persistAddress(results[0].formatted_address);
-                        }
-                      },
-                    );
-                  }
-                }}
-                onIdle={() => {
-                  if (!map) {
-                    return;
-                  }
-
-                  const center = map.getCenter();
-                  if (!center) {
-                    return;
-                  }
-
-                  const next = { lat: center.lat(), lon: center.lng() };
-                  setCenterCoords(next);
-
-                  if (!isDraggingRef.current && status === 'ready') {
-                    saveTaxiLocation(next);
-                  }
-                }}
-                options={{
-                  disableDefaultUI: true,
-                  zoomControl: true,
-                  clickableIcons: false,
-                  streetViewControl: false,
-                  fullscreenControl: false,
-                  mapTypeControl: false,
-                  gestureHandling: 'greedy',
-                }}
-              />
+                      if (window.google?.maps?.Geocoder) {
+                        const geocoder = new window.google.maps.Geocoder();
+                        geocoder.geocode(
+                          { location: { lat: next.lat, lng: next.lon } },
+                          (results, geocodeStatus) => {
+                            if (geocodeStatus === 'OK' && results?.[0]?.formatted_address) {
+                              persistAddress(results[0].formatted_address);
+                            }
+                          },
+                        );
+                      }
+                    }}
+                  />
+                </GoogleMap>
+              </>
             )}
-
-            {/* The Pinpoint */}
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2">
-              <motion.div
-                initial={false}
-                animate={{
-                  scale: isDragging ? [1, 1.28, 1.16] : 1,
-                  opacity: isDragging ? 0.22 : 0.38,
-                  y: isDragging ? 8 : 3,
-                }}
-                transition={{ duration: 0.24, ease: 'easeOut' }}
-                className="absolute left-1/2 top-[44px] h-[5px] w-5 -translate-x-1/2 rounded-full bg-slate-900/25 blur-[2px]"
-              />
-
-              <motion.div
-                initial={false}
-                animate={{
-                  y: isDragging ? -30 : -8,
-                  rotate: isDragging ? -4 : 0,
-                  scale: isDragging ? 1.04 : 1,
-                }}
-                transition={{
-                  type: 'spring',
-                  stiffness: isDragging ? 450 : 350,
-                  damping: 25,
-                }}
-                className="relative flex flex-col items-center -translate-y-full"
-              >
-                <div className="relative flex flex-col items-center">
-                  <div className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/85 bg-[linear-gradient(180deg,#34d399_0%,#10b981_100%)] shadow-[0_14px_26px_-8px_rgba(16,185,129,0.45)]">
-                    <MapPin size={18} strokeWidth={2.9} className="text-white" />
-                    <div className="absolute inset-[8px] rounded-full border border-white/25" />
-                  </div>
-                  <div className="-mt-1 h-5 w-[3px] rounded-full bg-[linear-gradient(180deg,#10b981_0%,#047857_100%)] shadow-[0_6px_12px_rgba(4,120,87,0.25)]" />
-                  <div className="-mt-1.5 h-2.5 w-2.5 rotate-45 rounded-[3px] bg-[#065f46]" />
-                </div>
-              </motion.div>
-            </div>
 
             {!coords && status !== 'loading' && (
               <button
@@ -312,7 +362,7 @@ const LocationMapSection = () => {
       </div>
 
       <p className="mt-2 text-[10px] font-bold text-slate-400">
-        {centerCoords.lat.toFixed(5)}, {centerCoords.lon.toFixed(5)} · Google Maps
+        {markerCoords.lat.toFixed(5)}, {markerCoords.lon.toFixed(5)} · Google Maps
       </p>
     </motion.section>
   );

@@ -580,7 +580,7 @@ const DriverHome = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8F9FA] font-sans select-none overflow-hidden relative pb-20 text-slate-900">
+        <div className="min-h-screen bg-[#F8F9FA] font-sans select-none overflow-hidden relative pb-20 text-slate-900 outline-none focus:outline-none [&_*]:outline-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
             <IncomingRideRequest 
                 visible={showRequest && Boolean(currentRequest)}
                 requestData={currentRequest}
@@ -589,17 +589,15 @@ const DriverHome = () => {
                 onDecline={handleDecline}
             />
 
-            <header className="fixed top-0 left-0 right-0 px-6 pt-6 pb-2.5 flex items-center justify-between z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 shadow-md">
+            <header className="fixed top-0 left-0 right-0 px-6 pt-6 pb-2.5 flex items-center justify-between z-50 bg-white/20 backdrop-blur-md border-b border-white/10 shadow-sm">
                 <div className="flex items-center gap-3 pt-2">
-                    {appLogo ? (
-                        <img src={appLogo} alt={appName} className="h-7 drop-shadow-sm" />
-                    ) : (
-                        <span className="text-lg font-black tracking-tight text-slate-900">{appName}</span>
-                    )}
-                    <div className="h-5 w-px bg-slate-200" />
-                    <div className="flex items-center gap-1.5">
-                        <div className={`w-2 h-2 rounded-full shadow-sm ${isHydratingDriver ? 'bg-amber-400 animate-pulse' : isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                        <span className={`text-[11px] font-semibold tracking-wide ${isHydratingDriver ? 'text-amber-500' : isOnline ? 'text-emerald-500' : 'text-slate-400'}`}>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm transition-all shadow-sm ${
+                        isHydratingDriver ? 'bg-amber-500/10 border-amber-500/20 text-amber-600' : 
+                        isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 
+                        'bg-slate-500/10 border-slate-500/20 text-slate-500'
+                    }`}>
+                        <div className={`w-2 h-2 rounded-full ${isHydratingDriver ? 'bg-amber-500 animate-pulse' : isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                        <span className="text-[11px] font-black tracking-widest uppercase leading-none mt-0.5">
                             {isHydratingDriver ? 'Syncing' : isOnline ? 'Online' : 'Offline'}
                         </span>
                     </div>
@@ -628,15 +626,15 @@ const DriverHome = () => {
             </div>
 
             <div className="absolute bottom-[5.5rem] left-0 right-0 px-4 z-30">
-                <Motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white rounded-[2rem] p-4 shadow-premium border border-slate-50">
+                <Motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white/40 backdrop-blur-md rounded-[2rem] p-4 shadow-xl border border-white/20">
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex flex-col gap-0.5">
+                        <div className="bg-white/40 p-3 rounded-2xl border border-white/30 flex flex-col gap-0.5 backdrop-blur-sm">
                              <div className="flex items-center gap-1 opacity-60"><IndianRupee size={10} className="text-emerald-500" /><span className="text-[10px] font-medium text-slate-500">Wallet</span></div>
                              <p className={`text-xl font-bold tracking-tight leading-none ${walletSummary.isBlocked ? 'text-rose-600' : 'text-slate-900'}`}>
                                 Rs {Number(walletSummary.balance || 0).toFixed(2)}
                              </p>
                         </div>
-                        <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex flex-col gap-0.5">
+                        <div className="bg-white/40 p-3 rounded-2xl border border-white/30 flex flex-col gap-0.5 backdrop-blur-sm">
                              <div className="flex items-center gap-1 opacity-60"><Clock size={10} className="text-blue-500" /><span className="text-[10px] font-medium text-slate-500">Duty Time</span></div>
                              <p className="text-xl font-bold text-slate-900 tracking-tight leading-none">{dutyHours}h {dutyMins}m</p>
                         </div>

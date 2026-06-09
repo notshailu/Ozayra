@@ -67,10 +67,31 @@ const withAlpha = (hex, alpha) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const shiftHex = (hex, amount) => {
+  if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return hex;
+
+  const normalized =
+    hex.length === 4
+      ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+      : hex;
+
+  const value = normalized.slice(1);
+  if (value.length !== 6) return hex;
+
+  const clamp = (num) => Math.max(0, Math.min(255, num + amount));
+  const r = clamp(parseInt(value.slice(0, 2), 16));
+  const g = clamp(parseInt(value.slice(2, 4), 16));
+  const b = clamp(parseInt(value.slice(4, 6), 16));
+
+  return `#${[r, g, b]
+    .map((channel) => channel.toString(16).padStart(2, "0"))
+    .join("")}`;
+};
+
 const quickTheme = (baseColor) => {
-  const base = normalizeHex(baseColor, "#2f7a46");
+  const base = normalizeHex(baseColor, "#0c831f");
   return {
-    topBg: `linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 100%), ${base}`,
+    topBg: `linear-gradient(180deg, ${shiftHex(base, -20)} 0%, ${shiftHex(base, 0)} 100%)`,
     accent: base,
     text: "#ffffff",
     activeBg: base,
@@ -278,7 +299,7 @@ export default function HomeHeader({
       className={`relative transition-all duration-400 ${
         isFood
           ? "min-h-[280px] overflow-hidden"
-          : "min-h-[120px] overflow-visible"
+          : "min-h-[60px] overflow-visible"
       }`}
       style={{ background: theme.topBg, color: theme.text }}
     >
@@ -314,15 +335,17 @@ export default function HomeHeader({
         </div>
       )}
 
-      <div
-        className="absolute inset-0 z-[1] opacity-[0.25] pointer-events-none"
-        style={{
-          backgroundImage: `url(${foodPattern})`,
-          backgroundSize: "200px",
-          backgroundRepeat: "repeat",
-          mixBlendMode: "overlay",
-        }}
-      />
+      {isFood && (
+        <div
+          className="absolute inset-0 z-[1] opacity-[0.25] pointer-events-none"
+          style={{
+            backgroundImage: `url(${foodPattern})`,
+            backgroundSize: "200px",
+            backgroundRepeat: "repeat",
+            mixBlendMode: "overlay",
+          }}
+        />
+      )}
 
       {isFood && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -332,6 +355,24 @@ export default function HomeHeader({
           <Coffee className="absolute top-20 left-[30%] opacity-[0.08]" style={{ color: theme.accent }} size={48} />
           <Soup className="absolute bottom-[40%] left-[5%] opacity-[0.05]" style={{ color: theme.accent }} size={72} />
         </div>
+      )}
+
+      {!isFood && activeTab === "quick" && (
+        <>
+          <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
+            <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-full w-full">
+              <circle cx="10" cy="10" r="20" fill="white" />
+              <circle cx="90" cy="20" r="15" fill="white" />
+              <circle cx="50" cy="80" r="25" fill="white" />
+              <path d="M 0 50 Q 25 30 50 50 T 100 50" stroke="white" strokeWidth="0.5" fill="none" />
+              <path d="M 0 70 Q 25 50 50 70 T 100 70" stroke="white" strokeWidth="0.5" fill="none" />
+            </svg>
+          </div>
+          <div
+            className="absolute top-0 left-1/4 h-24 w-24 rounded-full blur-[48px] pointer-events-none"
+            style={{ backgroundColor: "rgba(255,255,255,0.22)" }}
+          />
+        </>
       )}
 
       <div className="flex items-center justify-between px-5 pt-4 mb-2 relative z-10">
@@ -368,83 +409,87 @@ export default function HomeHeader({
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            to={walletPath}
-            className="h-[38px] w-[38px] rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-            aria-label="Open wallet"
-          >
-            <Wallet className="h-[19px] w-[19px] text-[#282c3f]" strokeWidth={2} />
-          </Link>
+          {isFood && (
+            <Link
+              to={walletPath}
+              className="h-[38px] w-[38px] rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+              aria-label="Open wallet"
+            >
+              <Wallet className="h-[19px] w-[19px] text-[#282c3f]" strokeWidth={2} />
+            </Link>
+          )}
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="relative h-[38px] w-[38px] rounded-full bg-white/95 border border-white/60 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-              >
-                <Bell className="h-[18px] w-[18px] text-[#282c3f]" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-yellow-400 border border-white" />
-                )}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0 overflow-hidden border-none shadow-2xl rounded-2xl mt-2" align="end">
-              <div className="bg-white">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    Notifications
-                    {unreadCount > 0 && (
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-600 border-none text-[10px] h-4">
-                        {unreadCount} New
-                      </Badge>
-                    )}
-                  </h3>
-                  <Link to="/food/user/notifications" className="text-xs font-bold text-orange-600">
-                    {mergedNotifications.length > 0 ? "View All" : ""}
-                  </Link>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {mergedNotifications.length > 0 ? (
-                    mergedNotifications.slice(0, 5).map((item, index) => (
-                      <div key={item.id || `notif-${index}`} className="p-4 flex items-start gap-3 border-b border-gray-50 last:border-0">
-                        <div className="mt-1 p-2 rounded-full bg-orange-100/50 text-orange-600">
-                          <Bell className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-0.5">
-                            <span className="text-sm font-bold text-gray-900 truncate">{item.title}</span>
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-gray-400 whitespace-nowrap">{item.time}</span>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-                                  removeNotification(item.id, item.source);
-                                }}
-                                className="rounded-full p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.message}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-8 text-center flex flex-col items-center gap-2">
-                      <BellOff className="h-10 w-10 text-gray-200" />
-                      <p className="text-xs text-gray-400 font-medium">All caught up!</p>
-                    </div>
+          {isFood && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="relative h-[38px] w-[38px] rounded-full bg-white/95 border border-white/60 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                >
+                  <Bell className="h-[18px] w-[18px] text-[#282c3f]" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-yellow-400 border border-white" />
                   )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0 overflow-hidden border-none shadow-2xl rounded-2xl mt-2" align="end">
+                <div className="bg-white">
+                  <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      Notifications
+                      {unreadCount > 0 && (
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-600 border-none text-[10px] h-4">
+                          {unreadCount} New
+                        </Badge>
+                      )}
+                    </h3>
+                    <Link to="/food/user/notifications" className="text-xs font-bold text-orange-600">
+                      {mergedNotifications.length > 0 ? "View All" : ""}
+                    </Link>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {mergedNotifications.length > 0 ? (
+                      mergedNotifications.slice(0, 5).map((item, index) => (
+                        <div key={item.id || `notif-${index}`} className="p-4 flex items-start gap-3 border-b border-gray-50 last:border-0">
+                          <div className="mt-1 p-2 rounded-full bg-orange-100/50 text-orange-600">
+                            <Bell className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-0.5">
+                              <span className="text-sm font-bold text-gray-900 truncate">{item.title}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-400 whitespace-nowrap">{item.time}</span>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    removeNotification(item.id, item.source);
+                                  }}
+                                  className="rounded-full p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.message}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center flex flex-col items-center gap-2">
+                        <BellOff className="h-10 w-10 text-gray-200" />
+                        <p className="text-xs text-gray-400 font-medium">All caught up!</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
+          )}
 
           <Link
-            to="/food/user/cart"
+            to={isFood ? "/food/user/cart" : "/quick/cart"}
             className="h-[38px] w-[38px] rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
             aria-label="Open cart"
           >

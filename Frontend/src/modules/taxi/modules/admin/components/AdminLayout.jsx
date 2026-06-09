@@ -303,6 +303,7 @@ const AdminLayout = () => {
               { label: 'Service Location', path: '/taxi/admin/pricing/service-location' },
               { label: 'Zone', path: '/taxi/admin/pricing/zone' },
               { label: 'Airport', path: '/taxi/admin/pricing/airport' },
+              { label: 'Explorer Destinations', path: '/taxi/admin/pricing/explorer-destinations' },
               { label: 'App Modules', path: '/taxi/admin/pricing/app-modules' },
               { label: 'Vehicle Type', path: '/taxi/admin/pricing/vehicle-type' },
               { label: 'Rental Package Types', path: '/taxi/admin/pricing/rental-packages' },

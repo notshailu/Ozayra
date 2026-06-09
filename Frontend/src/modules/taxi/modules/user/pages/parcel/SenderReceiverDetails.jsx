@@ -442,6 +442,201 @@ const SenderReceiverDetails = () => {
   const [pricingRules, setPricingRules] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
 
+  // Geolocation and Dynamic Suggestions State
+  const [userCoords, setUserCoords] = useState(null);
+  const [nearbySuggestions, setNearbySuggestions] = useState(() => POPULAR_LOCATIONS.slice(0, 4));
+  const [pickupSuggestions, setPickupSuggestions] = useState([]);
+  const [dropSuggestions, setDropSuggestions] = useState([]);
+  const [lastGeocodedPickup, setLastGeocodedPickup] = useState(() => parcelState.pickup || '');
+  const [lastGeocodedDrop, setLastGeocodedDrop] = useState(() => parcelState.drop || '');
+  const [isProceeding, setIsProceeding] = useState(false);
+
+  // 1. Fetch user coordinates on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserCoords({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn('User geolocation fetch failed:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+  }, []);
+
+  // 2. Reverse geocode userCoords to populate nearbySuggestions
+  useEffect(() => {
+    if (!userCoords || !isGoogleMapsLoaded || !window.google?.maps?.Geocoder) {
+      return;
+    }
+
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ location: userCoords }, (results, status) => {
+      if (status === 'OK' && results) {
+        const suggestions = [];
+        for (const result of results) {
+          const sublocalityComp = result.address_components.find(
+            (c) => c.types.includes('sublocality') || c.types.includes('neighborhood')
+          );
+          let name = '';
+          if (sublocalityComp) {
+            name = sublocalityComp.long_name;
+          } else {
+            name = result.formatted_address.split(',')[0];
+          }
+
+          if (name && !suggestions.includes(name) && name.length > 2) {
+            suggestions.push(name);
+          }
+          if (suggestions.length >= 4) break;
+        }
+
+        // Fallback to parts of formatted address
+        if (suggestions.length < 4) {
+          for (const result of results) {
+            const shortAddress = result.formatted_address.split(',').slice(0, 2).join(',').trim();
+            if (shortAddress && !suggestions.includes(shortAddress)) {
+              suggestions.push(shortAddress);
+            }
+            if (suggestions.length >= 4) break;
+          }
+        }
+
+        if (suggestions.length > 0) {
+          setNearbySuggestions(suggestions.slice(0, 4));
+        }
+      }
+    });
+  }, [userCoords, isGoogleMapsLoaded]);
+
+  // 3. Autocomplete for pickup input
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !window.google?.maps?.places?.AutocompleteService) {
+      if (!pickup.trim()) {
+        setPickupSuggestions(nearbySuggestions);
+      } else {
+        setPickupSuggestions(POPULAR_LOCATIONS.filter(item => item.toLowerCase().includes(pickup.toLowerCase())).slice(0, 4));
+      }
+      return;
+    }
+
+    if (!pickup.trim()) {
+      setPickupSuggestions(nearbySuggestions);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const autocompleteService = new window.google.maps.places.AutocompleteService();
+      const request = {
+        input: pickup,
+        componentRestrictions: { country: 'in' },
+      };
+
+      if (userCoords) {
+        request.locationBias = {
+          radius: 50000,
+          center: userCoords,
+        };
+      }
+
+      autocompleteService.getPlacePredictions(request, (predictions, status) => {
+        if (status === 'OK' && predictions) {
+          setPickupSuggestions(predictions.map((p) => p.description).slice(0, 4));
+        } else {
+          setPickupSuggestions(POPULAR_LOCATIONS.filter(item => item.toLowerCase().includes(pickup.toLowerCase())).slice(0, 4));
+        }
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [pickup, nearbySuggestions, userCoords, isGoogleMapsLoaded]);
+
+  // 4. Autocomplete for drop input
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !window.google?.maps?.places?.AutocompleteService) {
+      if (!drop.trim()) {
+        setDropSuggestions(nearbySuggestions);
+      } else {
+        setDropSuggestions(POPULAR_LOCATIONS.filter(item => item.toLowerCase().includes(drop.toLowerCase())).slice(0, 4));
+      }
+      return;
+    }
+
+    if (!drop.trim()) {
+      setDropSuggestions(nearbySuggestions);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const autocompleteService = new window.google.maps.places.AutocompleteService();
+      const request = {
+        input: drop,
+        componentRestrictions: { country: 'in' },
+      };
+
+      if (userCoords) {
+        request.locationBias = {
+          radius: 50000,
+          center: userCoords,
+        };
+      }
+
+      autocompleteService.getPlacePredictions(request, (predictions, status) => {
+        if (status === 'OK' && predictions) {
+          setDropSuggestions(predictions.map((p) => p.description).slice(0, 4));
+        } else {
+          setDropSuggestions(POPULAR_LOCATIONS.filter(item => item.toLowerCase().includes(drop.toLowerCase())).slice(0, 4));
+        }
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [drop, nearbySuggestions, userCoords, isGoogleMapsLoaded]);
+
+  // 5. Geocoding helper resolver
+  const resolveCoords = (address) => {
+    return new Promise((resolve) => {
+      if (!isGoogleMapsLoaded || !window.google?.maps?.Geocoder) {
+        resolve(LOCATION_COORDS[address] || null);
+        return;
+      }
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results?.[0]?.geometry?.location) {
+          const loc = results[0].geometry.location;
+          resolve([loc.lng(), loc.lat()]);
+        } else {
+          resolve(LOCATION_COORDS[address] || null);
+        }
+      });
+    });
+  };
+
+  const handleSelectPickup = async (item) => {
+    setPickup(item);
+    clearError('pickup');
+    const coords = await resolveCoords(item);
+    if (coords) {
+      setPickupCoords(coords);
+      setLastGeocodedPickup(item);
+    }
+  };
+
+  const handleSelectDrop = async (item) => {
+    setDrop(item);
+    clearError('drop');
+    const coords = await resolveCoords(item);
+    if (coords) {
+      setDropCoords(coords);
+      setLastGeocodedDrop(item);
+    }
+  };
+
   useEffect(() => {
     let active = true;
     const loadData = async () => {
@@ -523,7 +718,8 @@ const SenderReceiverDetails = () => {
     };
   }, [pickupCoords, dropCoords, pickupLatLng, dropLatLng, isGoogleMapsLoaded]);
 
-  const calculatedFare = useMemo(() => {
+  // Abstracted fare computer for dynamic distance/coords routing
+  const computeFare = (meters) => {
     const activeTypes = vehicleTypes.filter((type) => type.active !== false && Number(type.status ?? 1) !== 0);
     const preferredType = String(parcelState.goodsTypeFor || '').trim();
     
@@ -566,7 +762,7 @@ const SenderReceiverDetails = () => {
     if (!activeRule) {
       const rule = parcelState.weightRule;
       if (rule) {
-        const distanceKm = distanceMeters / 1000;
+        const distanceKm = meters / 1000;
         const extraDistanceKm = Math.max(0, distanceKm - Number(rule.base_distance || 0));
         const subtotal = Number(rule.base_price || 0) + (extraDistanceKm * Number(rule.price_per_distance || 0));
         return Math.max(0, Math.round(subtotal));
@@ -585,7 +781,7 @@ const SenderReceiverDetails = () => {
       return 45;
     }
 
-    const distanceKm = distanceMeters / 1000;
+    const distanceKm = meters / 1000;
     const basePrice = Number(rule.base_price || 0);
     const baseDistance = Number(rule.base_distance || 0);
     const pricePerDistance = Number(rule.price_per_distance || 0);
@@ -595,7 +791,9 @@ const SenderReceiverDetails = () => {
     const subtotal = basePrice + (extraDistanceKm * pricePerDistance);
     const total = subtotal + (subtotal * serviceTax) / 100;
     return Math.max(0, Math.round(total));
-  }, [pricingRules, vehicleTypes, distanceMeters, parcelState.weight, parcelState.weightRule, parcelState.goodsTypeFor]);
+  };
+
+  const calculatedFare = useMemo(() => computeFare(distanceMeters), [pricingRules, vehicleTypes, distanceMeters, parcelState.weight, parcelState.weightRule, parcelState.goodsTypeFor]);
 
   useEffect(() => {
     let active = true;
@@ -652,21 +850,8 @@ const SenderReceiverDetails = () => {
     };
   }, [storedUser]);
 
-  const pickupSuggestions = useMemo(
-    () => POPULAR_LOCATIONS.filter((item) => item.toLowerCase().includes(String(pickup || '').toLowerCase())).slice(0, 4),
-    [pickup],
-  );
-  const dropSuggestions = useMemo(
-    () => POPULAR_LOCATIONS.filter((item) => item.toLowerCase().includes(String(drop || '').toLowerCase())).slice(0, 4),
-    [drop],
-  );
-
   const validate = () => {
     const nextErrors = {};
-    if (!senderName.trim()) nextErrors.senderName = 'Sender name is required';
-    if (!PHONE_REGEX.test(senderMobile)) nextErrors.senderMobile = 'Enter a valid 10-digit mobile number';
-    if (!receiverName.trim()) nextErrors.receiverName = 'Receiver name is required';
-    if (!PHONE_REGEX.test(receiverMobile)) nextErrors.receiverMobile = 'Enter a valid 10-digit mobile number';
     if (!pickup.trim()) nextErrors.pickup = 'Pickup location is required';
     if (!drop.trim()) nextErrors.drop = 'Drop location is required';
     setErrors(nextErrors);
@@ -714,6 +899,7 @@ const SenderReceiverDetails = () => {
 
         setPickupCoords(coords);
         setPickup(address || formatLatLngLabel(next));
+        setLastGeocodedPickup(address || formatLatLngLabel(next));
         clearError('pickup');
         setIsLocatingPickup(false);
       },
@@ -725,38 +911,96 @@ const SenderReceiverDetails = () => {
     );
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!validate()) return;
+    setIsProceeding(true);
 
-    navigate('/taxi/user/parcel/searching', {
-      state: {
-        ...parcelState,
-        pickup,
-        drop,
-        pickupCoords,
-        dropCoords,
-        senderName,
-        senderMobile,
-        receiverName,
-        receiverMobile,
-        paymentMethod: 'Cash',
-        fare: calculatedFare,
-        deliveryScope: parcelState.deliveryScope || 'city',
-        isOutstation: Boolean(parcelState.isOutstation || parcelState.deliveryScope === 'outstation'),
-        parcel: {
-          category: parcelState.parcelType || 'Parcel',
-          weight: parcelState.weight || 'Under 5kg',
-          description: parcelState.description || '',
+    try {
+      let finalPickupCoords = pickupCoords;
+      let finalDropCoords = dropCoords;
+
+      if (pickup !== lastGeocodedPickup) {
+        const resolved = await resolveCoords(pickup);
+        if (resolved) {
+          finalPickupCoords = resolved;
+          setPickupCoords(resolved);
+          setLastGeocodedPickup(pickup);
+        }
+      }
+
+      if (drop !== lastGeocodedDrop) {
+        const resolved = await resolveCoords(drop);
+        if (resolved) {
+          finalDropCoords = resolved;
+          setDropCoords(resolved);
+          setLastGeocodedDrop(drop);
+        }
+      }
+
+      // Calculate directions route distance with final resolved coords
+      let finalDistanceMeters = distanceMeters;
+      if (pickup !== lastGeocodedPickup || drop !== lastGeocodedDrop) {
+        finalDistanceMeters = await new Promise((resolve) => {
+          const fallback = calculateHaversineDistance(finalPickupCoords, finalDropCoords);
+          if (!isGoogleMapsLoaded || !window.google?.maps?.DirectionsService) {
+            resolve(fallback);
+            return;
+          }
+          const directionsService = new window.google.maps.DirectionsService();
+          directionsService.route(
+            {
+              origin: coordPairToLatLng(finalPickupCoords),
+              destination: coordPairToLatLng(finalDropCoords),
+              travelMode: window.google.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+              if (status === 'OK' && result?.routes?.[0]?.legs?.[0]) {
+                resolve(result.routes[0].legs[0].distance?.value || fallback);
+              } else {
+                resolve(fallback);
+              }
+            }
+          );
+        });
+        setDistanceMeters(finalDistanceMeters);
+      }
+
+      const finalFare = computeFare(finalDistanceMeters);
+
+      navigate('/taxi/user/ride/select-vehicle', {
+        state: {
+          ...parcelState,
+          pickup,
+          drop,
+          pickupCoords: finalPickupCoords,
+          dropCoords: finalDropCoords,
+          senderName: senderName || storedUser?.name || 'Sender',
+          senderMobile: senderMobile || storedUser?.phone || '9999999999',
+          receiverName: receiverName || 'Receiver',
+          receiverMobile: receiverMobile || '9999999999',
+          paymentMethod: 'Cash',
+          fare: finalFare,
           deliveryScope: parcelState.deliveryScope || 'city',
           isOutstation: Boolean(parcelState.isOutstation || parcelState.deliveryScope === 'outstation'),
-          senderName,
-          senderMobile,
-          receiverName,
-          receiverMobile,
+          parcel: {
+            category: parcelState.parcelType || 'Parcel',
+            weight: parcelState.weight || 'Under 5kg',
+            description: parcelState.description || '',
+            deliveryScope: parcelState.deliveryScope || 'city',
+            isOutstation: Boolean(parcelState.isOutstation || parcelState.deliveryScope === 'outstation'),
+            senderName: senderName || storedUser?.name || 'Sender',
+            senderMobile: senderMobile || storedUser?.phone || '9999999999',
+            receiverName: receiverName || 'Receiver',
+            receiverMobile: receiverMobile || '9999999999',
+          },
+          isParcel: true,
         },
-        isParcel: true,
-      },
-    });
+      });
+    } catch (err) {
+      console.error('Error in handling routing proceed:', err);
+    } finally {
+      setIsProceeding(false);
+    }
   };
 
   return (
@@ -771,6 +1015,7 @@ const SenderReceiverDetails = () => {
         onConfirm={(coords, address) => {
           setPickupCoords(coords);
           setPickup(address || formatCoordLabel(coords));
+          setLastGeocodedPickup(address || formatCoordLabel(coords));
           clearError('pickup');
           setActiveMapPicker(null);
         }}
@@ -785,6 +1030,7 @@ const SenderReceiverDetails = () => {
         onConfirm={(coords, address) => {
           setDropCoords(coords);
           setDrop(address || formatCoordLabel(coords));
+          setLastGeocodedDrop(address || formatCoordLabel(coords));
           clearError('drop');
           setActiveMapPicker(null);
         }}
@@ -798,36 +1044,11 @@ const SenderReceiverDetails = () => {
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
             {parcelState.parcelType || 'Parcel'} - {parcelState.weight || 'Under 5kg'} - {parcelState.deliveryScope === 'outstation' ? 'Outstation' : 'In City'}
           </p>
-          <h1 className="text-[20px] font-extrabold text-gray-900 tracking-tight leading-none">Contacts & Route</h1>
+          <h1 className="text-[20px] font-extrabold text-gray-900 tracking-tight leading-none">Select Route</h1>
         </div>
       </header>
 
       <div className="flex-1 p-5 space-y-8 overflow-y-auto no-scrollbar pb-4">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 ml-1">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-primary">
-              <User size={18} strokeWidth={3} />
-            </div>
-            <h3 className="text-[16px] font-black text-gray-900 tracking-tight leading-none">Sender Details</h3>
-          </div>
-          <div className="bg-white rounded-[32px] p-5 shadow-lg shadow-gray-100 border border-gray-50 space-y-4">
-            <div className="space-y-1">
-              <label className="text-[12px] font-black text-gray-400 ml-1">Sender Name</label>
-              <input
-                type="text"
-                className={`w-full rounded-2xl p-4 text-[15px] font-bold text-gray-900 focus:outline-none focus:ring-2 ring-primary/10 transition-all ${errors.senderName ? 'bg-red-50 ring-2 ring-red-100' : 'bg-gray-50/50'}`}
-                value={senderName}
-                placeholder="Your name"
-                onChange={(e) => {
-                  setSenderName(e.target.value);
-                  clearError('senderName');
-                }}
-              />
-              {errors.senderName && <p className="text-[11px] font-black text-red-500 ml-2 flex items-center gap-1 mt-1"><AlertCircle size={11} strokeWidth={3} /> {errors.senderName}</p>}
-            </div>
-            <PhoneInput label="Sender Mobile" value={senderMobile} onChange={setSenderMobile} error={errors.senderMobile} name="senderMobile" onClearError={clearError} />
-          </div>
-        </div>
 
         <div className="space-y-4">
           <div className="flex items-center gap-3 ml-1">
@@ -836,105 +1057,142 @@ const SenderReceiverDetails = () => {
             </div>
             <h3 className="text-[16px] font-black text-gray-900 tracking-tight leading-none">Pickup & Drop</h3>
           </div>
-          <div className="bg-white rounded-[32px] p-5 shadow-lg shadow-gray-100 border border-gray-50 space-y-4">
-            <AddressField
-              label="Pickup"
-              value={pickup}
-              onChange={(value) => {
-                setPickup(value);
-                clearError('pickup');
-              }}
-              error={errors.pickup}
-              suggestions={pickupSuggestions}
-              onPickSuggestion={(value) => {
-                setPickup(value);
-                setPickupCoords(getCoords(value));
-                clearError('pickup');
-              }}
-            />
-            <div className="rounded-[24px] border border-gray-100 bg-slate-50/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Pickup Pin</p>
-                  <p className="mt-1 text-[12px] font-black text-slate-900">{formatCoordLabel(pickupCoords)}</p>
+
+          <div className="bg-white rounded-[32px] p-5 shadow-lg border border-slate-100 space-y-4">
+            <div className="relative flex flex-col gap-5">
+              
+              {/* Vertical dotted connector line */}
+              <div className="absolute left-[9px] top-[26px] bottom-[26px] w-[1.5px] border-l-[1.5px] border-dotted border-slate-300 pointer-events-none" />
+
+              {/* Pickup Input Row */}
+              <div className="flex items-start gap-3 relative">
+                <div className="mt-[13px] w-5 h-5 rounded-full border-2 border-emerald-500 bg-white flex items-center justify-center shrink-0 z-10">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 </div>
-                <div className="flex shrink-0 flex-col gap-2">
+                <div className="flex-1 min-w-0">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Pickup Location</label>
+                  <div className={`flex items-center bg-slate-50 border rounded-xl px-3 py-2.5 transition-all ${errors.pickup ? 'border-red-200 bg-red-50/20' : 'border-slate-100 focus-within:border-slate-300'}`}>
+                    <input
+                      type="text"
+                      value={pickup}
+                      onChange={(e) => {
+                        setPickup(e.target.value);
+                        clearError('pickup');
+                      }}
+                      placeholder="Enter pickup area or landmark"
+                      className="w-full bg-transparent border-none text-[14px] font-bold text-slate-900 focus:outline-none placeholder:text-slate-300"
+                    />
+                    {pickup.length > 0 && (
+                      <button onClick={() => setPickup('')} className="ml-1 text-slate-300 hover:text-slate-500 shrink-0">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {errors.pickup && <p className="text-[10px] font-black text-red-500 mt-1">{errors.pickup}</p>}
+                  
+                  {/* Pickup Suggestions */}
+                  {pickupSuggestions.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {pickupSuggestions.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handleSelectPickup(item)}
+                          className="rounded-full border border-slate-100 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-colors"
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-1.5 text-[9px] font-semibold text-slate-400">Pin: {formatCoordLabel(pickupCoords)}</p>
+                </div>
+                
+                {/* Actions for Pickup */}
+                <div className="flex flex-col gap-1.5 mt-[15px] shrink-0">
                   <button
                     type="button"
                     onClick={useCurrentPickupLocation}
                     disabled={isLocatingPickup}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-[11px] font-black text-white shadow-sm disabled:opacity-70"
+                    className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 active:scale-95 transition-colors border border-slate-100 flex items-center justify-center"
+                    title="Use Current Location"
                   >
-                    <Navigation size={13} className={isLocatingPickup ? 'animate-pulse' : ''} strokeWidth={2.6} />
-                    {isLocatingPickup ? 'Locating' : 'Use Current'}
+                    <Navigation size={13} className={isLocatingPickup ? 'animate-pulse' : ''} />
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveMapPicker('pickup')}
-                    className="rounded-full bg-white px-4 py-2 text-[11px] font-black text-slate-700 shadow-sm ring-1 ring-slate-200"
+                    className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 active:scale-95 transition-colors border border-slate-100 flex items-center justify-center"
+                    title="Choose on Map"
                   >
-                    Choose on Map
+                    <MapPin size={13} />
                   </button>
                 </div>
               </div>
-            </div>
-            <AddressField
-              label="Drop"
-              value={drop}
-              onChange={(value) => {
-                setDrop(value);
-                clearError('drop');
-              }}
-              error={errors.drop}
-              suggestions={dropSuggestions}
-              onPickSuggestion={(value) => {
-                setDrop(value);
-                setDropCoords(getCoords(value));
-                clearError('drop');
-              }}
-            />
-            <div className="rounded-[24px] border border-gray-100 bg-slate-50/70 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Delivery Pin</p>
-                  <p className="mt-1 text-[12px] font-black text-slate-900">{formatCoordLabel(dropCoords)}</p>
+
+              {/* Drop Input Row */}
+              <div className="flex items-start gap-3 relative">
+                <div className="mt-[13px] w-5 h-5 rounded-full border-2 border-orange-500 bg-white flex items-center justify-center shrink-0 z-10">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveMapPicker('drop')}
-                  className="rounded-full bg-white px-4 py-2 text-[11px] font-black text-slate-700 shadow-sm ring-1 ring-slate-200"
-                >
-                  Choose on Map
-                </button>
+                <div className="flex-1 min-w-0">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Drop Location</label>
+                  <div className={`flex items-center bg-slate-50 border rounded-xl px-3 py-2.5 transition-all ${errors.drop ? 'border-red-200 bg-red-50/20' : 'border-slate-100 focus-within:border-slate-300'}`}>
+                    <input
+                      type="text"
+                      value={drop}
+                      onChange={(e) => {
+                        setDrop(e.target.value);
+                        clearError('drop');
+                      }}
+                      placeholder="Enter delivery area or landmark"
+                      className="w-full bg-transparent border-none text-[14px] font-bold text-slate-900 focus:outline-none placeholder:text-slate-300"
+                    />
+                    {drop.length > 0 && (
+                      <button onClick={() => setDrop('')} className="ml-1 text-slate-300 hover:text-slate-500 shrink-0">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {errors.drop && <p className="text-[10px] font-black text-red-500 mt-1">{errors.drop}</p>}
+
+                  {/* Drop Suggestions */}
+                  {dropSuggestions.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {dropSuggestions.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handleSelectDrop(item)}
+                          className="rounded-full border border-slate-100 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-colors"
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-1.5 text-[9px] font-semibold text-slate-400">Pin: {formatCoordLabel(dropCoords)}</p>
+                </div>
+
+                {/* Actions for Drop */}
+                <div className="flex flex-col gap-1.5 mt-[15px] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMapPicker('drop')}
+                    className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 active:scale-95 transition-colors border border-slate-100 flex items-center justify-center"
+                    title="Choose on Map"
+                  >
+                    <MapPin size={13} />
+                  </button>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
 
         <div className="space-y-4 pb-24">
-          <div className="flex items-center gap-3 ml-1">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-              <User size={18} strokeWidth={3} />
-            </div>
-            <h3 className="text-[16px] font-black text-gray-900 tracking-tight leading-none">Receiver Details</h3>
-          </div>
-          <div className="bg-white rounded-[32px] p-5 shadow-lg shadow-gray-100 border border-gray-50 space-y-4">
-            <div className="space-y-1">
-              <label className="text-[12px] font-black text-gray-400 ml-1">Receiver Name</label>
-              <input
-                type="text"
-                placeholder="Enter receiver's name"
-                className={`w-full rounded-2xl p-4 text-[15px] font-bold text-gray-900 focus:outline-none focus:ring-2 ring-blue-100 transition-all placeholder:text-gray-300 ${errors.receiverName ? 'bg-red-50 ring-2 ring-red-100' : 'bg-gray-50/50'}`}
-                value={receiverName}
-                onChange={(e) => {
-                  setReceiverName(e.target.value);
-                  clearError('receiverName');
-                }}
-              />
-              {errors.receiverName && <p className="text-[11px] font-black text-red-500 ml-2 flex items-center gap-1 mt-1"><AlertCircle size={11} strokeWidth={3} /> {errors.receiverName}</p>}
-            </div>
-            <PhoneInput label="Receiver Mobile" value={receiverMobile} onChange={setReceiverMobile} error={errors.receiverMobile} name="receiverMobile" onClearError={clearError} />
-
+          <div className="bg-white rounded-[32px] p-5 shadow-lg shadow-gray-100 border border-gray-50">
             <div className="bg-slate-50/80 rounded-2xl p-4 border border-gray-100/60 flex flex-col gap-1">
               <div className="flex justify-between items-center">
                 <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Est. Distance</span>
@@ -955,9 +1213,23 @@ const SenderReceiverDetails = () => {
       </div>
 
       <div className="p-6 bg-white border-t border-gray-50 pb-10 sticky bottom-0 z-30">
-        <Motion.button whileTap={{ scale: 0.98 }} onClick={handleProceed} className="w-full bg-[#1C2833] py-5 rounded-[28px] text-[18px] font-black text-white shadow-xl shadow-gray-200 active:bg-black transition-all flex items-center justify-center gap-2">
-          <span>Find Delivery Agent</span>
-          <ChevronRight size={20} className="opacity-40" />
+        <Motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={handleProceed}
+          disabled={isProceeding}
+          className="w-full bg-[#1C2833] py-5 rounded-[28px] text-[18px] font-black text-white shadow-xl shadow-gray-200 active:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+        >
+          {isProceeding ? (
+            <>
+              <LoaderCircle size={18} className="animate-spin text-white" />
+              <span>Resolving Locations...</span>
+            </>
+          ) : (
+            <>
+              <span>Choose Delivery Vehicle</span>
+              <ChevronRight size={20} className="opacity-40" />
+            </>
+          )}
         </Motion.button>
       </div>
     </div>

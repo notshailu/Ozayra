@@ -367,6 +367,7 @@ const SearchingDriver = () => {
           vehicleTypeId: selectedVehicleTypeId,
           vehicleIconType: routeState.vehicleIconType || routeState.vehicle?.iconType,
           paymentMethod: routeState.paymentMethod || 'Cash',
+          otp,
         }, rideRequestConfig);
 
         const payload = unwrap(response);

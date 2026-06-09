@@ -121,6 +121,11 @@ const rideSchema = new mongoose.Schema(
       enum: Object.values(RIDE_LIVE_STATUS),
       default: RIDE_LIVE_STATUS.SEARCHING,
     },
+    otp: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     pickupLocation: {
       type: {
         type: String,

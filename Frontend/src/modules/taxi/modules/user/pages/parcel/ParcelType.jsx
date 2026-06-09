@@ -104,6 +104,50 @@ const formatGoodsType = (item, index) => {
   };
 };
 
+const getSelectedStyles = (title) => {
+  const name = String(title || '').toLowerCase();
+  if (name.includes('document')) {
+    return {
+      card: 'border-orange-400 bg-[linear-gradient(180deg,#ffffff_0%,#fffaf0_100%)] shadow-[0_12px_32px_rgba(249,115,22,0.12)] scale-[1.025]',
+      dot: 'bg-orange-500 ring-orange-100/80',
+      iconGlow: 'shadow-[0_8px_20px_rgba(249,115,22,0.22)]',
+    };
+  }
+  if (name.includes('grocer')) {
+    return {
+      card: 'border-emerald-400 bg-[linear-gradient(180deg,#ffffff_0%,#f5fdf7_100%)] shadow-[0_12px_32px_rgba(16,185,129,0.12)] scale-[1.025]',
+      dot: 'bg-emerald-500 ring-emerald-100/80',
+      iconGlow: 'shadow-[0_8px_20px_rgba(16,185,129,0.22)]',
+    };
+  }
+  if (name.includes('gift')) {
+    return {
+      card: 'border-purple-400 bg-[linear-gradient(180deg,#ffffff_0%,#faf5ff_100%)] shadow-[0_12px_32px_rgba(168,85,247,0.12)] scale-[1.025]',
+      dot: 'bg-purple-500 ring-purple-100/80',
+      iconGlow: 'shadow-[0_8px_20px_rgba(168,85,247,0.22)]',
+    };
+  }
+  if (name.includes('cloth')) {
+    return {
+      card: 'border-blue-400 bg-[linear-gradient(180deg,#ffffff_0%,#f0f7ff_100%)] shadow-[0_12px_32px_rgba(59,130,246,0.12)] scale-[1.025]',
+      dot: 'bg-blue-500 ring-blue-100/80',
+      iconGlow: 'shadow-[0_8px_20px_rgba(59,130,246,0.22)]',
+    };
+  }
+  if (name.includes('electr')) {
+    return {
+      card: 'border-yellow-400 bg-[linear-gradient(180deg,#ffffff_0%,#fefdf0_100%)] shadow-[0_12px_32px_rgba(234,179,8,0.12)] scale-[1.025]',
+      dot: 'bg-yellow-500 ring-yellow-100/80',
+      iconGlow: 'shadow-[0_8px_20px_rgba(234,179,8,0.22)]',
+    };
+  }
+  return {
+    card: 'border-slate-700 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_12px_32px_rgba(15,23,42,0.12)] scale-[1.025]',
+    dot: 'bg-slate-800 ring-slate-100/80',
+    iconGlow: 'shadow-[0_8px_20px_rgba(15,23,42,0.22)]',
+  };
+};
+
 const ParcelType = () => {
   const [categories, setCategories] = useState(fallbackCategories);
   const [selectedType, setSelectedType] = useState(fallbackCategories[0]?.title || '');
@@ -185,25 +229,35 @@ const ParcelType = () => {
           <p className="text-[9px] font-black uppercase tracking-[0.26em] text-slate-400">Parcel Delivery</p>
           <h1 className="text-[19px] font-black tracking-tight text-slate-900 leading-tight">What are you sending?</h1>
         </div>
-        <div className="rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black text-slate-600 shadow-sm shrink-0">
-          <Package size={12} className="inline mr-1 text-orange-400" />
-          {categories.length} types
+        <div className="rounded-full border border-slate-100 bg-slate-50/70 px-3 py-1.5 text-[10.5px] font-black text-slate-600 shadow-sm shrink-0 flex items-center gap-1.5">
+          <Package size={13} className="text-slate-500" />
+          <span>{categories.length} types</span>
         </div>
       </Motion.header>
 
       {/* Content */}
       <div className="flex-1 px-5 pt-5 pb-32 overflow-y-auto no-scrollbar">
-
-        {/* Section label */}
+        {/* Section label & Step progress */}
         <Motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.08, ease: 'easeOut' }}
-          className="mb-4"
+          className="mb-5 bg-white/70 border border-white/80 rounded-[24px] p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"
         >
-          <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400">Step 1 of 3</p>
-          <h2 className="mt-0.5 text-[16px] font-black tracking-tight text-slate-900">Select Category</h2>
-          <p className="mt-0.5 text-[11px] font-bold text-slate-500">Tap a category that best describes your item.</p>
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-slate-400">Step 1 of 3</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-orange-600">Select Category</span>
+          </div>
+          
+          {/* Progress Bar Segments */}
+          <div className="flex items-center gap-1.5 mt-2.5">
+            <div className="h-1.5 flex-1 rounded-full bg-slate-900 shadow-sm" />
+            <div className="h-1.5 flex-1 rounded-full bg-slate-200/80" />
+            <div className="h-1.5 flex-1 rounded-full bg-slate-200/80" />
+          </div>
+          
+          <h2 className="mt-3.5 text-[15px] font-black tracking-tight text-slate-900">What describes your item?</h2>
+          <p className="mt-0.5 text-[11px] font-bold text-slate-500">Choose a category below to configure package details.</p>
         </Motion.div>
 
         {loadError ? (
@@ -222,22 +276,23 @@ const ParcelType = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.12, ease: 'easeOut' }}
-          className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+          className="grid grid-cols-2 gap-3.5"
         >
           {loading ? (
             [...Array(6)].map((_, index) => (
               <div
                 key={`loading-${index}`}
-                className="rounded-[20px] border border-white/80 bg-white/75 p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]"
+                className="rounded-[24px] border border-white/80 bg-white/75 p-5 shadow-[0_4px_14px_rgba(15,23,42,0.05)]"
               >
-                <div className="mx-auto h-14 w-14 animate-pulse rounded-[16px] bg-slate-100" />
-                <div className="mt-3 h-3 animate-pulse rounded-full bg-slate-100" />
-                <div className="mx-auto mt-2 h-2.5 w-3/4 animate-pulse rounded-full bg-slate-100" />
+                <div className="mx-auto h-16 w-16 animate-pulse rounded-[20px] bg-slate-100" />
+                <div className="mt-4 h-3.5 animate-pulse rounded-full bg-slate-100" />
+                <div className="mx-auto mt-2.5 h-3 w-3/4 animate-pulse rounded-full bg-slate-100" />
               </div>
             ))
           ) : (
             categories.map((cat, i) => {
               const isSelected = selectedType === cat.title;
+              const selStyle = getSelectedStyles(cat.title);
               return (
                 <Motion.button
                   key={cat.id}
@@ -247,10 +302,10 @@ const ParcelType = () => {
                   transition={{ duration: 0.35, delay: 0.1 + i * 0.05, ease: 'easeOut' }}
                   whileTap={{ scale: 0.96 }}
                   onClick={() => setSelectedType(cat.title)}
-                  className={`relative flex min-h-[172px] flex-col items-center justify-start gap-2.5 rounded-[20px] p-4 border transition-all text-center ${
+                  className={`relative flex min-h-[172px] flex-col items-center justify-start gap-3 rounded-[24px] p-4 border transition-all duration-300 text-center cursor-pointer ${
                     isSelected
-                      ? 'border-orange-200 bg-white shadow-[0_8px_24px_rgba(249,115,22,0.15)]'
-                      : 'border-white/80 bg-white/90 shadow-[0_4px_14px_rgba(15,23,42,0.05)] hover:border-slate-200'
+                      ? `border-slate-900/10 ${selStyle.card}`
+                      : 'border-slate-100 bg-white/90 shadow-[0_4px_16px_rgba(15,23,42,0.04)] hover:border-slate-200 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)]'
                   }`}
                 >
                   {/* Selected indicator dot */}
@@ -261,30 +316,30 @@ const ParcelType = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-orange-500"
+                        className={`absolute top-3.5 right-3.5 w-2.5 h-2.5 rounded-full ring-4 ${selStyle.dot}`}
                       />
                     )}
                   </AnimatePresence>
 
                   {/* 3D image container */}
-                  <div className={`w-14 h-14 rounded-[16px] flex items-center justify-center transition-all overflow-visible ${
-                    isSelected ? 'shadow-lg scale-110' : ''
+                  <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center transition-all duration-300 overflow-visible ${
+                    isSelected ? `scale-110 ${selStyle.iconGlow}` : ''
                   } ${cat.accentClass}`}>
                     <img
                       src={cat.img}
                       alt={cat.title}
-                      className="w-12 h-12 object-contain drop-shadow-md"
+                      className="w-12 h-12 object-contain drop-shadow-[0_6px_12px_rgba(15,23,42,0.12)]"
                     />
                   </div>
 
                   {/* Labels */}
-                  <div className="w-full">
-                    <span className={`block min-h-[40px] break-words text-[11px] font-black leading-[1.15] tracking-tight sm:text-[12px] ${
-                      isSelected ? 'text-slate-900' : 'text-slate-600'
+                  <div className="w-full flex-grow flex flex-col justify-center">
+                    <span className={`block text-[12.5px] font-black leading-[1.2] tracking-tight transition-colors duration-200 ${
+                      isSelected ? 'text-slate-900 font-extrabold' : 'text-slate-700'
                     }`}>
                       {cat.title}
                     </span>
-                    <span className="mt-1 block break-words text-[9px] font-bold leading-[1.2] text-slate-400 sm:text-[9.5px]">
+                    <span className="mt-1 block text-[9.5px] font-bold leading-[1.2] text-slate-400 transition-colors duration-200">
                       {cat.desc}
                     </span>
                   </div>
@@ -303,19 +358,19 @@ const ParcelType = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
-              className="mt-5 flex items-center gap-3 rounded-[18px] border border-white/80 bg-white/90 px-4 py-3.5 shadow-[0_4px_14px_rgba(15,23,42,0.05)]"
+              className="mt-6 flex items-center gap-4 rounded-[22px] bg-slate-900 text-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.15)] border border-white/10"
             >
-              <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center ${selected.accentClass}`}>
+              <div className="w-10 h-10 rounded-[14px] flex items-center justify-center bg-white/10 shrink-0">
                 <img src={selected.img} alt={selected.title} className="w-7 h-7 object-contain drop-shadow-sm" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Selected</p>
-                <p className="text-[13px] font-black text-slate-900 leading-tight">{selected.title}</p>
-                <p className="text-[10px] font-bold text-slate-400">{selected.desc}</p>
+                <p className="text-[8px] font-black uppercase tracking-[0.22em] text-emerald-400">Ready to Send</p>
+                <p className="text-[14px] font-black leading-tight mt-0.5">{selected.title}</p>
+                <p className="text-[10px] font-medium text-slate-300 mt-0.5">{selected.desc}</p>
               </div>
-              <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.4)]">
                 <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </Motion.div>
@@ -338,7 +393,7 @@ const ParcelType = () => {
             })
           }
           disabled={loading || !selectedType}
-          className="pointer-events-auto w-full bg-slate-900 py-4 rounded-[18px] text-[15px] font-black text-white shadow-[0_8px_24px_rgba(15,23,42,0.18)] active:bg-black transition-all flex items-center justify-center gap-2"
+          className="pointer-events-auto w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-[22px] text-[15px] font-black shadow-[0_12px_30px_rgba(15,23,42,0.18)] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
         >
           {loading ? (
             <>

@@ -525,7 +525,7 @@ export default function UnifiedOTPFastLogin() {
              {" • "}
              <Link to="/food/user/profile/privacy" className="underline hover:text-[#249b57] transition-colors">Privacy Policy</Link>
              {" • "}
-             <Link to="/food/user/profile/content" className="underline hover:text-[#249b57] transition-colors">Content Policy</Link>
+             <Link to="/food/user/profile/refund" className="underline hover:text-[#249b57] transition-colors">Refund Policy</Link>
            </p>
         </div>
       </div>

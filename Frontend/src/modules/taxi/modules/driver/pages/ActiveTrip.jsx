@@ -409,7 +409,23 @@ const ActiveTrip = () => {
     };
 
     const displayFare = liveRequest?.fare || tripData.fare;
-    const expectedOtp = String(liveRequest?.otp || effectiveState?.otp || '1234');
+    const expectedOtp = String(liveRequest?.raw?.otp || liveRequest?.otp || effectiveState?.otp || '1234');
+
+    useEffect(() => {
+        if (!liveRaw) return;
+
+        const currentStatus = String(liveRaw.status || '').toLowerCase();
+        const currentLiveStatus = String(liveRaw.liveStatus || '').toLowerCase();
+
+        if (currentStatus === 'ongoing' || currentLiveStatus === 'started') {
+            setPhase((prevPhase) => prevPhase !== 'in_trip' && prevPhase !== 'payment_confirm' && prevPhase !== 'review' ? 'in_trip' : prevPhase);
+        } else if (currentStatus === 'completed') {
+            const isPaymentPending = String(liveRaw.paymentStatus || '').toLowerCase() === 'pending' || String(liveRequest?.paymentStatus || '').toLowerCase() === 'pending' || driverPaymentStatus === 'pending';
+            setPhase(isPaymentPending ? 'payment_confirm' : 'review');
+        } else if (currentLiveStatus === 'arriving') {
+            setPhase((prevPhase) => prevPhase === 'to_pickup' ? 'otp_verification' : prevPhase);
+        }
+    }, [driverPaymentStatus, liveRaw, liveRequest?.paymentStatus]);
 
     const publishRideStatus = useCallback((nextStatus) => {
         if (!rideId) {
@@ -941,8 +957,8 @@ const ActiveTrip = () => {
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 active:scale-95 transition-transform"><MessageSquare size={18} strokeWidth={2.5} /></button>
-                                    <button className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-emerald-500 active:scale-95 transition-transform"><Phone size={18} strokeWidth={2.5} /></button>
+                                    <button onClick={() => navigate('/taxi/driver/ride/chat?role=driver')} className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 active:scale-95 transition-transform"><MessageSquare size={18} strokeWidth={2.5} /></button>
+                                    <button onClick={() => { console.log('Dialing sender/user:', isParcel ? tripData.sender.phone : tripData.user.phone); window.location.href = `tel:${isParcel ? tripData.sender.phone : tripData.user.phone}`; }} className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-emerald-500 active:scale-95 transition-transform"><Phone size={18} strokeWidth={2.5} /></button>
                                 </div>
                             </div>
                             <motion.button
@@ -1023,7 +1039,7 @@ const ActiveTrip = () => {
                                             {tripData.drop}
                                         </p>
                                     </div>
-                                    <button className="shrink-0 w-11 h-11 bg-white text-rose-500 rounded-xl border border-rose-100 flex items-center justify-center active:scale-90 transition-transform shadow-sm">
+                                    <button onClick={() => navigate('/taxi/driver/security')} className="shrink-0 w-11 h-11 bg-white text-rose-500 rounded-xl border border-rose-100 flex items-center justify-center active:scale-90 transition-transform shadow-sm">
                                         <ShieldAlert size={22} strokeWidth={2.5} />
                                     </button>
                                 </div>
@@ -1038,7 +1054,7 @@ const ActiveTrip = () => {
                                         <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wide">{isParcel ? 'Receiver' : 'Passenger'}</p>
                                     </div>
                                 </div>
-                                <button className="shrink-0 w-9 h-9 bg-white rounded-lg border border-slate-100 flex items-center justify-center text-emerald-500"><Phone size={16} strokeWidth={2.5} /></button>
+                                <button onClick={() => { console.log('Dialing receiver/user:', isParcel ? tripData.receiver.phone : tripData.user.phone); window.location.href = `tel:${isParcel ? tripData.receiver.phone : tripData.user.phone}`; }} className="shrink-0 w-9 h-9 bg-white rounded-lg border border-slate-100 flex items-center justify-center text-emerald-500"><Phone size={16} strokeWidth={2.5} /></button>
                             </div>
                             <motion.button
                                 whileTap={{ scale: 0.96 }}

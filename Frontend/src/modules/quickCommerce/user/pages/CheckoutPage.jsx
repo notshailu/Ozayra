@@ -357,31 +357,8 @@ const CheckoutPage = () => {
   const sharedProfilePhone = String(
     userProfile?.phone || user?.phone || "",
   ).trim();
-
-  // Mock data for recommendations
-  const recommendedProducts = [
-    {
-      id: 101,
-      name: "Uncle Chips",
-      price: 20,
-      image:
-        "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200",
-    },
-    {
-      id: 102,
-      name: "Lay's Chips",
-      price: 20,
-      image:
-        "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200",
-    },
-    {
-      id: 103,
-      name: "Bread",
-      price: 35,
-      image:
-        "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200",
-    },
-  ];
+  // Dynamic state for recommendations
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
 
   const [coupons, setCoupons] = useState([]);
   const [manualCode, setManualCode] = useState(
@@ -1127,6 +1104,47 @@ const CheckoutPage = () => {
   const getCartItem = (productId) => cart.find((item) => item.id === productId);
 
   useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const hasValidLocation =
+          Number.isFinite(currentLocation?.latitude) &&
+          Number.isFinite(currentLocation?.longitude);
+
+        const params = { limit: 10 };
+        if (hasValidLocation) {
+          params.lat = currentLocation.latitude;
+          params.lng = currentLocation.longitude;
+        }
+
+        const res = await customerApi.getProducts(params);
+        if (res.data.success) {
+          const rawResult = res.data.result;
+          const dbProds = Array.isArray(res.data.results)
+            ? res.data.results
+            : Array.isArray(rawResult?.items)
+              ? rawResult.items
+              : Array.isArray(rawResult)
+                ? rawResult
+                : [];
+          const formatted = dbProds.map((p) => ({
+            ...p,
+            id: p._id,
+            image: p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2",
+            price: p.salePrice || p.price,
+            originalPrice: p.price,
+            weight: p.weight || "1 unit",
+            deliveryTime: "8-15 mins"
+          }));
+          setRecommendedProducts(formatted);
+        }
+      } catch (error) {
+        console.error("Failed to fetch recommended products:", error);
+      }
+    };
+    fetchRecommendations();
+  }, [currentLocation]);
+
+  useEffect(() => {
     // Recipient data is intentionally not restored from localStorage —
     // the receiver is a different person and should be entered fresh each time.
 
@@ -1852,20 +1870,22 @@ const CheckoutPage = () => {
             )}
 
             {/* You might also like */}
-            <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 transition-colors">
-              <h3 className="font-black text-slate-800 text-lg mb-4">
-                You might also like
-              </h3>
-              <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 snap-x">
-                {recommendedProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="flex-shrink-0 w-[140px] snap-start">
-                    <ProductCard product={product} compact={true} />
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+            {recommendedProducts.length > 0 && (
+              <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 transition-colors">
+                <h3 className="font-black text-slate-800 text-lg mb-4">
+                  You might also like
+                </h3>
+                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 snap-x">
+                  {recommendedProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex-shrink-0 w-[140px] snap-start">
+                      <ProductCard product={product} compact={true} />
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Right Column: Order Summary & Payment - Sticky on Desktop */}

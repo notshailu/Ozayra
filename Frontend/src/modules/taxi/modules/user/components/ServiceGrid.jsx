@@ -4,6 +4,18 @@ import { motion } from 'framer-motion';
 import { userService } from '../services/userService';
 import toast from 'react-hot-toast';
 
+import carIcon from '../../../assets/icons/car.png';
+import bikeIcon from '../../../assets/icons/bike.png';
+import autoIcon from '../../../assets/icons/auto.png';
+import deliveryIcon from '../../../assets/icons/Delivery.png';
+
+const FALLBACK_SERVICES = [
+  { icon: carIcon, label: 'Car', description: 'Book a premium ride', path: '/taxi/user/ride/select-location', accentClass: 'bg-orange-50/80' },
+  { icon: autoIcon, label: 'Auto', description: 'Budget friendly auto', path: '/taxi/user/ride/select-location', accentClass: 'bg-blue-50/80' },
+  { icon: bikeIcon, label: 'Moto', description: 'Quick bike transit', path: '/taxi/user/ride/select-location', accentClass: 'bg-yellow-50/80' },
+  { icon: deliveryIcon, label: 'Parcel', description: 'Send package instantly', path: '/taxi/user/parcel/type', accentClass: 'bg-purple-50/80' },
+];
+
 const ServiceTile = ({ icon, label, description, path, accentClass }) => {
   const navigate = useNavigate();
 
@@ -13,7 +25,7 @@ const ServiceTile = ({ icon, label, description, path, accentClass }) => {
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => path && navigate(path)}
-      className="group relative flex w-full flex-col items-center gap-2.5 overflow-hidden rounded-[20px] border border-white/90 bg-white/60 p-1.5 shadow-[0_8px_20px_-4px_rgba(15,23,42,0.06)] transition-all duration-300 hover:bg-white hover:shadow-[0_16px_32px_-8px_rgba(15,23,42,0.12)]"
+      className="group relative flex w-full flex-col items-center gap-2.5 overflow-hidden rounded-[20px] border border-white/95 bg-white/60 p-2 shadow-[0_8px_24px_-4px_rgba(15,23,42,0.06)] transition-all duration-300 hover:bg-white hover:shadow-[0_16px_32px_-8px_rgba(15,23,42,0.12)]"
     >
       <div
         className={`relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[16px] shadow-[inset_0_1px_4px_rgba(255,255,255,0.6)] ${accentClass || 'bg-gray-50'}`}
@@ -27,7 +39,7 @@ const ServiceTile = ({ icon, label, description, path, accentClass }) => {
       </div>
 
       <div className="flex flex-col items-center px-1 pb-1">
-        <span className="text-[10px] font-bold uppercase leading-tight tracking-[0.02em] text-slate-700">
+        <span className="text-[10.5px] font-black uppercase leading-tight tracking-[0.04em] text-slate-800">
           {label}
         </span>
       </div>
@@ -68,26 +80,33 @@ const ServiceGrid = () => {
         const results = res?.results || res?.data?.results || [];
         const activeModules = results.filter(m => m.active);
         
-        const mapped = activeModules.map((m, idx) => ({
-          icon: m.mobile_menu_icon,
-          label: m.name,
-          description: m.short_description,
-          path: getPath(m),
-          accentClass: getAccent(idx)
-        }));
+        const mapped = activeModules.map((m, idx) => {
+          let displayName = m.name;
+          if (displayName.toLowerCase() === 'ride' || displayName.toLowerCase() === 'cab') {
+             displayName = 'Car';
+          }
+          return {
+            icon: m.mobile_menu_icon || carIcon,
+            label: displayName,
+            description: m.short_description,
+            path: getPath(m),
+            accentClass: getAccent(idx)
+          };
+        });
         
         setServices(mapped);
       } catch (err) {
         console.error('Failed to load services:', err);
-        toast.error('Could not load services');
+        // We do not toast an error on home screen since we have a premium fallback experience.
       }
     };
 
     fetchServices();
   }, []);
 
-  const optionCount = services.length;
-  const optionLabel = services.length === 1 ? 'option' : 'options';
+  const displayServices = services.length > 0 ? services : FALLBACK_SERVICES;
+  const optionCount = displayServices.length;
+  const optionLabel = optionCount === 1 ? 'option' : 'options';
 
   return (
     <div className="px-5">
@@ -109,7 +128,7 @@ const ServiceGrid = () => {
         </div>
 
         <div className="mt-5 grid grid-cols-4 gap-3.5">
-          {services.map((service) => (
+          {displayServices.map((service) => (
             <ServiceTile key={service.label} {...service} />
           ))}
         </div>

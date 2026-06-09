@@ -273,6 +273,7 @@ export const createRideRecord = async ({
   promo_code,
   service_location_id,
   transport_type,
+  otp,
 }) => {
   const user = await User.findById(userId);
 
@@ -364,6 +365,7 @@ export const createRideRecord = async ({
       intercity: normalizeIntercityPayload(intercity),
       status: RIDE_STATUS.SEARCHING,
       liveStatus: RIDE_LIVE_STATUS.SEARCHING,
+      otp,
     });
 
     user.currentRideId = ride._id;
@@ -404,6 +406,7 @@ export const createRideRecord = async ({
             intercity: normalizeIntercityPayload(intercity),
             status: RIDE_STATUS.SEARCHING,
             liveStatus: RIDE_LIVE_STATUS.SEARCHING,
+            otp,
           },
         ],
         { session },
@@ -477,6 +480,7 @@ export const serializeRideRealtime = (ride) => ({
   serviceType: ride.serviceType || 'ride',
   status: ride.status,
   liveStatus: ride.liveStatus,
+  otp: ride.otp,
   fare: ride.fare,
   estimatedDistanceMeters: ride.estimatedDistanceMeters || 0,
   estimatedDurationMinutes: ride.estimatedDurationMinutes || 0,

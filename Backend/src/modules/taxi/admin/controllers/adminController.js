@@ -426,6 +426,20 @@ export const deleteAirport = asyncHandler(async (req, res) => {
   ok(res, { deleted: true });
 });
 
+export const getExplorerDestinations = asyncHandler(async (req, res) =>
+  ok(res, await adminService.listExplorerDestinations(req.query)),
+);
+export const createExplorerDestination = asyncHandler(async (req, res) =>
+  ok(res, await adminService.createExplorerDestination(req.body)),
+);
+export const updateExplorerDestination = asyncHandler(async (req, res) =>
+  ok(res, await adminService.updateExplorerDestination(req.params.id, req.body)),
+);
+export const deleteExplorerDestination = asyncHandler(async (req, res) => {
+  await adminService.deleteExplorerDestination(req.params.id);
+  ok(res, { deleted: true });
+});
+
 export const getGoodsTypes = asyncHandler(async (_req, res) =>
   res.json(await adminService.listGoodsTypes()),
 );

@@ -21,9 +21,9 @@ import {
 import { useSettings } from '../../../../shared/context/SettingsContext';
 
 const MAX_CONTACTS = 5;
-const PHONE_REGEX = /^\d{10}$/;
+const PHONE_REGEX = /^\d{3,15}$/;
 
-const normalizePhone = (value) => String(value || '').replace(/\D/g, '').slice(-10);
+const normalizePhone = (value) => String(value || '').replace(/\D/g, '').slice(0, 15);
 
 const SecuritySOS = () => {
   const navigate = useNavigate();
@@ -95,7 +95,7 @@ const SecuritySOS = () => {
     }
 
     if (!PHONE_REGEX.test(normalizedPhone)) {
-      nextErrors.phone = 'Enter a valid 10-digit mobile number';
+      nextErrors.phone = 'Enter a valid mobile or emergency number';
     }
 
     if (contacts.some((contact) => normalizePhone(contact.phone) === normalizedPhone)) {
@@ -399,13 +399,13 @@ const SecuritySOS = () => {
                     <Phone size={16} className="text-slate-400 shrink-0" strokeWidth={2} />
                     <input
                       type="tel"
-                      maxLength={10}
+                      maxLength={15}
                       value={phone}
                       onChange={(event) => {
                         setPhone(normalizePhone(event.target.value));
                         setErrors((prev) => ({ ...prev, phone: '' }));
                       }}
-                      placeholder="10-digit mobile number"
+                      placeholder="Mobile or emergency number"
                       className="flex-1 bg-transparent border-none text-[15px] font-bold text-slate-900 focus:outline-none placeholder:text-slate-300"
                     />
                     {PHONE_REGEX.test(phone) ? <CheckCircle2 size={16} className="text-emerald-500 shrink-0" strokeWidth={2.5} /> : null}

@@ -28,6 +28,7 @@ export const taxiAdminSidebarMenu = [
           { label: "Service Location", path: "/admin/taxi/pricing/service-location" },
           { label: "Zone Setup", path: "/admin/taxi/pricing/zone" },
           { label: "Airport", path: "/admin/taxi/pricing/airport" },
+          { label: "Explorer Destinations", path: "/admin/taxi/pricing/explorer-destinations" },
           { label: "App Modules", path: "/admin/taxi/pricing/app-modules" },
           { label: "Vehicle Type", path: "/admin/taxi/pricing/vehicle-type" },
           { label: "Rental Packages", path: "/admin/taxi/pricing/rental-packages" },

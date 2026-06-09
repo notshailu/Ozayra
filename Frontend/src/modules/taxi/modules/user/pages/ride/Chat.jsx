@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Phone, Smile, Headset } from 'lucide-react';
 import SupportChatPanel from '../../../shared/components/SupportChatPanel';
+import api from '../../../../shared/api/axiosInstance';
+import { socketService } from '../../../../shared/api/socket';
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -10,11 +12,7 @@ const Chat = () => {
   const searchParams = new URLSearchParams(location.search);
   const isAdminChat = searchParams.get('admin') === 'true';
   const routeRole = searchParams.get('role');
-  const supportRole = routeRole === 'driver' || routeRole === 'user'
-    ? routeRole
-    : localStorage.getItem('role') === 'driver'
-      ? 'driver'
-      : 'user';
+  const supportRole = routeRole === 'driver' ? 'driver' : 'user';
   const hasLiveToken = Boolean(
     supportRole === 'driver'
       ? localStorage.getItem('driverToken') || localStorage.getItem('token')
@@ -22,9 +20,76 @@ const Chat = () => {
   );
   const bottomRef = useRef(null);
 
+  const [activeRide, setActiveRide] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(!isAdminChat);
+
+  useEffect(() => {
+    if (isAdminChat) return;
+
+    socketService.connect({ role: supportRole });
+
+    const fetchActiveRide = async () => {
+      try {
+        const token = supportRole === 'driver' 
+          ? localStorage.getItem('driverToken') || localStorage.getItem('token') 
+          : localStorage.getItem('userToken') || localStorage.getItem('token');
+          
+        if (!token) return;
+        const response = await api.get('/rides/active/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const payload = response.data?.data || response.data;
+        if (payload?.rideId) {
+            setActiveRide(payload);
+            const loadedMessages = (payload.messages || []).map(m => ({
+                id: m.id || m._id,
+                sender: String(m.senderRole).toLowerCase() === supportRole ? 'user' : 'other',
+                text: m.message,
+                time: m.sentAt ? new Date(m.sentAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+            }));
+            setMessages(loadedMessages);
+            
+            socketService.emit('joinRide', { rideId: payload.rideId });
+        }
+      } catch(err) {
+        console.error('Error fetching active ride for chat', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchActiveRide();
+  }, [isAdminChat, supportRole]);
+
+  useEffect(() => {
+    if (isAdminChat || !activeRide) return;
+
+    const handleNewMessage = (msg) => {
+        if (String(msg.rideId) !== String(activeRide.rideId)) return;
+        
+        const isMe = String(msg.senderRole).toLowerCase() === supportRole;
+        if (!isMe) {
+            setMessages(prev => [...prev, {
+                id: msg.id || Date.now(),
+                sender: 'other',
+                text: msg.message,
+                time: new Date(msg.sentAt || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
+            }]);
+        }
+    };
+
+    socketService.on('ride:message:new', handleNewMessage);
+    return () => socketService.off('ride:message:new', handleNewMessage);
+  }, [activeRide, supportRole, isAdminChat]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   if (isAdminChat && hasLiveToken) {
     return (
-      <div className="min-h-screen bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_60%,#EEF2F7_100%)] max-w-lg mx-auto flex flex-col font-sans relative overflow-hidden p-4">
+      <div className="h-[100dvh] bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_60%,#EEF2F7_100%)] max-w-lg mx-auto flex flex-col font-sans relative overflow-hidden p-4">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center">
             <ArrowLeft size={18} className="text-slate-900" strokeWidth={2.5} />
@@ -46,34 +111,30 @@ const Chat = () => {
     );
   }
 
-  const initMessages = isAdminChat
-    ? [{ id: 1, sender: 'other', text: 'Hello! How can we help you today?', time: '12:45' }]
-    : [
-        { id: 1, sender: 'other', text: "I've arrived at your location.", time: '12:45' },
-        { id: 2, sender: 'user', text: 'Okay, coming in 2 minutes.', time: '12:46' },
-      ];
-
   const quickReplies = isAdminChat
     ? ['Payment Issue', 'Ride Cancelled', 'Lost Item', 'Safety']
     : ['Wait for me', "I'm coming", 'Where exactly?', 'Okay'];
-
-  const [messages, setMessages] = useState(initMessages);
-  const [input, setInput] = useState('');
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const send = (text) => {
     const msg = text || input.trim();
     if (!msg) return;
     setInput('');
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), sender: 'user', text: msg, time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) },
-    ]);
-    // Auto-reply simulation
-    if (isAdminChat) {
+    
+    const newMsg = { 
+        id: Date.now(), 
+        sender: 'user', 
+        text: msg, 
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) 
+    };
+    
+    setMessages((prev) => [...prev, newMsg]);
+
+    if (!isAdminChat && activeRide) {
+        socketService.emit('ride:message:send', {
+            rideId: activeRide.rideId,
+            message: msg
+        });
+    } else if (isAdminChat) {
       setTimeout(() => {
         setMessages((prev) => [
           ...prev,
@@ -83,11 +144,12 @@ const Chat = () => {
     }
   };
 
-  const otherName = isAdminChat ? 'Rydon24 Support' : 'Kishan Kumawat';
-  const otherSub = isAdminChat ? 'Active now' : 'Driver · Active now';
+  const otherName = isAdminChat ? 'Rydon24 Support' : (supportRole === 'driver' ? (activeRide?.user?.name || 'Passenger') : (activeRide?.driver?.name || 'Driver'));
+  const otherSub = isAdminChat ? 'Active now' : (supportRole === 'driver' ? 'Passenger · Active now' : 'Driver · Active now');
+  const otherPhone = isAdminChat ? null : (supportRole === 'driver' ? activeRide?.user?.phone : activeRide?.driver?.phone);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_60%,#EEF2F7_100%)] max-w-lg mx-auto flex flex-col font-sans relative overflow-hidden">
+    <div className="h-[100dvh] bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_60%,#EEF2F7_100%)] max-w-lg mx-auto flex flex-col font-sans relative overflow-hidden">
       <div className="absolute -top-16 right-[-40px] h-44 w-44 rounded-full bg-orange-100/50 blur-3xl pointer-events-none" />
 
       {/* Header */}
@@ -102,19 +164,19 @@ const Chat = () => {
             {isAdminChat ? (
               <Headset size={18} className="text-orange-500" strokeWidth={2} />
             ) : (
-              <img src="https://ui-avatars.com/api/?name=Kishan+Kumawat&background=f1f5f9&color=0f172a" alt="Driver" className="w-full h-full object-cover" />
+              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(otherName)}&background=f1f5f9&color=0f172a`} alt="Avatar" className="w-full h-full object-cover" />
             )}
           </div>
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-black text-slate-900 leading-tight">{otherName}</p>
+          <p className="text-[14px] font-black text-slate-900 leading-tight">{isLoading ? 'Connecting...' : otherName}</p>
           <p className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">{otherSub}</p>
         </div>
 
-        {!isAdminChat && (
-          <motion.button whileTap={{ scale: 0.9 }} onClick={() => window.open('tel:+919876543210')} className="w-9 h-9 rounded-[12px] border border-white/80 bg-white/90 flex items-center justify-center shadow-[0_4px_12px_rgba(15,23,42,0.07)] shrink-0">
+        {!isAdminChat && otherPhone && (
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => { console.log('Calling:', otherPhone); window.location.href = `tel:${otherPhone}`; }} className="w-9 h-9 rounded-[12px] border border-white/80 bg-white/90 flex items-center justify-center shadow-[0_4px_12px_rgba(15,23,42,0.07)] shrink-0">
             <Phone size={15} className="text-slate-700" strokeWidth={2.5} />
           </motion.button>
         )}

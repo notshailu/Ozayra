@@ -75,6 +75,7 @@ const defaultFormData = {
   dispatch_type: 'normal',
   icon_types: 'car',
   image: '',
+  icon: '',
   capacity: 0,
   is_accept_share_ride: 0,
   status: 1,
@@ -226,7 +227,8 @@ const VehicleType = ({ mode: propMode }) => {
               transport_type: selectedVehicle.transport_type || 'taxi',
               dispatch_type: selectedVehicle.dispatch_type || selectedVehicle.trip_dispatch_type || 'normal',
               icon_types: normalizeIconType(selectedVehicle.icon_types || selectedVehicle.icon_types_for),
-              image: selectedVehicle.icon || selectedVehicle.image || '',
+              image: selectedVehicle.image || '',
+              icon: selectedVehicle.icon || '',
               capacity: Number(selectedVehicle.capacity || 0),
               is_accept_share_ride: Number(selectedVehicle.is_accept_share_ride || 0),
               status: Number(selectedVehicle.status ?? (selectedVehicle.active !== false ? 1 : 0)),
@@ -269,7 +271,14 @@ const VehicleType = ({ mode: propMode }) => {
     return '';
   }, [formData.image]);
 
-  const currentIconPreview = iconMap[formData.icon_types] || CarIcon;
+  const previewIcon = useMemo(() => {
+    if (formData.icon && typeof formData.icon === 'string') {
+      return formData.icon;
+    }
+    return '';
+  }, [formData.icon]);
+
+  const currentIconPreview = previewIcon || iconMap[formData.icon_types] || CarIcon;
 
   const availableSupportVehicles = useMemo(
     () => vehicles.filter((item) => String(item.id) !== String(id)),
@@ -294,9 +303,24 @@ const VehicleType = ({ mode: propMode }) => {
     updateForm('image', dataUrl);
   };
 
+  const handleIconChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    const dataUrl = await fileToDataUrl(file);
+    updateForm('icon', dataUrl);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setErrorMessage('');
+
+    if (!formData.name.trim() || !formData.transport_type || !formData.short_description.trim() || !formData.description.trim() || !formData.capacity) {
+      setErrorMessage('Please fill all required fields marked with *');
+      setIsSaving(false);
+      return;
+    }
 
     try {
       const payload = {
@@ -307,7 +331,7 @@ const VehicleType = ({ mode: propMode }) => {
         dispatch_type: formData.dispatch_type,
         icon_types: normalizeIconType(formData.icon_types),
         image: formData.image || '',
-        icon: formData.image || '',
+        icon: formData.icon || '',
         capacity: Number(formData.capacity || 0),
         is_accept_share_ride: Number(formData.is_accept_share_ride || 0),
         status: formData.active ? 1 : 0,
@@ -526,6 +550,30 @@ const VehicleType = ({ mode: propMode }) => {
                 <option key={key} value={key}>{key}</option>
               ))}
             </select>
+            
+            <div className="mt-6 flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={formData.active}
+                  onChange={(e) => {
+                    updateForm('active', e.target.checked);
+                    updateForm('status', e.target.checked ? 1 : 0);
+                  }}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                Active vehicle type
+              </label>
+              <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={formData.is_accept_share_ride === 1}
+                  onChange={(e) => updateForm('is_accept_share_ride', e.target.checked ? 1 : 0)}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                Accept share ride
+              </label>
+            </div>
           </div>
 
           <div>
@@ -559,17 +607,36 @@ const VehicleType = ({ mode: propMode }) => {
 
           <div className="space-y-6">
             <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-              <p className="mb-3 text-sm font-semibold text-slate-800">Live Map Icon Preview</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-slate-800">Map Icon Preview</p>
+                <label className="cursor-pointer rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">
+                  Upload Custom
+                  <input type="file" accept="image/*" className="hidden" onChange={handleIconChange} />
+                </label>
+              </div>
               <div className="relative h-[228px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 <img src={MapBackground} alt="Map preview" className="absolute inset-0 h-full w-full object-cover opacity-25" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <img src={currentIconPreview} alt="Icon preview" className="h-16 w-16 object-contain drop-shadow-xl" />
                 </div>
+                {previewIcon && (
+                  <button
+                    type="button"
+                    onClick={() => updateForm('icon', '')}
+                    className="absolute right-2 top-2 rounded bg-white/80 p-1.5 text-red-500 shadow backdrop-blur transition hover:bg-red-500 hover:text-white"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             </div>
 
             <div>
-              <label className={labelClass}>Maximum Weight / Capacity *</label>
+              <label className={labelClass}>
+                {formData.transport_type?.toLowerCase() === 'taxi' ? 'Sitting Capacity *' : 
+                 formData.transport_type?.toLowerCase() === 'delivery' ? 'Maximum Weight *' : 
+                 'Maximum Weight / Capacity *'}
+              </label>
               <input
                 type="number"
                 value={formData.capacity}
@@ -652,27 +719,6 @@ const VehicleType = ({ mode: propMode }) => {
                 This form is fully dynamic from your DB. Transport type, icon type, supported vehicles, and preferences all save to the real vehicle catalog.
               </p>
             </div>
-            <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-              <input
-                type="checkbox"
-                checked={formData.is_accept_share_ride === 1}
-                onChange={(e) => updateForm('is_accept_share_ride', e.target.checked ? 1 : 0)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              Accept share ride
-            </label>
-            <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-              <input
-                type="checkbox"
-                checked={formData.active}
-                onChange={(e) => {
-                  updateForm('active', e.target.checked);
-                  updateForm('status', e.target.checked ? 1 : 0);
-                }}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              Active vehicle type
-            </label>
           </div>
 
           <div className="flex flex-col gap-3 lg:items-end">

@@ -357,7 +357,7 @@ const toFiniteNumber = (value, fallback = 0) => {
   return Number.isFinite(numeric) ? numeric : fallback;
 };
 
-const findBestPricingRule = ({ rules, vehicleTypeId, serviceLocationId }) => {
+const findBestPricingRule = ({ rules, vehicleTypeId, serviceLocationId, isParcel }) => {
   const normalizedVehicleTypeId = normalizeId(vehicleTypeId);
   const normalizedServiceLocationId = normalizeId(serviceLocationId);
 
@@ -365,9 +365,12 @@ const findBestPricingRule = ({ rules, vehicleTypeId, serviceLocationId }) => {
     const matchesVehicle = normalizeId(rule?.vehicle_type?._id || rule?.vehicle_type || rule?.type_id) === normalizedVehicleTypeId;
     const isActive = Number(rule?.active ?? 1) === 1 && String(rule?.status || 'active').toLowerCase() !== 'inactive';
     const transportType = String(rule?.transport_type || 'taxi').toLowerCase();
-    const isTaxi = transportType === 'taxi' || transportType === 'both';
+    
+    const isMatchedType = isParcel
+      ? (transportType === 'delivery' || transportType === 'both' || transportType === 'all')
+      : (transportType === 'taxi' || transportType === 'both' || transportType === 'all');
 
-    return matchesVehicle && isActive && isTaxi;
+    return matchesVehicle && isActive && isMatchedType;
   });
 
   if (!candidates.length) {
@@ -381,11 +384,34 @@ const findBestPricingRule = ({ rules, vehicleTypeId, serviceLocationId }) => {
   return exactServiceLocation || candidates[0];
 };
 
-const calculateEstimatedFare = ({ vehicle, pricingRule, distanceMeters, durationMinutes }) => {
+const calculateEstimatedFare = ({ vehicle, pricingRule, distanceMeters, durationMinutes, isParcel, weightLabel }) => {
   const fallbackFare = getFallbackVehicleEstimate(vehicle?.raw || vehicle);
 
   if (!pricingRule) {
     return fallbackFare;
+  }
+
+  if (isParcel) {
+    const weightRule = Array.isArray(pricingRule.parcel_weight_ranges) && pricingRule.parcel_weight_ranges.find(
+      (r) => String(r.weight_range).trim().toLowerCase() === String(weightLabel || 'Under 5kg').trim().toLowerCase()
+    );
+
+    if (weightRule) {
+      const distanceKm = Math.max(0, Number(distanceMeters || 0) / 1000);
+      const basePrice = toFiniteNumber(weightRule.base_price, 0);
+      const baseDistance = Math.max(0, toFiniteNumber(weightRule.base_distance, 0));
+      const pricePerDistance = toFiniteNumber(weightRule.price_per_distance, 0);
+      const serviceTax = toFiniteNumber(pricingRule.service_tax, 0);
+      const extraDistanceKm = Math.max(0, distanceKm - baseDistance);
+      const subtotal = basePrice + (extraDistanceKm * pricePerDistance);
+
+      if (subtotal <= 0) {
+        return fallbackFare;
+      }
+
+      const total = subtotal + (subtotal * serviceTax) / 100;
+      return Math.max(0, Math.round(total));
+    }
   }
 
   const distanceKm = Math.max(0, Number(distanceMeters || 0) / 1000);
@@ -526,6 +552,9 @@ const SelectVehicle = () => {
   const dropPosition = useMemo(() => toLatLng(dropCoords, null), [dropCoords]);
   const { isLoaded: isMapLoaded, loadError: mapLoadError } = useAppGoogleMapsLoader();
 
+  const isParcel = Boolean(routeState.isParcel);
+  const weightLabel = routeState.parcel?.weight || routeState.weight || 'Under 5kg';
+
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -557,7 +586,11 @@ const SelectVehicle = () => {
           .filter((type) => {
             const isActive = type.active !== false && Number(type.status ?? 1) !== 0;
             const tType = String(type.transport_type || 'taxi').toLowerCase();
-            return isActive && (tType === 'taxi' || tType === 'both' || tType === 'all');
+            if (isParcel) {
+              return isActive && (tType === 'delivery' || tType === 'both' || tType === 'all');
+            } else {
+              return isActive && (tType === 'taxi' || tType === 'both' || tType === 'all');
+            }
           })
           .map(normalizeVehicleType);
 
@@ -673,6 +706,7 @@ const SelectVehicle = () => {
           rules: pricingRules,
           vehicleTypeId: vehicle.vehicleTypeId,
           serviceLocationId,
+          isParcel,
         });
 
         return {
@@ -683,10 +717,12 @@ const SelectVehicle = () => {
             pricingRule,
             distanceMeters: tripMetrics.distanceMeters,
             durationMinutes: tripMetrics.durationMinutes,
+            isParcel,
+            weightLabel,
           }),
         };
       }),
-    [pricingRules, serviceLocationId, tripMetrics.distanceMeters, tripMetrics.durationMinutes, vehicles],
+    [pricingRules, serviceLocationId, tripMetrics.distanceMeters, tripMetrics.durationMinutes, vehicles, isParcel, weightLabel],
   );
 
   const selectedVehicle = useMemo(() => pricedVehicles.find((v) => v.id === selected), [pricedVehicles, selected]);
@@ -816,8 +852,13 @@ const SelectVehicle = () => {
       return;
     }
 
-    navigate(`${routePrefix}/ride/searching`, {
+    const targetPath = isParcel
+      ? `${routePrefix}/parcel/searching`
+      : `${routePrefix}/ride/searching`;
+
+    navigate(targetPath, {
       state: {
+        ...routeState,
         pickup,
         drop,
         pickupCoords,
@@ -924,7 +965,9 @@ const SelectVehicle = () => {
             {isLoadingVehicles && (
               <div className="min-h-[180px] flex flex-col items-center justify-center gap-3 text-slate-400">
                 <LoaderCircle size={26} className="animate-spin" />
-                <p className="text-[11px] font-bold uppercase tracking-widest">Finding available rides</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest">
+                  {isParcel ? 'Finding available delivery options' : 'Finding available rides'}
+                </p>
               </div>
             )}
 
@@ -1080,7 +1123,7 @@ const SelectVehicle = () => {
               ? selectedAvailability.totalDrivers
                 ? (
                   <>
-                    <span>Book {selectedVehicle.name}</span>
+                    <span>{isParcel ? 'Confirm Delivery' : `Book ${selectedVehicle.name}`}</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-900/20" />
                     <span>{formatCurrency(selectedVehicle.price)}</span>
                   </>

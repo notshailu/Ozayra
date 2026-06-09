@@ -45,6 +45,7 @@ export const createDeliveryRecord = async ({
   vehicleIconType,
   paymentMethod,
   parcel,
+  otp,
 }) => {
   const ride = await createRideRecord({
     userId,
@@ -60,6 +61,7 @@ export const createDeliveryRecord = async ({
     serviceType: 'parcel',
     transport_type: 'delivery',
     parcel,
+    otp,
   });
 
   await startDispatchFlow(ride);

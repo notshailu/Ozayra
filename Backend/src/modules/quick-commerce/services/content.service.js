@@ -132,9 +132,6 @@ export const getQuickExperienceSections = async ({ pageType = 'home', headerId =
 
   // --- Category Tree Logic (Optimized) ---
   const getCategoryTreeInfo = async () => {
-    if (cache.categories.data && !isExpired(cache.categories.expiry)) {
-      return cache.categories.treeInfo;
-    }
     const allCategories = await QuickCategory.find(normalizeStatusQuery()).lean();
     const childrenMap = new Map();
     allCategories.forEach(c => {
@@ -158,9 +155,6 @@ export const getQuickExperienceSections = async ({ pageType = 'home', headerId =
     };
 
     const treeInfo = { allCategories, childrenMap, getRecursiveChildIds };
-    cache.categories.data = allCategories;
-    cache.categories.treeInfo = treeInfo;
-    cache.categories.expiry = Date.now() + CACHE_TTL;
     return treeInfo;
   };
 
@@ -490,10 +484,6 @@ export const reorderQuickOfferSections = async (items = []) => {
 };
 
 export const getQuickCategories = async (query = {}) => {
-  if (!query.parentId && cache.categories.data && !isExpired(cache.categories.expiry)) {
-    return cache.categories.data;
-  }
-
   const filter = normalizeStatusQuery();
 
   if (query.parentId) {
@@ -504,9 +494,5 @@ export const getQuickCategories = async (query = {}) => {
     .sort({ order: 1, name: 1 })
     .lean();
 
-  if (!query.parentId) {
-    cache.categories.data = categories;
-    cache.categories.expiry = Date.now() + CACHE_TTL;
-  }
   return categories;
 };

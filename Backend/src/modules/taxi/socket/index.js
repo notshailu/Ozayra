@@ -144,7 +144,7 @@ export const registerTaxiSocketHandlers = (io) => {
 
     socket.on(
       'requestRide',
-      onAsync(socket, async ({ pickup, drop, fare, estimatedDistanceMeters, estimatedDurationMinutes, vehicleTypeId, vehicleIconType, paymentMethod, serviceType, intercity }) => {
+      onAsync(socket, async ({ pickup, drop, fare, estimatedDistanceMeters, estimatedDurationMinutes, vehicleTypeId, vehicleIconType, paymentMethod, serviceType, intercity, otp }) => {
         if (identity.role !== 'user') {
           return;
         }
@@ -162,6 +162,7 @@ export const registerTaxiSocketHandlers = (io) => {
           paymentMethod,
           serviceType,
           intercity,
+          otp,
         });
 
         joinRideRoom(socket, ride._id);

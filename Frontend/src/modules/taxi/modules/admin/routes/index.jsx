@@ -50,6 +50,7 @@ const AdminBannerImage = lazy(() => import('../pages/promotions/BannerImage'));
 const AdminServiceLocation = lazy(() => import('../pages/price-management/ServiceLocation'));
 const AdminZoneManagement = lazy(() => import('../pages/price-management/ZoneManagement'));
 const AdminAirportManagement = lazy(() => import('../pages/price-management/Airport'));
+const AdminExplorerDestinations = lazy(() => import('../pages/price-management/ExplorerDestinations'));
 const AdminSetPrices = lazy(() => import('../pages/price-management/SetPrices'));
 const AdminSetPackagePrices = lazy(() => import('../pages/price-management/SetPackagePrices'));
 const AdminCreatePackagePrice = lazy(() => import('../pages/price-management/CreatePackagePrice'));
@@ -214,6 +215,9 @@ const TaxiAdminRoutes = () => {
           <Route path="airport" element={<AdminAirportManagement />} />
           <Route path="airport/create" element={<AdminAirportManagement mode="create" />} />
           <Route path="airport/edit/:id" element={<AdminAirportManagement mode="edit" />} />
+          <Route path="explorer-destinations" element={<AdminExplorerDestinations />} />
+          <Route path="explorer-destinations/create" element={<AdminExplorerDestinations mode="create" />} />
+          <Route path="explorer-destinations/edit/:id" element={<AdminExplorerDestinations mode="edit" />} />
           <Route path="vehicle-type" element={<AdminVehicleType />} />
           <Route path="vehicle-type/create" element={<AdminVehicleType mode="create" />} />
           <Route path="vehicle-type/edit/:id" element={<AdminVehicleType mode="edit" />} />
