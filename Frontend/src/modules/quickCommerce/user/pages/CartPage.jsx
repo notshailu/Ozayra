@@ -246,36 +246,37 @@ const CartPage = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#f7f7f7] px-4 py-6">
-        <div className="mx-auto max-w-md">
-          <div className="mb-5 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Your Cart</h1>
-              <p className="text-sm text-slate-500">Add items to get started</p>
-            </div>
+      <div className="min-h-screen bg-white dark:bg-[#0a0a0a] px-6 py-6 flex flex-col relative justify-center">
+        {/* Header Bar */}
+        <div className="absolute top-6 left-6 right-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-350 active:scale-95 transition-transform"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Your Cart</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Add items to get started</p>
           </div>
+        </div>
 
-          <div className="rounded-[28px] bg-white px-6 py-10 text-center shadow-sm">
-            <div className="mx-auto mb-6 flex h-44 w-44 items-center justify-center">
-              <Lottie animationData={emptyBoxAnimation} loop className="h-40 w-40" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900">Your cart is empty</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              Pick a few essentials and they&apos;ll show up here.
-            </p>
-            <Link to={categoriesPath} className="mt-6 inline-flex w-full">
-              <Button className="h-12 w-full rounded-2xl bg-[#0c831f] text-white hover:bg-[#0b721b]">
-                Start Shopping
-              </Button>
-            </Link>
+        {/* Content */}
+        <div className="w-full max-w-sm mx-auto flex flex-col items-center text-center mt-8">
+          <div className="mb-6 relative flex items-center justify-center">
+            <div className="absolute w-24 h-24 bg-green-500/5 rounded-full blur-2xl pointer-events-none" />
+            <Lottie animationData={emptyBoxAnimation} loop className="h-32 w-32 relative z-10 opacity-90" />
           </div>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Your cart is empty</h2>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-[260px] leading-relaxed">
+            Pick a few essentials and they&apos;ll show up here.
+          </p>
+          <Link to={categoriesPath} className="mt-8 w-full max-w-[200px]">
+            <Button className="h-11 w-full rounded-full bg-[#0c831f] text-white hover:bg-[#0b721b] font-bold text-sm transition-all shadow-sm active:scale-[0.98]">
+              Start Shopping
+            </Button>
+          </Link>
         </div>
       </div>
     );

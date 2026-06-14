@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
-import { ChevronLeft, ChevronRight, Plus, MapPin, MoreHorizontal, Navigation, Home, Building2, Briefcase, Phone, X, Crosshair, Search } from "lucide-react"
+import { useNavigate, useLocation as useRouterLocation } from "react-router-dom"
+import { ChevronLeft, ChevronRight, Plus, MapPin, MoreHorizontal, Navigation, Home, Building2, Briefcase, Phone, X, Crosshair, Search, Trash2, Check } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
@@ -99,9 +100,11 @@ const persistSelectedLocation = (locationData) => {
 
 export default function AddressSelectorPage() {
   const navigate = useNavigate()
+  const routerLocation = useRouterLocation()
+  const backPath = routerLocation.state?.backTo || routerLocation.state?.from || "/quick"
   const goBack = useAppBackNavigation()
   const { location, loading, requestLocation } = useGeoLocation()
-  const { addresses = [], addAddress, updateAddress, setDefaultAddress, userProfile } = useProfile()
+  const { addresses = [], addAddress, updateAddress, setDefaultAddress, deleteAddress, userProfile } = useProfile()
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [mapPosition, setMapPosition] = useState([22.7196, 75.8577]) // Default Indore coordinates [lat, lng]
   const [addressFormData, setAddressFormData] = useState({
@@ -138,7 +141,7 @@ export default function AddressSelectorPage() {
   const getAddressId = (address) => address?.id || address?._id || null
 
   const handleBack = () => {
-    goBack()
+    navigate(backPath)
   }
 
   const addressAutocompleteSuggestions = useMemo(() => {
@@ -316,7 +319,7 @@ export default function AddressSelectorPage() {
           toast.success("Location updated", { id: "geo" })
           // Redirect if they are on the main selection page
           setTimeout(() => {
-            navigate("/food/user")
+            navigate(backPath)
           }, 800)
         }
       } else {
@@ -337,8 +340,19 @@ export default function AddressSelectorPage() {
       
       // Redirect to home page after selection
       setTimeout(() => {
-        navigate("/food/user")
+        navigate(backPath)
       }, 500)
+    }
+  }
+
+  const handleDeleteAddress = async (e, id) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      await deleteAddress(id)
+      toast.success("Address deleted successfully")
+    } catch (error) {
+      toast.error("Failed to delete address")
     }
   }
 
@@ -475,7 +489,7 @@ export default function AddressSelectorPage() {
         
         // Redirect to home page after saving new address
         setTimeout(() => {
-          navigate("/food/user")
+          navigate(backPath)
         }, 500)
       }
     } catch (error) {
@@ -746,37 +760,44 @@ export default function AddressSelectorPage() {
     )
   }
 
+  const activeAddress = addresses.find((addr) => addr.isDefault) || addresses[0] || null
+  const activeAddressId = activeAddress ? getAddressId(activeAddress) : null
+
   return (
-    <AnimatedPage className="min-h-screen bg-white dark:bg-[#0a0a0a] flex flex-col">
-      <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 px-4 py-4 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full">
-          <ChevronLeft className="h-6 w-6" />
+    <AnimatedPage className="min-h-screen bg-slate-50/70 dark:bg-[#0a0a0a] flex flex-col font-outfit">
+      <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 px-4 py-4 flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full h-8 w-8 hover:bg-gray-100 p-0">
+          <ChevronLeft className="h-5 w-5 text-gray-800 dark:text-gray-200" />
         </Button>
-        <h1 className="text-xl font-bold">Select Location</h1>
+        <h1 className="text-lg font-black text-gray-900 dark:text-white">Select Location</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-10">
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-800">
+        <div className="p-4 bg-transparent">
           <button 
             onClick={handleUseCurrentLocation}
-            className="w-full flex items-center gap-4 p-4 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm hover:shadow-md transition-all group"
+            className="w-full flex items-center gap-4 p-4 bg-white dark:bg-[#1a1a1a] rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group"
           >
-            <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-              <Navigation className="h-5 w-5 text-[#EB590E]" />
+            <div className="h-12 w-12 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center shrink-0">
+              <Navigation className="h-5 w-5 text-emerald-600 dark:text-emerald-400 rotate-[45deg]" />
             </div>
-            <div className="text-left flex-1">
-              <p className="font-bold text-[#EB590E]">Use Current Location</p>
-              <p className="text-xs text-gray-500 line-clamp-1">{currentAddress || "Enable GPS for accuracy"}</p>
+            <div className="text-left flex-1 min-w-0">
+              <p className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">Use Current Location</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{currentAddress || "Enable GPS for accuracy"}</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-gray-400" />
+            <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600 transition-colors" />
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 pt-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">Saved Addresses</h2>
-            <Button variant="ghost" className="text-[#EB590E] p-0 h-auto font-bold" onClick={handleAddAddressClick}>
-              <Plus className="h-4 w-4 mr-1" /> Add New
+            <h2 className="text-xs font-black uppercase tracking-wider text-gray-400">Saved Addresses</h2>
+            <Button 
+              variant="ghost" 
+              className="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50/50 p-0 h-auto font-black text-xs flex items-center gap-0.5" 
+              onClick={handleAddAddressClick}
+            >
+              <Plus className="h-3.5 w-3.5" /> Add New
             </Button>
           </div>
 
@@ -789,25 +810,60 @@ export default function AddressSelectorPage() {
             ) : (
               addresses.map((addr, idx) => {
                 const Icon = getAddressIcon(addr)
+                const addrId = getAddressId(addr)
+                const isActive = addrId === activeAddressId
+
                 return (
-                  <button
-                    key={getAddressId(addr) || idx}
+                  <div
+                    key={addrId || idx}
                     onClick={() => handleSelectSavedAddress(addr)}
-                    className="w-full flex items-start gap-4 p-4 bg-slate-50 dark:bg-[#1a1a1a] rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors text-left group"
+                    className={cn(
+                      "w-full flex items-start gap-4 p-4 rounded-[20px] transition-all duration-300 text-left cursor-pointer border",
+                      isActive
+                        ? "bg-emerald-50/10 dark:bg-emerald-950/5 border-emerald-600 dark:border-emerald-500 shadow-[0_4px_16px_rgba(16,185,129,0.06)]"
+                        : "bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+                    )}
                   >
-                    <div className="h-10 w-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                      <Icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <div className={cn(
+                      "h-12 w-12 rounded-full flex items-center justify-center shrink-0 shadow-sm transition-all duration-300",
+                      isActive ? "bg-emerald-600 dark:bg-emerald-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                    )}>
+                      <Icon className="h-5 w-5" />
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 dark:text-white capitalize">{addr.label || "Address"}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <p className="font-extrabold text-gray-900 dark:text-white capitalize text-sm">{addr.label || "Address"}</p>
+                        {isActive && (
+                          <span className="bg-emerald-600 dark:bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1 leading-relaxed">
                         {[addr.additionalDetails, addr.street, addr.city, addr.state].filter(Boolean).join(", ")}
                       </p>
                     </div>
-                    <div className="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-700 mt-2 flex items-center justify-center group-hover:border-[#EB590E]">
-                       <ChevronRight className="h-3 w-3 text-gray-400 group-hover:text-[#EB590E]" />
+
+                    <div className="flex flex-col items-end gap-3 self-stretch justify-between py-1 shrink-0">
+                      {isActive ? (
+                        <div className="h-6 w-6 rounded-full bg-emerald-600 dark:bg-emerald-500 flex items-center justify-center">
+                          <Check className="h-3.5 w-3.5 text-white animate-scale-in" strokeWidth={3} />
+                        </div>
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-gray-400 transition-colors" />
+                      )}
+                      
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteAddress(e, addrId)}
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all border-0 bg-transparent p-0 cursor-pointer"
+                        aria-label="Delete address"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 )
               })
             )}
@@ -821,6 +877,13 @@ export default function AddressSelectorPage() {
         }
         .animate-bounce-short {
           animation: bounce-short 1s infinite ease-in-out;
+        }
+        @keyframes scale-in {
+          0% { transform: scale(0.6); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
       `}</style>
     </AnimatedPage>

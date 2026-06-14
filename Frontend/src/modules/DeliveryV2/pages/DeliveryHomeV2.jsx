@@ -31,7 +31,7 @@ import {
 import { getHaversineDistance, calculateETA, calculateHeading } from '@/modules/DeliveryV2/utils/geo';
 import { getPrimaryPickupLocation, normalizePickupPoints } from '@/modules/DeliveryV2/utils/orderRouting';
 import { useCompanyName } from "@food/hooks/useCompanyName";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useNotificationInbox from "@food/hooks/useNotificationInbox";
 
 /** Minimal bottom-sheet popup (Restored from legacy FeedNavbar) */
@@ -66,6 +66,7 @@ function BottomPopup({ isOpen, onClose, title, children }) {
  */
 export default function DeliveryHomeV2({ tab = 'feed' }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isOnline, toggleOnline, activeOrder, tripStatus, setRiderLocation, setActiveOrder, updateTripStatus, clearActiveOrder } = useDeliveryStore();
   const { isWithinRange, distanceToTarget } = useProximityCheck();
   const { acceptOrder, reachPickup, pickUpOrder, reachDrop, completeDelivery, resetTrip } = useOrderManager();
@@ -73,16 +74,22 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
   const companyName = useCompanyName();
   const { unreadCount: notificationUnreadCount } = useNotificationInbox("delivery", { limit: 20 });
 
-    const [incomingOrder, setIncomingOrder] = useState(null);
-    const [currentTab, setCurrentTab] = useState(tab);
-  
-  // Track URL changes (Prop changes) to update sub-page content
+  const [incomingOrder, setIncomingOrder] = useState(null);
+
+  const getTabFromPath = (path) => {
+    if (path.endsWith('/pocket')) return 'pocket';
+    if (path.endsWith('/history')) return 'history';
+    if (path.endsWith('/profile')) return 'profile';
+    return 'feed';
+  };
+  const currentTab = getTabFromPath(location.pathname);
+
+  // Track URL changes to scroll to top
   useEffect(() => {
-    setCurrentTab(tab);
     if (scrollContainerRef.current) {
        scrollContainerRef.current.scrollTo(0, 0);
     }
-}, [tab]);
+  }, [location.pathname]);
 
   const [showVerification, setShowVerification] = useState(false);
   const [showEmergencyPopup, setShowEmergencyPopup] = useState(false);
@@ -178,7 +185,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
     
     // 2. Alert user and redirect
     toast.error("Session Expired", { description: "Please log in again." });
-    navigate("/food/delivery/login", { replace: true });
+    navigate("/delivery/login", { replace: true });
 
     // Optional: Full refresh after delay ONLY if we're not already on login
     setTimeout(() => {
@@ -621,7 +628,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-4">
              <div 
-                onClick={() => navigate('/food/delivery/profile')}
+                onClick={() => navigate('/delivery/profile')}
                 className="w-10 h-10 rounded-full border border-white/20 p-0.5 shadow-xl overflow-hidden bg-white/5 cursor-pointer active:scale-95 transition-all"
              >
                 <img src={profileImage || "https://i.ibb.co/3m2Yh7r/Ishsys-Brand-Image.png"} alt="Profile" className="w-full h-full object-cover rounded-full" />
@@ -650,8 +657,8 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
           </div>
           <div className="flex items-center gap-3">
              <button onClick={() => setShowEmergencyPopup(true)} className="w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 active:scale-95 transition-all shadow-lg"><AlertTriangle className="w-4 h-4" /></button>
-             <button onClick={() => navigate('/food/delivery/help/id-card')} className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 active:scale-95 transition-all shadow-lg"><Contact className="w-4 h-4" /></button>
-             <button onClick={() => navigate('/food/delivery/notifications')} className="relative w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all shadow-lg"><Bell className="w-4 h-4" />{notificationUnreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-400 border border-[#1f1f1f]" />}</button>
+             <button onClick={() => navigate('/delivery/help/id-card')} className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 active:scale-95 transition-all shadow-lg"><Contact className="w-4 h-4" /></button>
+             <button onClick={() => navigate('/delivery/notifications')} className="relative w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all shadow-lg"><Bell className="w-4 h-4" />{notificationUnreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-400 border border-[#1f1f1f]" />}</button>
           </div>
         </div>
 
@@ -958,16 +965,16 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
 
       {/* ─── 3. BOTTOM NAV (Fixed - Compact Pro) ─── */}
       <div className="bg-white border-t border-gray-100 px-8 py-3 pb-6 flex justify-between items-center z-[200] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-         <button onClick={() => navigate('/food/delivery/feed')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'feed' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
+         <button onClick={() => navigate('/delivery/feed')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'feed' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
             <LayoutGrid className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Feed</span>
          </button>
-         <button onClick={() => navigate('/food/delivery/pocket')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'pocket' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
+         <button onClick={() => navigate('/delivery/pocket')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'pocket' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
             <Wallet className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Pocket</span>
          </button>
-         <button onClick={() => navigate('/food/delivery/history')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'history' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
+         <button onClick={() => navigate('/delivery/history')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'history' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
             <History className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Trip History</span>
          </button>
-         <button onClick={() => navigate('/food/delivery/profile')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'profile' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
+         <button onClick={() => navigate('/delivery/profile')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'profile' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
             <UserIcon className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Profile</span>
          </button>
       </div>

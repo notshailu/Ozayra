@@ -167,7 +167,7 @@ export default function QuickSharedCart() {
 
     if (!selectedAddress) {
       toast.error("Please select a delivery address first");
-      navigate("/food/user/cart/address-selector");
+      navigate("/cart/address-selector");
       return;
     }
 
@@ -206,7 +206,7 @@ export default function QuickSharedCart() {
       if (selectedPaymentMethod === "cash") {
         toast.success("Quick order placed successfully");
         clearCart();
-        navigate(`/food/user/orders/${order?._id || order?.orderId || order?.id}?confirmed=true`, {
+        navigate(`/quick/orders/${order?._id || order?.orderId || order?.id}?confirmed=true`, {
           state: order ? { prefetchedOrder: order } : undefined,
         });
         return;
@@ -243,7 +243,7 @@ export default function QuickSharedCart() {
           if (verifyResponse?.data?.success) {
             toast.success("Quick order placed successfully");
             clearCart();
-            navigate(`/food/user/orders/${order?._id || order?.orderId || order?.id}?confirmed=true`, {
+            navigate(`/quick/orders/${order?._id || order?.orderId || order?.id}?confirmed=true`, {
               state: order ? { prefetchedOrder: order } : undefined,
             });
             return;
@@ -401,7 +401,7 @@ export default function QuickSharedCart() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/food/user/cart/address-selector")}
+                onClick={() => navigate("/cart/address-selector")}
                 className="mt-4 text-sm font-bold text-emerald-700"
               >
                 {selectedAddress ? "Change address" : "Select address"}

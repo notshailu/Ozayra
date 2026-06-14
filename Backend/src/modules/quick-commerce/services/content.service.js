@@ -310,15 +310,21 @@ export const createQuickExperienceSection = async (data) => {
   }).sort({ order: -1 });
   
   const order = (maxSection?.order ?? -1) + 1;
-  return QuickExperienceSection.create({ ...data, order });
+  const result = await QuickExperienceSection.create({ ...data, order });
+  clearContentCache();
+  return result;
 };
 
 export const updateQuickExperienceSection = async (id, data) => {
-  return QuickExperienceSection.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
+  const result = await QuickExperienceSection.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
+  clearContentCache();
+  return result;
 };
 
 export const deleteQuickExperienceSection = async (id) => {
-  return QuickExperienceSection.findByIdAndDelete(id);
+  const result = await QuickExperienceSection.findByIdAndDelete(id);
+  clearContentCache();
+  return result;
 };
 
 export const reorderQuickExperienceSections = async (items = []) => {
@@ -329,7 +335,9 @@ export const reorderQuickExperienceSections = async (items = []) => {
     },
   }));
   if (!ops.length) return;
-  return QuickExperienceSection.bulkWrite(ops);
+  const result = await QuickExperienceSection.bulkWrite(ops);
+  clearContentCache();
+  return result;
 };
 
 export const getQuickCoupons = async () => {
@@ -436,6 +444,7 @@ export const createQuickOfferSection = async (data) => {
   };
 
   const result = await collection.insertOne(section);
+  clearContentCache();
   return { ...section, _id: result.insertedId };
 };
 
@@ -454,7 +463,7 @@ export const updateQuickOfferSection = async (id, data) => {
     { $set: update },
     { returnDocument: 'after' }
   );
-
+  clearContentCache();
   return result;
 };
 
@@ -463,6 +472,7 @@ export const deleteQuickOfferSection = async (id) => {
   if (!collection) throw new Error('Collection not found');
 
   await collection.deleteOne({ _id: toId(id) });
+  clearContentCache();
   return true;
 };
 
@@ -480,6 +490,7 @@ export const reorderQuickOfferSections = async (items = []) => {
   if (ops.length > 0) {
     await collection.bulkWrite(ops);
   }
+  clearContentCache();
   return true;
 };
 

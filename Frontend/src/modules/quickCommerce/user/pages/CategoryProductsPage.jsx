@@ -13,11 +13,38 @@ import { useProductDetail } from '../context/ProductDetailContext';
 import { customerApi } from '../services/customerApi';
 import MiniCart from '../components/shared/MiniCart';
 import SectionRenderer from "../components/experience/SectionRenderer";
+import ExperienceBannerCarousel from "../components/experience/ExperienceBannerCarousel";
+import { resolveQuickImageUrl } from '../utils/image';
+import { getQuickCategoryPath } from '../utils/routes';
 import { useLocation as useAppLocation } from '../context/LocationContext';
 
 const QUICK_THEME_STORAGE_KEY = "food.quick.headerColor";
 const QUICK_HEADER_RETURN_STORAGE_KEY = "food.quick.headerReturn";
 const FALLBACK_HEADER_COLOR = "#0c831f";
+
+const quickCategoryPalettes = [
+  { bgFrom: "#ffd96a", bgVia: "#ffeaa0", bgTo: "#fff0c7", glowColor: "rgba(255,184,0,0.18)", frameColor: "#f0d98a" },
+  { bgFrom: "#9fe88c", bgVia: "#c3f1b2", bgTo: "#e4f8da", glowColor: "rgba(126,220,141,0.18)", frameColor: "#bfe3b7" },
+  { bgFrom: "#f3a25d", bgVia: "#f9c48b", bgTo: "#fee0bf", glowColor: "rgba(255,139,61,0.16)", frameColor: "#efc08e" },
+  { bgFrom: "#b8eff0", bgVia: "#d5f7f5", bgTo: "#edfdfc", glowColor: "rgba(122,215,215,0.16)", frameColor: "#b9e5e3" },
+];
+
+const getQuickCategoryImage = (category = {}) => {
+  const candidate =
+    category?.image ||
+    category?.icon ||
+    category?.thumbnail ||
+    category?.imageUrl ||
+    category?.iconUrl ||
+    category?.media?.image ||
+    category?.media?.url ||
+    "";
+
+  return (
+    resolveQuickImageUrl(candidate, category?.name) ||
+    "https://cdn-icons-png.flaticon.com/128/2321/2321831.png"
+  );
+};
 
 const CategoryProductsPage = () => {
     const { categoryId: catId } = useParams();
@@ -59,6 +86,7 @@ const CategoryProductsPage = () => {
     const [heroConfig, setHeroConfig] = useState(null);
     const [categoryMap, setCategoryMap] = useState({});
     const [subcategoryMap, setSubcategoryMap] = useState({});
+    const [fullCategoryMap, setFullCategoryMap] = useState({});
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -122,6 +150,7 @@ const CategoryProductsPage = () => {
                 flatten(allCats);
                 setCategoryMap(cMap);
                 setSubcategoryMap(sMap);
+                setFullCategoryMap(fullMap);
 
                 // Find the current category in the flattened map
                 let currentCat = fullMap[catId];
@@ -164,7 +193,21 @@ const CategoryProductsPage = () => {
                 setExperienceSections(expRes.data.result || expRes.data.results || []);
             }
             if (heroRes?.data?.success) {
-                setHeroConfig(heroRes.data.result);
+                let heroData = heroRes.data.result;
+                const hasBanners = (heroData?.banners?.items || []).length > 0;
+                const hasCategories = (heroData?.categoryIds || []).length > 0;
+
+                if (!hasBanners && !hasCategories) {
+                    try {
+                        const homeHeroRes = await customerApi.getHeroConfig({ pageType: 'home' });
+                        if (homeHeroRes?.data?.success && homeHeroRes.data.result) {
+                            heroData = homeHeroRes.data.result;
+                        }
+                    } catch (e) {
+                        console.error("Error fetching fallback home hero config:", e);
+                    }
+                }
+                setHeroConfig(heroData);
             }
         } catch (error) {
             console.error("Error fetching category data:", error);
@@ -254,6 +297,83 @@ const CategoryProductsPage = () => {
 
                     {/* Content */}
                     <main className="flex-1 px-3 pt-1 pb-24 bg-white dark:bg-background transition-colors">
+                        {selectedSubCategory === 'all' && heroConfig && (
+                            <>
+                                {/* Hero Banners */}
+                                {(heroConfig.banners?.items || []).length > 0 && (
+                                    <div className="mb-6 rounded-[24px] overflow-hidden shadow-sm border border-slate-100 dark:border-white/5">
+                                        <ExperienceBannerCarousel
+                                            section={{ title: "" }}
+                                            items={heroConfig.banners.items}
+                                            fullWidth={true}
+                                            slideGap={8}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Categories Below Hero */}
+                                {(heroConfig.categoryIds || []).length > 0 && (
+                                    <div className="mb-8 bg-slate-50/50 dark:bg-card/30 rounded-[24px] p-4 border border-slate-100 dark:border-white/5">
+                                        <h3 className="text-xs font-black tracking-[0.14em] text-slate-800 dark:text-slate-200 uppercase font-sans mb-3.5 px-1">
+                                            Featured Categories
+                                        </h3>
+                                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
+                                            {(heroConfig.categoryIds || []).map((id, idx) => {
+                                                const cat = fullCategoryMap[id];
+                                                if (!cat) return null;
+                                                const palette = quickCategoryPalettes[idx % quickCategoryPalettes.length];
+                                                const categoryImage = getQuickCategoryImage(cat);
+                                                return (
+                                                    <motion.div
+                                                        key={id}
+                                                        whileHover={{ y: -4 }}
+                                                        whileTap={{ scale: 0.96 }}
+                                                        onClick={() => {
+                                                            if (subCategories.some(sub => sub.id === id)) {
+                                                                setSelectedSubCategory(id);
+                                                            } else {
+                                                                navigate(getQuickCategoryPath(id));
+                                                            }
+                                                        }}
+                                                        className="flex flex-col items-center gap-1.5 min-w-[76px] cursor-pointer group snap-start"
+                                                    >
+                                                        <div
+                                                            className="relative w-[76px] h-[86px] rounded-t-full rounded-b-[18px] shadow-[0_6px_12px_rgba(15,23,42,0.06)] border flex items-start justify-center overflow-hidden transition-all duration-300 group-hover:shadow-[0_10px_20px_rgba(15,23,42,0.15)] group-hover:rotate-1"
+                                                            style={{
+                                                                backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.6) 24%, rgba(255,255,255,0.15) 100%), linear-gradient(135deg, ${palette.bgFrom}, ${palette.bgVia}, ${palette.bgTo})`,
+                                                                borderColor: palette.frameColor,
+                                                            }}
+                                                        >
+                                                            <div
+                                                                className="absolute inset-0 opacity-40 pointer-events-none"
+                                                                style={{ backgroundColor: palette.glowColor }}
+                                                            />
+                                                            {categoryImage ? (
+                                                                <img
+                                                                    src={categoryImage}
+                                                                    alt={cat.name}
+                                                                    className="absolute top-0 left-0 w-full h-[72%] object-cover group-hover:scale-110 transition-transform duration-500 rounded-t-full"
+                                                                />
+                                                            ) : (
+                                                                <div className="absolute top-0 left-0 w-full h-[72%] flex items-center justify-center bg-white/55 text-lg font-black uppercase text-slate-400 rounded-t-full">
+                                                                    {(cat.name || "?").charAt(0)}
+                                                                </div>
+                                                            )}
+                                                            <div className="absolute inset-x-1 bottom-1.5 z-20 text-center">
+                                                                <span className="block text-[9px] font-bold text-[#1f2b20] leading-tight whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-[#0c831f] transition-colors">
+                                                                    {cat.name}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
                         {selectedSubCategory === 'all' && experienceSections.filter(s => (s.title || '').trim().toLowerCase() !== 'best sellers').length > 0 && (
                             <div className="mb-4">
                                 <SectionRenderer

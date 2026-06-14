@@ -42,42 +42,44 @@ const DeliveryV2Router = () => {
         <Route path="welcome" element={<Welcome />} />
         <Route path="login" element={<SignIn />} />
         <Route path="otp" element={<OTP />} />
-        <Route path="signup" element={<Navigate to={`/food/delivery/login${location.search}`} replace />} />
+        <Route path="signup" element={<Navigate to={`/delivery/login${location.search}`} replace />} />
         <Route path="signup/details" element={<SignupStep1 />} />
         <Route path="signup/documents" element={<SignupStep2 />} />
         <Route path="verification" element={<PendingVerification />} />
         <Route path="terms" element={<TermsAndConditionsV2 />} />
 
         {/* Protected Core Routes */}
-        <Route path="/" element={<ProtectedRoute><DeliveryHomeV2 tab="feed" /></ProtectedRoute>} />
-        <Route path="/feed" element={<ProtectedRoute><DeliveryHomeV2 tab="feed" /></ProtectedRoute>} />
-        <Route path="/pocket" element={<ProtectedRoute><DeliveryHomeV2 tab="pocket" /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><DeliveryHomeV2 tab="history" /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><DeliveryHomeV2 tab="profile" /></ProtectedRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><NotificationsV2 /></ProtectedRoute>} />
-        <Route path="/profile/details" element={<ProtectedRoute><ProfileDetailsV2 /></ProtectedRoute>} />
-        <Route path="/profile/bank" element={<ProtectedRoute><ProfileBankV2 /></ProtectedRoute>} />
-        <Route path="/profile/documents" element={<ProtectedRoute><ProfileDocsV2 /></ProtectedRoute>} />
+        <Route element={<ProtectedRoute><DeliveryHomeV2 /></ProtectedRoute>}>
+          <Route path="/" />
+          <Route path="feed" />
+          <Route path="pocket" />
+          <Route path="history" />
+          <Route path="profile" />
+        </Route>
+        <Route path="notifications" element={<ProtectedRoute><NotificationsV2 /></ProtectedRoute>} />
+        <Route path="profile/details" element={<ProtectedRoute><ProfileDetailsV2 /></ProtectedRoute>} />
+        <Route path="profile/bank" element={<ProtectedRoute><ProfileBankV2 /></ProtectedRoute>} />
+        <Route path="profile/documents" element={<ProtectedRoute><ProfileDocsV2 /></ProtectedRoute>} />
         
         {/* Support Systems */}
-        <Route path="/help/tickets" element={<ProtectedRoute><SupportTicketsV2 /></ProtectedRoute>} />
-        <Route path="/help/tickets/create" element={<ProtectedRoute><CreateSupportTicketV2 /></ProtectedRoute>} />
-        <Route path="/help/tickets/:ticketId" element={<ProtectedRoute><ViewSupportTicketV2 /></ProtectedRoute>} />
-        <Route path="/help/id-card" element={<ProtectedRoute><ShowIdCardV2 /></ProtectedRoute>} />
-        <Route path="/profile/terms" element={<ProtectedRoute><TermsAndConditionsV2 /></ProtectedRoute>} />
-        <Route path="/profile/privacy" element={<ProtectedRoute><PrivacyPolicyV2 /></ProtectedRoute>} />
+        <Route path="help/tickets" element={<ProtectedRoute><SupportTicketsV2 /></ProtectedRoute>} />
+        <Route path="help/tickets/create" element={<ProtectedRoute><CreateSupportTicketV2 /></ProtectedRoute>} />
+        <Route path="help/tickets/:ticketId" element={<ProtectedRoute><ViewSupportTicketV2 /></ProtectedRoute>} />
+        <Route path="help/id-card" element={<ProtectedRoute><ShowIdCardV2 /></ProtectedRoute>} />
+        <Route path="profile/terms" element={<ProtectedRoute><TermsAndConditionsV2 /></ProtectedRoute>} />
+        <Route path="profile/privacy" element={<ProtectedRoute><PrivacyPolicyV2 /></ProtectedRoute>} />
         
         {/* Financial Deep-Pages */}
-        <Route path="/pocket/payout" element={<ProtectedRoute><PayoutV2 /></ProtectedRoute>} />
-        <Route path="/pocket/statement" element={<ProtectedRoute><PocketStatementV2 /></ProtectedRoute>} />
-        <Route path="/pocket/deductions" element={<ProtectedRoute><DeductionStatementV2 /></ProtectedRoute>} />
-        <Route path="/pocket/limit-settlement" element={<ProtectedRoute><LimitSettlementV2 /></ProtectedRoute>} />
-        <Route path="/pocket/balance" element={<ProtectedRoute><PocketBalanceV2 /></ProtectedRoute>} />
-        <Route path="/pocket/cash-limit" element={<ProtectedRoute><CashLimitInfoV2 /></ProtectedRoute>} />
-        <Route path="/pocket/details" element={<ProtectedRoute><PocketDetailsV2 /></ProtectedRoute>} />
+        <Route path="pocket/payout" element={<ProtectedRoute><PayoutV2 /></ProtectedRoute>} />
+        <Route path="pocket/statement" element={<ProtectedRoute><PocketStatementV2 /></ProtectedRoute>} />
+        <Route path="pocket/deductions" element={<ProtectedRoute><DeductionStatementV2 /></ProtectedRoute>} />
+        <Route path="pocket/limit-settlement" element={<ProtectedRoute><LimitSettlementV2 /></ProtectedRoute>} />
+        <Route path="pocket/balance" element={<ProtectedRoute><PocketBalanceV2 /></ProtectedRoute>} />
+        <Route path="pocket/cash-limit" element={<ProtectedRoute><CashLimitInfoV2 /></ProtectedRoute>} />
+        <Route path="pocket/details" element={<ProtectedRoute><PocketDetailsV2 /></ProtectedRoute>} />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/food/delivery" replace />} />
+        <Route path="*" element={<Navigate to="/delivery" replace />} />
       </Routes>
     </Suspense>
   );

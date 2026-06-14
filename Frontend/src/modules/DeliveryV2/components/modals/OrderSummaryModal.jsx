@@ -7,7 +7,7 @@ import { CheckCircle, ArrowRight, Wallet, History, Star } from 'lucide-react';
  * Post-delivery success screen.
  */
 export const OrderSummaryModal = ({ order, onDone }) => {
-  const earnings = order?.earnings || order?.riderEarning || (order?.orderAmount * 0.1) || 0;
+  const earnings = order?.earnings || order?.riderEarning || order?.pricing?.deliveryFee || ((order?.pricing?.total || order?.total || order?.totalAmount || 0) * 0.1) || 0;
 
   return (
     <div className="fixed inset-0 z-[160] bg-green-500 overflow-y-auto">

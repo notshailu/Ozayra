@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Users, X, Banknote, CreditCard, ChevronDown, ChevronRight, LoaderCircle } from 'lucide-react';
 import { GoogleMap, MarkerF, PolylineF } from '@react-google-maps/api';
 import api from '../../../../shared/api/axiosInstance';
-import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../../admin/utils/googleMaps';
+import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, UBER_MAP_STYLE } from '../../../admin/utils/googleMaps';
 
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 
@@ -135,6 +135,7 @@ const VehicleMapPreview = ({ center, dropPosition, drivers, selectedVehicle, isL
           fullscreenControl: false,
           mapTypeControl: false,
           gestureHandling: 'greedy',
+          styles: UBER_MAP_STYLE,
         }}
       >
         <MarkerF

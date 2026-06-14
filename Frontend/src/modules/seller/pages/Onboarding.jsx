@@ -193,13 +193,66 @@ export default function SellerOnboarding() {
   );
 
   const updateField = (field, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const { openingTime, closingTime } = useMemo(
     () => parseOpeningHours(form.openingHours),
     [form.openingHours],
   );
+
+  const isFoodBusiness = useMemo(
+    () => ["Grocery", "Bakery"].includes(form.businessType),
+    [form.businessType],
+  );
+
+  const isLocalhost = useMemo(() => {
+    return (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+    );
+  }, []);
+
+  const handleAutoFill = () => {
+    const defaultZone = zones[0] || {};
+    setForm({
+      name: "John Doe",
+      shopName: "Doe Groceries",
+      email: "johndoe@example.com",
+      phone: form.phone || "9876543210",
+      zoneId: defaultZone._id || defaultZone.id || "",
+      zoneSource: defaultZone.source || "",
+      address: "123 Main St, Mumbai, Maharashtra",
+      lat: 19.0760,
+      lng: 72.8777,
+      radius: 5,
+      businessType: "Grocery",
+      alternatePhone: "9876543210",
+      supportEmail: "support@doegroceries.com",
+      openingHours: "09:00 - 21:00",
+      bankName: "State Bank of India",
+      accountHolderName: "John Doe",
+      accountNumber: "123456789012",
+      ifscCode: "SBIN0001234",
+      accountType: "Savings",
+      upiId: "johndoe@okaxis",
+      panNumber: "ABCDE1234F",
+      gstRegistered: true,
+      gstNumber: "22ABCDE1234F1Z5",
+      gstLegalName: "John Doe Enterprises",
+      fssaiNumber: "12345678901234",
+      fssaiExpiry: "2028-12-31",
+      shopLicenseNumber: "LIC123456",
+      shopLicenseExpiry: "2028-12-31",
+    });
+    setHoursDraft({
+      openingTime: "09:00",
+      closingTime: "21:00",
+    });
+    setQrFile(new File([""], "mock_qr.jpg", { type: "image/jpeg" }));
+    setLicenseFile(new File([""], "mock_license.jpg", { type: "image/jpeg" }));
+    toast.success("Form auto-filled with mock data!");
+  };
 
 
   const selectedZone = useMemo(
@@ -285,14 +338,38 @@ export default function SellerOnboarding() {
       return;
     }
 
-    if (form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber)) {
-      toast.error("Invalid GST format. Must be 15 characters (e.g. 22ABCDE1234F1Z5)");
-      return;
+    if (form.gstRegistered) {
+      if (!form.gstNumber) {
+        toast.error("Fill GST number first");
+        return;
+      }
+      if (!form.gstLegalName) {
+        toast.error("Fill GST legal name first");
+        return;
+      }
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber)) {
+        toast.error("Invalid GST format. Must be 15 characters (e.g. 22ABCDE1234F1Z5)");
+        return;
+      }
     }
 
-    if (form.fssaiExpiry && form.fssaiExpiry < new Date().toISOString().split("T")[0]) {
-      toast.error("FSSAI expiry date cannot be a past date");
-      return;
+    if (isFoodBusiness) {
+      if (!form.fssaiNumber) {
+        toast.error("Fill FSSAI number first");
+        return;
+      }
+      if (!/^\d{14}$/.test(form.fssaiNumber)) {
+        toast.error("FSSAI number must be exactly 14 digits (numbers only)");
+        return;
+      }
+      if (!form.fssaiExpiry) {
+        toast.error("Fill FSSAI expiry date first");
+        return;
+      }
+      if (form.fssaiExpiry < new Date().toISOString().split("T")[0]) {
+        toast.error("FSSAI expiry date cannot be a past date");
+        return;
+      }
     }
 
     if (form.shopLicenseNumber && !/^[A-Za-z0-9\/\-]{5,20}$/.test(form.shopLicenseNumber)) {
@@ -440,18 +517,29 @@ export default function SellerOnboarding() {
             className="space-y-6 rounded-[34px] border border-white/70 bg-white/90 p-6 shadow-[0_35px_90px_rgba(15,23,42,0.08)] backdrop-blur xl:p-8"
           >
             <section className="space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-amber-100 p-3 text-amber-700">
-                  <Building2 className="h-5 w-5" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-amber-100 p-3 text-amber-700">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">
+                      Store identity
+                    </h2>
+                    <p className="text-sm font-medium text-slate-500">
+                      How your seller account will appear to admin and customers.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-black text-slate-900">
-                    Store identity
-                  </h2>
-                  <p className="text-sm font-medium text-slate-500">
-                    How your seller account will appear to admin and customers.
-                  </p>
-                </div>
+                {isLocalhost && (
+                  <button
+                    type="button"
+                    onClick={handleAutoFill}
+                    className="self-start sm:self-center px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow transition"
+                  >
+                    Auto Fill
+                  </button>
+                )}
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex flex-col gap-1">
@@ -482,14 +570,28 @@ export default function SellerOnboarding() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-slate-500">Business type <span className="text-red-500">*</span></label>
-                  <select required className="rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-slate-900" value={form.businessType} onChange={(e) => updateField("businessType", e.target.value)}>
-                  <option value="">Select business type</option>
-                  {businessTypes.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
+                  <select
+                    required
+                    className="rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-slate-900"
+                    value={form.businessType}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const isFood = ["Grocery", "Bakery"].includes(val);
+                      setForm((prev) => ({
+                        ...prev,
+                        businessType: val,
+                        fssaiNumber: isFood ? prev.fssaiNumber : "",
+                        fssaiExpiry: isFood ? prev.fssaiExpiry : "",
+                      }));
+                    }}
+                  >
+                    <option value="">Select business type</option>
+                    {businessTypes.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-slate-500">Alternate phone <span className="text-red-500">*</span></label>
@@ -759,55 +861,75 @@ export default function SellerOnboarding() {
                   )}
                 </div>
                 <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 font-semibold text-slate-700">
-                  <input type="checkbox" checked={form.gstRegistered} onChange={(e) => updateField("gstRegistered", e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={form.gstRegistered}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setForm((prev) => ({
+                        ...prev,
+                        gstRegistered: checked,
+                        gstNumber: checked ? prev.gstNumber : "",
+                        gstLegalName: checked ? prev.gstLegalName : "",
+                      }));
+                    }}
+                  />
                   GST registered
                 </label>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-500">GST number <span className="text-red-500">*</span></label>
-                  <input
-                    required
-                    className={`rounded-2xl border px-4 py-3 font-semibold uppercase outline-none focus:border-slate-900 ${form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber) ? "border-red-400 bg-red-50" : "border-slate-200"}`}
-                    placeholder="GST number (e.g. 22ABCDE1234F1Z5)"
-                    value={form.gstNumber}
-                    maxLength={15}
-                    onChange={(e) => updateField("gstNumber", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15))}
-                  />
-                  {form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber) && (
-                    <p className="text-xs font-semibold text-red-500 px-1">Invalid GST format. Must be 15 chars: 2 digits + PAN (10) + entity + Z + check (e.g. 22ABCDE1234F1Z5)</p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-500">GST legal name <span className="text-red-500">*</span></label>
-                  <input required className="rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-slate-900" placeholder="GST legal name" value={form.gstLegalName} onChange={(e) => updateField("gstLegalName", e.target.value.replace(/[^a-zA-Z\s]/g, ""))} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-500">FSSAI number <span className="text-red-500">*</span></label>
-                  <input
-                    required
-                    className={`rounded-2xl border px-4 py-3 font-semibold outline-none focus:border-slate-900 ${form.fssaiNumber && !/^\d{14}$/.test(form.fssaiNumber) ? "border-red-400 bg-red-50" : "border-slate-200"}`}
-                    placeholder="FSSAI number (14 digits)"
-                    value={form.fssaiNumber}
-                    maxLength={14}
-                    onChange={(e) => updateField("fssaiNumber", e.target.value.replace(/\D/g, "").slice(0, 14))}
-                  />
-                  {form.fssaiNumber && !/^\d{14}$/.test(form.fssaiNumber) && (
-                    <p className="text-xs font-semibold text-red-500 px-1">FSSAI number must be exactly 14 digits (numbers only)</p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-500">FSSAI expiry date <span className="text-red-500">*</span></label>
-                  <input
-                    required
-                    className={`rounded-2xl border px-4 py-3 font-semibold outline-none focus:border-slate-900 ${form.fssaiExpiry && form.fssaiExpiry < new Date().toISOString().split("T")[0] ? "border-red-400 bg-red-50" : "border-slate-200"}`}
-                    type="date"
-                    value={form.fssaiExpiry}
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => updateField("fssaiExpiry", e.target.value)}
-                  />
-                  {form.fssaiExpiry && form.fssaiExpiry < new Date().toISOString().split("T")[0] && (
-                    <p className="text-xs font-semibold text-red-500 px-1">FSSAI expiry date cannot be a past date</p>
-                  )}
-                </div>
+                {form.gstRegistered && (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-500">GST number <span className="text-red-500">*</span></label>
+                      <input
+                        required={form.gstRegistered}
+                        className={`rounded-2xl border px-4 py-3 font-semibold uppercase outline-none focus:border-slate-900 ${form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber) ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                        placeholder="GST number (e.g. 22ABCDE1234F1Z5)"
+                        value={form.gstNumber}
+                        maxLength={15}
+                        onChange={(e) => updateField("gstNumber", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15))}
+                      />
+                      {form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber) && (
+                        <p className="text-xs font-semibold text-red-500 px-1">Invalid GST format. Must be 15 chars: 2 digits + PAN (10) + entity + Z + check (e.g. 22ABCDE1234F1Z5)</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-500">GST legal name <span className="text-red-500">*</span></label>
+                      <input required={form.gstRegistered} className="rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-slate-900" placeholder="GST legal name" value={form.gstLegalName} onChange={(e) => updateField("gstLegalName", e.target.value.replace(/[^a-zA-Z\s]/g, ""))} />
+                    </div>
+                  </>
+                )}
+                {isFoodBusiness && (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-500">FSSAI number <span className="text-red-500">*</span></label>
+                      <input
+                        required={isFoodBusiness}
+                        className={`rounded-2xl border px-4 py-3 font-semibold outline-none focus:border-slate-900 ${form.fssaiNumber && !/^\d{14}$/.test(form.fssaiNumber) ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                        placeholder="FSSAI number (14 digits)"
+                        value={form.fssaiNumber}
+                        maxLength={14}
+                        onChange={(e) => updateField("fssaiNumber", e.target.value.replace(/\D/g, "").slice(0, 14))}
+                      />
+                      {form.fssaiNumber && !/^\d{14}$/.test(form.fssaiNumber) && (
+                        <p className="text-xs font-semibold text-red-500 px-1">FSSAI number must be exactly 14 digits (numbers only)</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-500">FSSAI expiry date <span className="text-red-500">*</span></label>
+                      <input
+                        required={isFoodBusiness}
+                        className={`rounded-2xl border px-4 py-3 font-semibold outline-none focus:border-slate-900 ${form.fssaiExpiry && form.fssaiExpiry < new Date().toISOString().split("T")[0] ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                        type="date"
+                        value={form.fssaiExpiry}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => updateField("fssaiExpiry", e.target.value)}
+                      />
+                      {form.fssaiExpiry && form.fssaiExpiry < new Date().toISOString().split("T")[0] && (
+                        <p className="text-xs font-semibold text-red-500 px-1">FSSAI expiry date cannot be a past date</p>
+                      )}
+                    </div>
+                  </>
+                )}
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-slate-500">Shop license number <span className="text-red-500">*</span></label>
                   <input

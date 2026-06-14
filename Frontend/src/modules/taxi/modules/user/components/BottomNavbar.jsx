@@ -22,19 +22,19 @@ const BottomNavbar = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         whileTap={{ scale: 0.97 }}
-        onClick={() => navigate('/user/auth/portal', { state: { redirectTo } })}
-        className="relative z-10 -mb-3 ml-auto mr-3 flex items-center gap-2 rounded-t-[18px] rounded-b-[10px] border border-b-0 border-[#d7defd] bg-[linear-gradient(180deg,#f8fbff_0%,#eef4ff_58%,#e3ecff_100%)] px-3 pb-3 pt-2 shadow-[0_-2px_0_rgba(255,255,255,0.75),0_-10px_24px_rgba(37,99,235,0.14)]"
+        onClick={() => navigate('/quick')}
+        className="relative z-10 -mb-3 ml-auto mr-3 flex items-center gap-2 rounded-t-[18px] rounded-b-[10px] border border-b-0 border-[#cbf2d3] bg-[linear-gradient(180deg,#f6fdf8_0%,#e4f9ea_58%,#d2f5db_100%)] px-3 pb-3 pt-2 shadow-[0_-2px_0_rgba(255,255,255,0.75),0_-10px_24px_rgba(16,185,129,0.12)]"
       >
-        <div className="pointer-events-none absolute -bottom-3 left-0 right-0 h-4 bg-[linear-gradient(180deg,rgba(227,236,255,0.95)_0%,rgba(255,255,255,0)_100%)]" />
-        <div className="pointer-events-none absolute -left-3 bottom-0 h-6 w-6 rounded-br-[18px] border-b border-r border-[#d7defd] bg-white/90" />
-        <div className="pointer-events-none absolute -right-3 bottom-0 h-6 w-6 rounded-bl-[18px] border-b border-l border-[#d7defd] bg-white/90" />
+        <div className="pointer-events-none absolute -bottom-3 left-0 right-0 h-4 bg-[linear-gradient(180deg,rgba(210,245,219,0.95)_0%,rgba(255,255,255,0)_100%)]" />
+        <div className="pointer-events-none absolute -left-3 bottom-0 h-6 w-6 rounded-br-[18px] border-b border-r border-[#cbf2d3] bg-white/90" />
+        <div className="pointer-events-none absolute -right-3 bottom-0 h-6 w-6 rounded-bl-[18px] border-b border-l border-[#cbf2d3] bg-white/90" />
 
         <div className="text-left leading-none">
-          <span className="block text-[9px] font-black uppercase tracking-[0.2em] text-[#5f78b8]">
-            Explore
+          <span className="block text-[9px] font-black uppercase tracking-[0.2em] text-[#1e7e34]">
+            Groceries
           </span>
         </div>
-        <div className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-white/80 text-[#173b7a]">
+        <div className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-white/80 text-[#0f5122]">
           <ArrowUpRight size={14} strokeWidth={2.6} />
         </div>
       </motion.button>

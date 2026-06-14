@@ -221,7 +221,30 @@ export async function tryAutoAssign(orderId, options = {}) {
       (p) => !offeredIds.includes(p.partnerId.toString()),
     );
 
-    if (eligible.length === 0) {
+    let finalEligible = eligible;
+    const paymentMethod = String(order?.payment?.method || order?.paymentMethod || '').toLowerCase();
+    const isCodOrder = ["cash", "cod", "cash_on_delivery"].includes(paymentMethod);
+
+    if (isCodOrder && eligible.length > 0) {
+      try {
+        const { getDeliveryPartnerWalletEnhanced } = await import("../../delivery/services/deliveryFinance.service.js");
+        const filtered = [];
+        for (const p of eligible) {
+          const wallet = await getDeliveryPartnerWalletEnhanced(p.partnerId);
+          if (Number(wallet.cashInHand) < Number(wallet.totalCashLimit)) {
+            filtered.push(p);
+          } else {
+            logger.info(`[Dispatch] Rider ${p.partnerId} excluded from auto-assign for order ${order._id} due to cash limit: cashInHand=${wallet.cashInHand}, totalCashLimit=${wallet.totalCashLimit}`);
+          }
+        }
+        finalEligible = filtered;
+      } catch (err) {
+        logger.error(`[Dispatch] Error checking cash limits in auto-assign for order ${order._id}: ${err.message}`);
+        finalEligible = eligible;
+      }
+    }
+
+    if (finalEligible.length === 0) {
       logger.info(
         `tryAutoAssign: No NEW eligible partners in ${maxKm}km for order ${order._id}. Restarting hunt...`,
       );
@@ -230,7 +253,23 @@ export async function tryAutoAssign(orderId, options = {}) {
       const io = getIO();
       if (io && partners.length > 0) {
         const payload = buildDeliverySocketPayload(order, source);
-        for (const p of partners) {
+        let broadcastPartners = partners;
+        if (isCodOrder) {
+          try {
+            const { getDeliveryPartnerWalletEnhanced } = await import("../../delivery/services/deliveryFinance.service.js");
+            const filteredBroad = [];
+            for (const p of partners) {
+              const wallet = await getDeliveryPartnerWalletEnhanced(p.partnerId);
+              if (Number(wallet.cashInHand) < Number(wallet.totalCashLimit)) {
+                filteredBroad.push(p);
+              }
+            }
+            broadcastPartners = filteredBroad;
+          } catch (err) {
+            logger.error(`[Dispatch] Error checking cash limits in broadcast search for order ${order._id}: ${err.message}`);
+          }
+        }
+        for (const p of broadcastPartners) {
           const roomName = rooms.delivery(p.partnerId);
           io.to(roomName).emit("new_order_available", {
             ...payload,
@@ -259,9 +298,9 @@ export async function tryAutoAssign(orderId, options = {}) {
     if (isPhase2) {
       // PHASE 2 BROADCAST: Notify everyone remaining
       logger.info(
-        `[Phase 2] Broadcasting order ${order._id} to ${eligible.length} riders.`,
+        `[Phase 2] Broadcasting order ${order._id} to ${finalEligible.length} riders.`,
       );
-      for (const p of eligible) {
+      for (const p of finalEligible) {
         const roomName = rooms.delivery(p.partnerId);
         if (io) {
           io.to(roomName).emit("new_order", {
@@ -280,7 +319,7 @@ export async function tryAutoAssign(orderId, options = {}) {
       }
     } else {
       // PHASE 1: Target best rider only
-      const p = eligible[0];
+      const p = finalEligible[0];
       const roomName = rooms.delivery(p.partnerId);
       logger.info(
         `[Phase 1] Offering order ${order._id} to best rider ${p.partnerId} (${p.distanceKm}km)`,
@@ -316,7 +355,7 @@ export async function tryAutoAssign(orderId, options = {}) {
       }
     }
 
-    const offeredToEntries = eligible.map((p) => ({
+    const offeredToEntries = finalEligible.map((p) => ({
       partnerId: p.partnerId,
       at: new Date(),
       action: "offered",
@@ -338,7 +377,7 @@ export async function tryAutoAssign(orderId, options = {}) {
       { delay: 60000 },
     );
 
-    return { ...order.toObject(), notifiedCount: eligible.length };
+    return { ...order.toObject(), notifiedCount: finalEligible.length };
   } finally {
     await FoodOrder.findByIdAndUpdate(orderId, {
       $unset: { "dispatch.dispatchingAt": "" },

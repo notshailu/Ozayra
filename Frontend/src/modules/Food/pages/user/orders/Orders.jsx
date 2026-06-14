@@ -452,7 +452,7 @@ export default function Orders() {
 
     replaceCart(reorderItems)
     toast.success("Items added to cart")
-    navigate(`/food/user/restaurants/${restaurantTarget}`)
+    navigate("/cart")
   }
 
   // Three-dots menu handlers
@@ -549,10 +549,7 @@ export default function Orders() {
     const location =
       order.restaurantLocation ||
       `${order.address?.city || ""}, ${order.address?.state || ""}`.trim()
-    const restaurantPath = order.restaurantSlug || order.restaurantId
-    const shareUrl = restaurantPath
-      ? `${window.location.origin}/food/user/restaurants/${restaurantPath}`
-      : `${window.location.origin}/food/user/orders/${order.id}`
+    const shareUrl = `${window.location.origin}/quick/orders/${order.id}`
 
     const shareText = `Check out ${order.restaurant} on ${companyName}.
 Location: ${location || "Location not available"}
@@ -664,7 +661,7 @@ Order again from this restaurant in the ${companyName} app.`
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-10">
         <div className="bg-white dark:bg-[#111111] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b border-transparent dark:border-gray-800">
-          <Link to="/user">
+          <Link to="/quick">
             <ArrowLeft className="w-6 h-6 text-gray-700 dark:text-white cursor-pointer" />
           </Link>
           <h1 className="ml-4 text-xl font-semibold text-gray-800 dark:text-white">Your Orders</h1>
@@ -680,14 +677,14 @@ Order again from this restaurant in the ${companyName} app.`
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-10">
         <div className="bg-white dark:bg-[#111111] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b border-transparent dark:border-gray-800">
-          <Link to="/user">
+          <Link to="/quick">
             <ArrowLeft className="w-6 h-6 text-gray-700 dark:text-white cursor-pointer" />
           </Link>
           <h1 className="ml-4 text-xl font-semibold text-gray-800 dark:text-white">Your Orders</h1>
         </div>
         <div className="px-4 py-8 text-center">
           <p className="text-gray-600 dark:text-gray-300">You haven't placed any orders yet</p>
-          <Link to="/user">
+          <Link to="/quick">
             <button className="mt-4 text-[#EB590E] font-medium">Start Ordering</button>
           </Link>
         </div>
@@ -699,7 +696,7 @@ Order again from this restaurant in the ${companyName} app.`
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-10 font-sans">
       {/* Header */}
       <div className="bg-white dark:bg-[#111111] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b border-transparent dark:border-gray-800">
-        <Link to="/food/user">
+        <Link to="/quick">
           <ArrowLeft className="w-6 h-6 text-gray-700 dark:text-white cursor-pointer" />
         </Link>
         <h1 className="ml-4 text-xl font-semibold text-gray-800 dark:text-white">Your Orders</h1>

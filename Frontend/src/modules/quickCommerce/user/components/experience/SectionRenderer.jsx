@@ -46,7 +46,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
           const items = hydratedItems.map(c => ({
             ...c,
             id: c.id || c._id,
-            image: resolveQuickImageUrl(c.image || c.mainImage)
+            image: resolveQuickImageUrl(c.image || c.mainImage, c.name)
           })).slice(0, visibleCount);
 
           if (!items.length) return null;
@@ -170,7 +170,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                       <div className="relative aspect-square w-full rounded-2xl bg-card dark:bg-background border border-border flex items-center justify-center overflow-hidden p-1 transition-all duration-200 group-hover:border-[#0c831f]/40 group-hover:bg-accent group-hover:shadow-[0_10px_25px_rgba(15,23,42,0.08)]">
                         {cat.image ? (
                           <img
-                            src={resolveQuickImageUrl(cat.image)}
+                            src={resolveQuickImageUrl(cat.image, cat.name)}
                             srcSet={getCloudinarySrcSet(cat.image)}
                             sizes="80px"
                             alt={cat.name}
@@ -202,7 +202,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
           const allProducts = hydratedItems.map(p => ({
             ...p,
             id: p._id || p.id,
-            image: resolveQuickImageUrl(p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2"),
+            image: resolveQuickImageUrl(p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2", p.name),
             price: Number(p.price || p.salePrice || 0),
             originalPrice: Number(p.originalPrice || p.mrp || p.price || p.salePrice || 0)
           }));

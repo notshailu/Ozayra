@@ -81,8 +81,8 @@ function LocationSelectorProvider({ children }) {
   const location = useLocation()
 
   const openLocationSelector = () => {
-    const currentPath = `${location.pathname || ""}${location.search || ""}${location.hash || ""}` || "/food/user"
-    navigate("/food/user/address-selector", {
+    const currentPath = `${location.pathname || ""}${location.search || ""}${location.hash || ""}` || "/quick"
+    navigate("/cart/address-selector", {
       state: {
         from: currentPath,
         backTo: currentPath,
@@ -124,18 +124,13 @@ export default function UserLayout({ children }) {
     : location.pathname
   const normalizedPath =
     path.length > 1 ? path.replace(/\/+$/, "") : path
-  const profileSource = new URLSearchParams(location.search).get("from")
-  const isSharedQuickProfile =
-    normalizedPath === "/profile" &&
-    profileSource === "quick"
-
-  const isSharedFoodProfile =
-    normalizedPath === "/profile" &&
-    profileSource !== "quick"
+  const isProfilePage =
+    normalizedPath === "/profile" ||
+    normalizedPath.startsWith("/profile/")
 
   const isProfileRoot =
     normalizedPath === "/user/profile" ||
-    isSharedFoodProfile
+    isProfilePage
 
   const showBottomNav = normalizedPath === "/" ||
     normalizedPath === "/user" ||
@@ -147,7 +142,7 @@ export default function UserLayout({ children }) {
     normalizedPath === "" // Handle empty string case for root relative to /food
 
   const isUnder250 = normalizedPath === "/under-250" || normalizedPath === "/user/under-250"
-  const showFoodBottomNav = showBottomNav && !isSharedQuickProfile
+  const showFoodBottomNav = showBottomNav && !isProfilePage
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] transition-colors duration-200">
@@ -166,7 +161,7 @@ export default function UserLayout({ children }) {
                     {children || <Outlet />}
                   </main>
                   {showFoodBottomNav && <BottomNavigation />}
-                  {isSharedQuickProfile && <QuickBottomNav />}
+                  {isProfilePage && <QuickBottomNav />}
                 </LocationSelectorProvider>
               </SearchOverlayProvider>
           </OrdersProvider>

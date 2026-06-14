@@ -331,7 +331,7 @@ export default function SignupStep2() {
     const raw = sessionStorage.getItem("deliverySignupDetails")
     if (!raw) {
       toast.error("Session expired. Please start from Create Account.")
-      navigate("/food/delivery/signup", { replace: true })
+      navigate("/delivery/signup", { replace: true })
       return
     }
 
@@ -340,7 +340,7 @@ export default function SignupStep2() {
       details = JSON.parse(raw)
     } catch {
       toast.error("Invalid session. Please start from Create Account.")
-      navigate("/food/delivery/signup", { replace: true })
+      navigate("/delivery/signup", { replace: true })
       return
     }
 
@@ -427,7 +427,7 @@ export default function SignupStep2() {
           toast.success("Registration submitted. Verification is in progress.")
           setTimeout(
             () =>
-              navigate("/food/delivery/verification", {
+              navigate("/delivery/verification", {
                 replace: true,
                 state: { phone: pendingPhone },
               }),
@@ -439,7 +439,7 @@ export default function SignupStep2() {
           toast.success("Profile submitted. Waiting for admin approval.")
           setTimeout(
             () =>
-              navigate("/food/delivery/verification", {
+              navigate("/delivery/verification", {
                 replace: true,
                 state: { phone: pendingPhone },
               }),

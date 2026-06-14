@@ -190,7 +190,7 @@ export default function MixedSharedCart() {
     }
     if (!defaultAddress) {
       toast.error("Please select a delivery address first");
-      navigate("/food/user/cart/address-selector");
+      navigate("/cart/address-selector");
       return;
     }
 
@@ -233,7 +233,7 @@ export default function MixedSharedCart() {
       if (selectedPaymentMethod === "cash") {
         toast.success("Mixed order placed successfully");
         clearCart();
-        navigate(`/user/orders/${order?.orderId || order?._id}?confirmed=true`, {
+        navigate(`/quick/orders/${order?.orderId || order?._id}?confirmed=true`, {
           state: order ? { prefetchedOrder: order } : undefined,
         });
         return;
@@ -271,7 +271,7 @@ export default function MixedSharedCart() {
           if (verifyResponse?.data?.success) {
             toast.success("Mixed order placed successfully");
             clearCart();
-            navigate(`/user/orders/${order?.orderId || order?._id}?confirmed=true`, {
+            navigate(`/quick/orders/${order?.orderId || order?._id}?confirmed=true`, {
               state: order ? { prefetchedOrder: order } : undefined,
             });
           } else {
@@ -321,7 +321,7 @@ export default function MixedSharedCart() {
   };
 
   if (foodItems.length === 0 || quickItems.length === 0) {
-    navigate("/food/user/cart");
+    navigate("/cart");
     return null;
   }
 
@@ -330,7 +330,7 @@ export default function MixedSharedCart() {
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-6">
         <button
           type="button"
-          onClick={() => navigate("/food/user")}
+          onClick={() => navigate("/quick")}
           className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -366,7 +366,7 @@ export default function MixedSharedCart() {
                   variant="outline"
                   className="rounded-full border-slate-200"
                 >
-                  <Link to="/food/user/cart/address-selector">
+                  <Link to="/cart/address-selector">
                     <MapPin className="mr-2 h-4 w-4" />
                     Change
                   </Link>

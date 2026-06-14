@@ -812,7 +812,7 @@ export default function OrderTracking() {
   const isQuickOrder =
     String(location.state?.orderType || "").toLowerCase() === "quick" ||
     /^QC/i.test(String(orderId || ""))
-  const backPath = isQuickOrder ? "/quick" : "/food/user"
+  const backPath = "/quick"
   const ordersContext = useOptionalOrders()
   const getOrderById = ordersContext?.getOrderById || (() => null)
   const { profile, getDefaultAddress } = useProfile()

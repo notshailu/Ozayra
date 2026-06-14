@@ -123,10 +123,11 @@ let globalQuickHomeCache = {
   data: null,
   headerSections: new Map(), // headerId -> sections
   categoryProducts: new Map(), // headerId -> products
+  headerHeroConfigs: new Map(), // headerId -> heroConfig
   lastFetched: 0,
 };
 
-const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY_MS = 5 * 1000; // 5 seconds cache duration
 
 export const useQuickHomeData = ({ currentLocation }) => {
   const hasValidCache = globalQuickHomeCache.data && (Date.now() - globalQuickHomeCache.lastFetched < CACHE_EXPIRY_MS);
@@ -288,15 +289,42 @@ export const useQuickHomeData = ({ currentLocation }) => {
     fetchData();
   }, [fetchData]);
 
-  // Fetch header-specific sections
+  // Fetch header-specific sections and hero configuration
   useEffect(() => {
     if (!activeCategory || activeCategory._id === "all") {
       setHeaderSections([]);
       setCategoryProducts(null); // reset to global products
+      if (globalQuickHomeCache.data?.heroConfig) {
+        setHeroConfig(globalQuickHomeCache.data.heroConfig);
+      }
       return;
     }
 
     const headerId = activeCategory._id;
+
+    const fetchHeroConfig = async () => {
+      if (globalQuickHomeCache.headerHeroConfigs.has(headerId)) {
+        setHeroConfig(globalQuickHomeCache.headerHeroConfigs.get(headerId));
+        return;
+      }
+      try {
+        const res = await customerApi.getHeroConfig({ pageType: "header", headerId });
+        if (res?.data?.success) {
+          const payload = res.data.result || res.data.results || res.data;
+          const config = payload && (payload.banners?.items?.length > 0 || payload.categoryIds?.length > 0)
+            ? { banners: payload.banners || { items: [] }, categoryIds: payload.categoryIds || [] }
+            : null;
+
+          const finalConfig = config || globalQuickHomeCache.data?.heroConfig || { banners: { items: [] }, categoryIds: [] };
+          globalQuickHomeCache.headerHeroConfigs.set(headerId, finalConfig);
+          setHeroConfig(finalConfig);
+        }
+      } catch (e) {
+        console.error("Error fetching header hero config:", e);
+        const fallback = globalQuickHomeCache.data?.heroConfig || { banners: { items: [] }, categoryIds: [] };
+        setHeroConfig(fallback);
+      }
+    };
 
     const fetchHeader = async () => {
       if (globalQuickHomeCache.headerSections.has(headerId)) {
@@ -354,6 +382,7 @@ export const useQuickHomeData = ({ currentLocation }) => {
 
     fetchHeader();
     fetchCategoryProducts();
+    fetchHeroConfig();
   }, [activeCategory]);
 
   return {
@@ -375,6 +404,9 @@ export const useQuickHomeData = ({ currentLocation }) => {
     actions: {
         refresh: () => {
             globalQuickHomeCache.data = null;
+            globalQuickHomeCache.headerSections.clear();
+            globalQuickHomeCache.categoryProducts.clear();
+            globalQuickHomeCache.headerHeroConfigs.clear();
             fetchData();
         }
     }

@@ -48,7 +48,7 @@ function resolveNativeInitialRoute() {
   if (pathname.startsWith('/hotel')) return pathname
   if (pathname.startsWith('/taxi')) return pathname
   if (pathname.startsWith('/restaurant')) return `/food${pathname}`
-  if (pathname.startsWith('/delivery')) return `/food${pathname}`
+  if (pathname.startsWith('/delivery')) return pathname
   if (pathname.startsWith('/user')) return `/food${pathname}`
   if (pathname.startsWith('/admin')) return pathname
   if (storedRoute.startsWith('/food/') || storedRoute.startsWith('/hotel') || storedRoute.startsWith('/taxi/') || storedRoute.startsWith('/admin')) {
@@ -56,7 +56,7 @@ function resolveNativeInitialRoute() {
   }
 
   if (isModuleAuthenticated('restaurant')) return '/food/restaurant'
-  if (isModuleAuthenticated('delivery')) return '/food/delivery'
+  if (isModuleAuthenticated('delivery')) return '/delivery'
   if (isModuleAuthenticated('admin')) return '/admin'
   if (isModuleAuthenticated('user')) return '/quick'
 

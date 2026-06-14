@@ -147,7 +147,7 @@ const mapProduct = (product, sellerMap = {}) => {
 };
 
 export const getHomeData = async (req, res) => {
-  setPublicCache(res, 60); // 1 minute cache
+  setNoCache(res);
   await ensureQuickCommerceSeedData();
 
   const pageType = req.query?.pageType || 'home';
@@ -311,7 +311,7 @@ export const getOffers = async (_req, res) => {
 };
 
 export const getCategories = async (req, res) => {
-  setPublicCache(res, 300); // 5 minutes cache
+  setNoCache(res);
   await ensureQuickCommerceSeedData();
 
   const { tree, parentId } = req.query;
@@ -341,7 +341,7 @@ export const getCategories = async (req, res) => {
 };
 
 export const getProducts = async (req, res) => {
-  setPublicCache(res, 60);
+  setNoCache(res);
   await ensureQuickCommerceSeedData();
 
   const { categoryId, search, limit } = req.query;

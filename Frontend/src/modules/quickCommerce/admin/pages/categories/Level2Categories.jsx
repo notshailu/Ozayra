@@ -159,7 +159,7 @@ const Level2Categories = () => {
       setDeleteTarget(null);
       fetchCategories();
     } catch (error) {
-      toast.error("Failed to delete category");
+      toast.error(error?.response?.data?.message || "Failed to delete category");
     }
   };
 

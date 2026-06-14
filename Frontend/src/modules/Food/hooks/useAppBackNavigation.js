@@ -2,15 +2,85 @@ import { useCallback } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { isModuleAuthenticated } from "@food/utils/auth"
 
+const normalizeStorefrontPath = (path) => {
+  if (typeof path !== "string") return path
+  const trimmed = path.trim()
+  if (!trimmed) return trimmed
+
+  const [pathPart, queryPart] = trimmed.split("?")
+  const querySuffix = queryPart ? `?${queryPart}` : ""
+
+  let clean = pathPart
+  if (clean.startsWith("/food/user")) {
+    clean = clean.slice(10) || "/"
+  } else if (clean.startsWith("/user")) {
+    clean = clean.slice(5) || "/"
+  } else if (clean.startsWith("/food")) {
+    if (clean.startsWith("/food/restaurant") || clean.startsWith("/food/delivery")) {
+      return trimmed
+    }
+    clean = clean.slice(5) || "/"
+  }
+
+  if (clean === "/" || clean === "") return `/quick${querySuffix}`
+  if (clean.startsWith("/profile")) {
+    return `${clean}${querySuffix}`
+  }
+  if (clean.startsWith("/cart")) {
+    return `${clean}${querySuffix}`
+  }
+  if (clean.startsWith("/orders")) {
+    const suffix = clean.slice(7)
+    return `/quick/orders${suffix}${querySuffix}`
+  }
+  if (clean.startsWith("/wallet")) {
+    return `/quick/wallet${querySuffix}`
+  }
+  if (clean.startsWith("/addresses")) {
+    return `/quick/addresses${querySuffix}`
+  }
+  if (clean.startsWith("/support")) {
+    return `/quick/support${querySuffix}`
+  }
+  if (clean.startsWith("/wishlist")) {
+    return `/quick/wishlist${querySuffix}`
+  }
+  if (clean.startsWith("/transactions")) {
+    return `/quick/transactions${querySuffix}`
+  }
+  if (clean.startsWith("/privacy")) {
+    return `/quick/privacy${querySuffix}`
+  }
+  if (clean.startsWith("/about")) {
+    return `/quick/about${querySuffix}`
+  }
+  if (clean.startsWith("/terms")) {
+    return `/quick/terms${querySuffix}`
+  }
+  if (clean.startsWith("/categories")) {
+    return `/quick/categories${clean.slice(11)}${querySuffix}`
+  }
+  if (clean.startsWith("/category/")) {
+    return `/quick/categories/${clean.slice(10)}${querySuffix}`
+  }
+  if (clean.startsWith("/product/")) {
+    return `/quick/product/${clean.slice(9)}${querySuffix}`
+  }
+  if (clean.startsWith("/products")) {
+    return `/quick/products${querySuffix}`
+  }
+  if (clean.startsWith("/search")) {
+    return `/quick/search${querySuffix}`
+  }
+
+  return `/quick${querySuffix}`
+}
+
 const toFoodPath = (value) => {
   if (typeof value !== "string") return null
   const trimmed = value.trim()
   if (!trimmed) return null
-  if (trimmed.startsWith("/food/")) return trimmed
-  if (trimmed === "/food") return trimmed
-  if (trimmed.startsWith("/user/")) return `/food${trimmed}`
-  if (trimmed === "/user") return "/food/user"
-  return null
+  return trimmed
 }
 
 const getNormalizedUserPath = (pathname) => {
@@ -156,6 +226,6 @@ export default function useAppBackNavigation() {
   const location = useLocation()
 
   return useCallback(() => {
-    navigate(resolveBackPath(location))
+    navigate(normalizeStorefrontPath(resolveBackPath(location)))
   }, [location, navigate])
 }

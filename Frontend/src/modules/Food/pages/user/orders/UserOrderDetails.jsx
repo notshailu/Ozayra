@@ -72,7 +72,7 @@ export default function UserOrderDetails() {
           orderData = response.data.order
         } else {
           toast.error("Order not found")
-          navigate("/user/orders")
+          navigate("/quick/orders")
           return
         }
 
@@ -98,7 +98,7 @@ export default function UserOrderDetails() {
         toast.error(
           error?.response?.data?.message || "Failed to load order details"
         )
-        navigate("/user/orders")
+        navigate("/quick/orders")
       } finally {
         setLoading(false)
       }
@@ -132,7 +132,7 @@ export default function UserOrderDetails() {
         <div className="text-center space-y-3">
           <p className="text-gray-700 text-sm font-medium">Order not found</p>
           <button
-            onClick={() => navigate("/user/orders")}
+            onClick={() => navigate("/quick/orders")}
             className="px-4 py-2 rounded-lg bg-[#EB590E] text-white text-sm font-semibold"
           >
             Back to Orders
@@ -434,7 +434,7 @@ export default function UserOrderDetails() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/food/user')}
+            onClick={() => navigate('/quick')}
             className="p-1 rounded-full hover:bg-gray-100"
           >
             <ArrowLeft className="w-6 h-6 text-gray-700 cursor-pointer" />
@@ -775,7 +775,7 @@ export default function UserOrderDetails() {
                 : String(orderMongoId)
 
               debugLog("Navigating to complaint page with orderId:", orderIdString)
-              navigate(`/user/complaints/submit/${encodeURIComponent(orderIdString)}`)
+              navigate(`/complaints/submit/${encodeURIComponent(orderIdString)}`)
             }}
             className="w-full bg-orange-50 border border-orange-200 text-orange-700 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-orange-100 transition-colors"
           >

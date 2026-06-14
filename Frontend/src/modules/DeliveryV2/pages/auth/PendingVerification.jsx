@@ -44,7 +44,7 @@ export default function PendingVerification() {
           <div className="mt-6 space-y-3">
             <button
               type="button"
-              onClick={() => navigate("/food/delivery/login", { replace: true })}
+              onClick={() => navigate("/delivery/login", { replace: true })}
               className="w-full rounded-2xl bg-[#00B761] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#00A055]"
             >
               Back to Login
@@ -57,7 +57,7 @@ export default function PendingVerification() {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => navigate("/food/delivery/profile/details")}
+                onClick={() => navigate("/delivery/profile/details")}
                 className="text-xs font-semibold text-[#0f7a42] hover:underline"
               >
                 View Registered Details

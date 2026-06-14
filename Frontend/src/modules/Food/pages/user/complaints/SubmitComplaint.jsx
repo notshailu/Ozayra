@@ -40,7 +40,7 @@ export default function SubmitComplaint() {
       debugError("Order ID missing from URL params")
       toast.error("Order ID is required")
       setTimeout(() => {
-        navigate("/user/orders")
+        navigate("/quick/orders")
       }, 2000)
       return
     }
@@ -60,7 +60,7 @@ export default function SubmitComplaint() {
           debugError("Order not found in response:", response?.data)
           toast.error("Order not found")
           setTimeout(() => {
-            navigate("/user/orders")
+            navigate("/quick/orders")
           }, 2000)
           return
         }
@@ -75,7 +75,7 @@ export default function SubmitComplaint() {
         debugError("Error fetching order:", error)
         toast.error(error?.response?.data?.message || "Failed to load order details")
         setTimeout(() => {
-          navigate("/user/orders")
+          navigate("/quick/orders")
         }, 2000)
       } finally {
         setLoading(false)
@@ -127,7 +127,7 @@ export default function SubmitComplaint() {
         toast.success("Complaint submitted successfully")
         // Navigate back to order details using the orderId from URL or order._id
         const orderIdForNav = order?._id || orderId
-        navigate(`/user/orders/${orderIdForNav}/details`)
+        navigate(`/quick/orders/${orderIdForNav}`)
       } else {
         toast.error(response?.data?.message || "Failed to submit complaint")
       }
@@ -165,7 +165,7 @@ export default function SubmitComplaint() {
         <h1 className="text-lg font-semibold text-gray-800 ml-3">Submit Complaint</h1>
         <button
           type="button"
-          onClick={() => navigate("/user/profile/support")}
+          onClick={() => navigate("/profile/support")}
           className="ml-auto text-sm font-semibold text-[#EB590E]"
         >
           View History

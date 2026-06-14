@@ -7,6 +7,7 @@ let sellerCommissionRulesLoadedAt = 0;
 async function getActiveSellerCommissionRules() {
   const now = Date.now();
   if (
+    process.env.NODE_ENV !== 'test' &&
     sellerCommissionRulesCache &&
     now - sellerCommissionRulesLoadedAt < SELLER_COMMISSION_CACHE_MS
   ) {

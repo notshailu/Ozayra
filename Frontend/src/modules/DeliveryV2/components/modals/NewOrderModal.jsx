@@ -65,7 +65,7 @@ export const NewOrderModal = ({ order, onAccept, onReject, onMinimize }) => {
 
   if (!order) return null;
 
-  const earnings = order.earnings || order.riderEarning || (order.orderAmount ? order.orderAmount * 0.1 : 0);
+  const earnings = order.earnings || order.riderEarning || order.pricing?.deliveryFee || ((order.pricing?.total || order.total || order.totalAmount || 0) * 0.1) || 0;
   const isQuickOrder = String(order?.orderType || order?.serviceType || order?.type || '').trim().toLowerCase() === 'quick';
   const restaurantName =
     order?.dispatchLeg?.sourceName ||

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { GoogleMap } from '@react-google-maps/api';
 import api from '../../../../shared/api/axiosInstance';
-import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../../admin/utils/googleMaps';
+import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, UBER_MAP_STYLE } from '../../../admin/utils/googleMaps';
 import { userAuthService } from '../../services/authService';
 
 const Motion = motion;
@@ -353,6 +353,7 @@ const MapPickerSheet = ({ open, title, confirmLabel, value, initialCoords, onClo
                   fullscreenControl: false,
                   mapTypeControl: false,
                   gestureHandling: 'greedy',
+                  styles: UBER_MAP_STYLE,
                 }}
               />
             )}

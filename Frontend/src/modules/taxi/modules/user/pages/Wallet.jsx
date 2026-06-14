@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Download, History, CreditCard, Gift, Send, QrCode } from 'lucide-react';
+import { ArrowLeft, Plus, Download, History, CreditCard, Gift, Send, QrCode, X } from 'lucide-react';
 import { userAuthService } from '../services/authService';
 
 const Wallet = () => {
@@ -86,8 +86,31 @@ const Wallet = () => {
         throw new Error('Razorpay SDK failed to load');
       }
 
-      const orderResponse = await userAuthService.createWalletTopupOrder(amountValue);
-      const order = orderResponse?.data || {};
+      let order;
+      try {
+        const orderResponse = await userAuthService.createWalletTopupOrder(amountValue);
+        order = orderResponse?.data || {};
+      } catch (orderErr) {
+        console.warn('Razorpay order creation failed, falling back to direct topup:', orderErr);
+        try {
+          const directResponse = await userAuthService.topupWallet(amountValue);
+          const data = directResponse?.data || {};
+          setWallet({
+            balance: Number(data.balance || 0),
+            currency: data.currency || 'INR',
+            recentTransactions: Array.isArray(data.recentTransactions) ? data.recentTransactions : [],
+          });
+          setIsSuccess(true);
+          setTimeout(() => {
+            setIsSuccess(false);
+            setShowAddMoney(false);
+            setAmount('');
+          }, 1400);
+          return;
+        } catch (directErr) {
+          throw new Error(directErr?.message || 'Direct wallet topup failed');
+        }
+      }
 
       if (!order.keyId || !order.orderId) {
         throw new Error('Unable to start payment');
@@ -186,62 +209,62 @@ const Wallet = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_38%,#EEF2F7_100%)] max-w-lg mx-auto flex flex-col font-sans pb-24 relative overflow-x-hidden">
-      <div className="absolute -top-20 right-[-40px] h-48 w-48 rounded-full bg-orange-100/55 blur-3xl pointer-events-none" />
-      <div className="absolute top-64 left-[-60px] h-56 w-56 rounded-full bg-emerald-100/50 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-24 right-[-40px] h-44 w-44 rounded-full bg-blue-100/50 blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-[#F9FAFB] max-w-lg mx-auto flex flex-col font-sans pb-24 relative overflow-x-hidden">
       {/* ADD MONEY MODAL */}
       <AnimatePresence>
         {showAddMoney && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4">
             <Motion.div 
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              className="bg-white w-full max-w-md rounded-[32px] p-8 pb-10 space-y-8 shadow-2xl relative"
+              className="bg-white w-full max-w-md rounded-3xl p-6 pb-8 space-y-6 shadow-xl relative"
             >
               <button 
                 onClick={() => setShowAddMoney(false)}
-                className="absolute top-6 right-6 w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 active:scale-90"
+                className="absolute top-5 right-5 w-8 h-8 bg-neutral-50 hover:bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-700 active:scale-95 transition-all"
               >
-                <Plus size={20} className="rotate-45" />
+                <X size={16} />
               </button>
 
-              <div className="text-center space-y-2">
-                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Add Money</h3>
-                <p className="text-[12px] font-bold text-gray-400 tracking-widest uppercase">Select amount to top-up</p>
+              <div className="text-center space-y-1">
+                <h3 className="text-lg font-semibold text-neutral-900">Add Money</h3>
+                <p className="text-xs text-neutral-400">Specify amount to top-up your wallet</p>
               </div>
 
               {isSuccess ? (
-                <Motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex flex-col items-center py-8 gap-4">
-                  <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center shadow-inner">
-                    <History size={40} strokeWidth={3} />
+                <Motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center py-6 gap-3">
+                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center shadow-sm">
+                    <Plus size={24} strokeWidth={2.5} />
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-black text-gray-900 leading-none">Wallet Refilled!</p>
-                    <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">Balance updated successfully</p>
+                    <p className="text-base font-semibold text-neutral-900">Refill Successful</p>
+                    <p className="text-xs text-neutral-400 mt-1">Your balance has been updated</p>
                   </div>
                 </Motion.div>
               ) : (
-                <div className="space-y-8">
-                  <div className="relative group">
-                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-400 group-focus-within:text-orange-500 transition-colors">₹</span>
+                <div className="space-y-6">
+                  <div className="relative flex items-center justify-center py-4">
+                    <span className="text-3xl font-semibold text-neutral-400 mr-1 select-none">₹</span>
                     <input 
                        type="number"
                        value={amount}
                        onChange={(e) => setAmount(e.target.value)}
                        placeholder="0.00"
-                       className="w-full h-20 bg-gray-50 border-2 border-gray-100 rounded-[24px] pl-12 pr-6 text-3xl font-black text-gray-900 focus:outline-none focus:border-orange-500/30 transition-all text-center placeholder:text-gray-200"
+                       className="w-48 bg-transparent text-center text-4xl font-semibold text-neutral-900 focus:outline-none placeholder:text-neutral-200"
+                       autoFocus
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2.5">
                     {['100', '500', '1000'].map(val => (
                       <button 
                         key={val}
                         onClick={() => setAmount(val)}
-                        className={`py-3 rounded-2xl font-black text-[13px] border-2 transition-all ${
-                          amount === val ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-200' : 'bg-white border-gray-100 text-gray-500'
+                        className={`py-2 rounded-xl font-medium text-sm border transition-all ${
+                          amount === val 
+                            ? 'bg-neutral-900 border-neutral-900 text-white shadow-sm' 
+                            : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'
                         }`}
                       >
                         +₹{val}
@@ -252,12 +275,14 @@ const Wallet = () => {
                   <button 
                     onClick={handleAddMoney}
                     disabled={isAdding || !amount}
-                    className={`w-full h-16 rounded-[24px] font-black text-[15px] uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 ${
-                      isAdding ? 'bg-gray-100 text-gray-300 shadow-none' : 'bg-orange-500 text-white shadow-orange-200'
+                    className={`w-full h-12 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
+                      isAdding || !amount
+                        ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
+                        : 'bg-neutral-900 text-white hover:bg-neutral-800'
                     }`}
                   >
                     {isAdding ? 'Processing...' : (
-                      <>Refill Wallet <Plus size={20} strokeWidth={3} /></>
+                      <>Refill Wallet <Plus size={16} strokeWidth={2.5} /></>
                     )}
                   </button>
                 </div>
@@ -270,57 +295,72 @@ const Wallet = () => {
       {/* SEND MODAL */}
       <AnimatePresence>
         {showSend && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4">
             <Motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              className="bg-white w-full max-w-md rounded-[32px] p-8 pb-10 space-y-8 shadow-2xl relative"
+              className="bg-white w-full max-w-md rounded-3xl p-6 pb-8 space-y-6 shadow-xl relative"
             >
-              <button onClick={() => setShowSend(false)} className="absolute top-6 right-6 w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 active:scale-90">
-                <Plus size={20} className="rotate-45" />
+              <button 
+                onClick={() => setShowSend(false)} 
+                className="absolute top-5 right-5 w-8 h-8 bg-neutral-50 hover:bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-700 active:scale-95 transition-all"
+              >
+                <X size={16} />
               </button>
-              <div className="text-center space-y-2">
-                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Send Money</h3>
-                <p className="text-[12px] font-bold text-gray-400 tracking-widest uppercase">Transfer to a phone number</p>
+              
+              <div className="text-center space-y-1">
+                <h3 className="text-lg font-semibold text-neutral-900">Send Money</h3>
+                <p className="text-xs text-neutral-400">Transfer funds instantly to a phone number</p>
               </div>
+
               {isSendSuccess ? (
-                <Motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex flex-col items-center py-8 gap-4">
-                  <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center shadow-inner">
-                    <Send size={36} strokeWidth={2.5} />
+                <Motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center py-6 gap-3">
+                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center shadow-sm">
+                    <Send size={20} strokeWidth={2} />
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-black text-gray-900 leading-none">Money Sent!</p>
-                    <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">Transfer successful</p>
+                    <p className="text-base font-semibold text-neutral-900">Transfer Sent</p>
+                    <p className="text-xs text-neutral-400 mt-1">Funds transferred successfully</p>
                   </div>
                 </Motion.div>
               ) : (
-                <div className="space-y-5">
-                  <input
-                    type="tel"
-                    value={sendPhone}
-                    onChange={(e) => setSendPhone(e.target.value)}
-                    placeholder="Recipient phone number"
-                    className="w-full h-16 bg-gray-50 border-2 border-gray-100 rounded-[20px] px-6 text-[15px] font-bold text-gray-900 focus:outline-none focus:border-blue-300 transition-all placeholder:text-gray-300"
-                  />
-                  <div className="relative">
-                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-black text-gray-400">₹</span>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Recipient</label>
                     <input
-                      type="number"
-                      value={sendAmount}
-                      onChange={(e) => setSendAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full h-16 bg-gray-50 border-2 border-gray-100 rounded-[20px] pl-10 pr-6 text-2xl font-black text-gray-900 focus:outline-none focus:border-blue-300 transition-all text-center placeholder:text-gray-200"
+                      type="tel"
+                      value={sendPhone}
+                      onChange={(e) => setSendPhone(e.target.value)}
+                      placeholder="Enter phone number"
+                      className="w-full h-11 bg-neutral-50 border border-neutral-200 rounded-xl px-4 text-sm font-medium text-neutral-900 focus:outline-none focus:border-neutral-900 transition-all placeholder:text-neutral-400"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">Amount</label>
+                    <div className="relative flex items-center justify-center py-4">
+                      <span className="text-3xl font-semibold text-neutral-400 mr-1 select-none">₹</span>
+                      <input 
+                         type="number"
+                         value={sendAmount}
+                         onChange={(e) => setSendAmount(e.target.value)}
+                         placeholder="0.00"
+                         className="w-48 bg-transparent text-center text-4xl font-semibold text-neutral-900 focus:outline-none placeholder:text-neutral-200"
+                      />
+                    </div>
+                  </div>
+
                   <button
                     onClick={handleSend}
                     disabled={isSending || !sendAmount || !sendPhone}
-                    className={`w-full h-16 rounded-[24px] font-black text-[15px] uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 ${
-                      isSending || !sendAmount || !sendPhone ? 'bg-gray-100 text-gray-300 shadow-none' : 'bg-blue-600 text-white shadow-blue-200'
+                    className={`w-full h-12 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
+                      isSending || !sendAmount || !sendPhone 
+                        ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
+                        : 'bg-neutral-900 text-white hover:bg-neutral-800'
                     }`}
                   >
-                    {isSending ? 'Sending...' : <><Send size={18} strokeWidth={2.5} /> Send Money</>}
+                    {isSending ? 'Sending...' : <><Send size={16} strokeWidth={2} /> Send Money</>}
                   </button>
                 </div>
               )}
@@ -332,31 +372,36 @@ const Wallet = () => {
       {/* RECEIVE MODAL */}
       <AnimatePresence>
         {showReceive && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4">
             <Motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              className="bg-white w-full max-w-md rounded-[32px] p-8 pb-10 space-y-8 shadow-2xl relative"
+              className="bg-white w-full max-w-md rounded-3xl p-6 pb-8 space-y-6 shadow-xl relative"
             >
-              <button onClick={() => setShowReceive(false)} className="absolute top-6 right-6 w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 active:scale-90">
-                <Plus size={20} className="rotate-45" />
+              <button 
+                onClick={() => setShowReceive(false)} 
+                className="absolute top-5 right-5 w-8 h-8 bg-neutral-50 hover:bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-700 active:scale-95 transition-all"
+              >
+                <X size={16} />
               </button>
-              <div className="text-center space-y-2">
-                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Receive Money</h3>
-                <p className="text-[12px] font-bold text-gray-400 tracking-widest uppercase">Share your QR or UPI ID</p>
+              
+              <div className="text-center space-y-1">
+                <h3 className="text-lg font-semibold text-neutral-900">Receive Money</h3>
+                <p className="text-xs text-neutral-400">Share your QR code or UPI address</p>
               </div>
-              <div className="flex flex-col items-center gap-6">
-                <div className="w-48 h-48 bg-gray-50 border-2 border-dashed border-gray-200 rounded-[28px] flex items-center justify-center text-gray-300">
-                  <QrCode size={80} strokeWidth={1.5} />
+
+              <div className="flex flex-col items-center gap-5">
+                <div className="w-44 h-44 bg-white border border-neutral-100 rounded-2xl flex items-center justify-center text-neutral-300 p-2 shadow-sm">
+                  <QrCode size={120} strokeWidth={1.5} className="text-neutral-800" />
                 </div>
-                <div className="w-full bg-gray-50 rounded-[20px] px-6 py-4 flex items-center justify-between gap-3">
-                  <span className="text-[13px] font-bold text-gray-500 truncate">user@rydon24</span>
+                <div className="w-full bg-neutral-50 border border-neutral-100 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                  <span className="text-xs font-medium text-neutral-600 truncate">user@rydon24</span>
                   <button
                     onClick={() => navigator.clipboard?.writeText('user@rydon24')}
-                    className="text-[11px] font-black text-green-600 uppercase tracking-widest shrink-0 active:scale-95"
+                    className="text-xs font-semibold text-neutral-900 hover:text-neutral-600 transition-colors active:scale-95 shrink-0"
                   >
-                    Copy
+                    Copy UPI ID
                   </button>
                 </div>
               </div>
@@ -367,180 +412,141 @@ const Wallet = () => {
 
       {/* HEADER */}
       <header className="sticky top-0 z-30">
-        <div className="bg-white/70 backdrop-blur-md border-b border-white/70 shadow-[0_10px_20px_rgba(15,23,42,0.05)]">
-          <div className="px-5 py-4 flex items-center gap-3">
-        <button 
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-white/80 border border-white/80 shadow-sm flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <ArrowLeft size={20} className="text-gray-900" strokeWidth={2.5} />
-        </button>
-        <h1 className="text-[19px] font-black text-gray-900 tracking-tight">My Wallet</h1>
+        <div className="bg-[#F9FAFB]/80 backdrop-blur-md border-b border-neutral-100">
+          <div className="px-6 py-5 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => navigate(-1)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all"
+              >
+                <ArrowLeft size={20} strokeWidth={2} />
+              </button>
+              <h1 className="text-lg font-semibold text-neutral-900 tracking-tight">Wallet</h1>
+            </div>
           </div>
         </div>
       </header>
 
       {/* BALANCE CARD */}
-      <div className="px-5 mt-4">
+      <div className="px-6 mt-6">
         <Motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ y: -2 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-[36px] p-8 text-white shadow-2xl relative overflow-hidden group"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 text-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-hidden group"
         >
-          <Motion.div
-            aria-hidden="true"
-            className="absolute inset-0 bg-[radial-gradient(260px_180px_at_20%_25%,rgba(249,115,22,0.18),transparent_60%)]"
-            animate={{ opacity: [0.1, 0.22, 0.1], x: [0, 10, 0], y: [0, -6, 0] }}
-            transition={{ duration: 5.2, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-[80px] -mr-32 -mt-32 group-hover:bg-orange-500/20 transition-colors"></div>
-          
-          <div className="relative z-10 flex flex-col gap-8">
+          <div className="relative z-10 flex flex-col gap-6">
             <div className="space-y-1">
-              <p className="text-white/30 font-black uppercase tracking-[0.2em] text-[8px]">Current Liquidity</p>
-              <Motion.h2
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: 'easeOut', delay: 0.05 }}
-                className="text-4xl font-black tracking-tighter"
-              >
-                {walletLoading ? (
-                  <>₹0<span className="text-white/20 text-2xl">.00</span></>
-                ) : (
-                  <>₹{balanceText.whole}<span className="text-white/20 text-2xl">.{balanceText.decimals}</span></>
-                )}
-              </Motion.h2>
-              {walletError && <p className="text-[11px] font-bold text-red-300 mt-2">{walletError}</p>}
+              <span className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Total Balance</span>
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-4xl font-bold tracking-tight text-white">
+                  {walletLoading ? '₹0' : `₹${balanceText.whole}`}
+                </span>
+                <span className="text-xl font-medium text-neutral-400">
+                  {walletLoading ? '.00' : `.${balanceText.decimals}`}
+                </span>
+              </div>
+              {walletError && <p className="text-xs text-red-400 mt-1">{walletError}</p>}
             </div>
-            
-            <div className="flex items-center gap-3">
-              <Motion.button
-                type="button"
-                onClick={() => setShowAddMoney(true)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.97 }}
-                className="group/cta relative flex-1 bg-white/10 text-white h-14 rounded-2xl font-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-2 border border-white/15 shadow-lg shadow-orange-500/10 overflow-hidden backdrop-blur-md"
-              >
-                <span aria-hidden="true" className="absolute inset-0 bg-orange-500/55" />
-                <Motion.span
-                  aria-hidden="true"
-                  className="absolute -left-16 top-0 h-full w-24 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)] opacity-60"
-                  animate={{ x: [0, 320] }}
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.2 }}
-                />
-                <Motion.span aria-hidden="true" className="relative z-10" whileHover={{ y: -1 }} transition={{ duration: 0.18, ease: 'easeOut' }}>
-                  <Plus size={16} strokeWidth={3} />
-                </Motion.span>
-                <span className="relative z-10">Refill</span>
-              </Motion.button>
 
-              <Motion.button
-                type="button"
-                onClick={() => navigate(`${basePath}/activity`)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.96 }}
-                className="w-14 h-14 bg-white/10 border border-white/15 rounded-2xl flex items-center justify-center text-white shadow-sm backdrop-blur-md"
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowAddMoney(true)}
+                className="flex-1 bg-white hover:bg-neutral-100 active:scale-[0.98] text-neutral-900 h-11 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-1.5 shadow-sm"
               >
-                <Motion.span aria-hidden="true" whileHover={{ rotate: -12 }} transition={{ duration: 0.2, ease: 'easeOut' }}>
-                  <History size={20} strokeWidth={2.5} />
-                </Motion.span>
-              </Motion.button>
+                <Plus size={16} strokeWidth={2.5} />
+                Refill
+              </button>
+              <button
+                onClick={() => navigate(`${basePath}/activity`)}
+                className="px-4 bg-neutral-800 hover:bg-neutral-700 active:scale-[0.98] text-neutral-200 h-11 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-1.5"
+              >
+                <History size={16} strokeWidth={2} />
+                History
+              </button>
             </div>
           </div>
         </Motion.div>
       </div>
 
-      {/* QUICK ACTIONS */}
-      <div className="px-5 mt-8 grid grid-cols-3 gap-3">
-         <div onClick={() => setShowSend(true)} className="bg-white border border-gray-100 rounded-[28px] p-5 flex flex-col items-center justify-center gap-3 shadow-sm cursor-pointer active:scale-95 transition-all hover:border-blue-100 group">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm">
-               <Send size={20} strokeWidth={2.5} />
-            </div>
-            <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest">Send</span>
-         </div>
-         <div onClick={() => setShowReceive(true)} className="bg-white border border-gray-100 rounded-[28px] p-5 flex flex-col items-center justify-center gap-3 shadow-sm cursor-pointer active:scale-95 transition-all hover:border-green-100 group">
-            <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-colors shadow-sm">
-               <Download size={20} strokeWidth={2.5} />
-            </div>
-            <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest">Receive</span>
-         </div>
-         <div 
-            onClick={() => navigate(`${basePath}/profile/payments`)}
-            className="bg-white border border-gray-100 rounded-[28px] p-5 flex flex-col items-center justify-center gap-3 shadow-sm cursor-pointer active:scale-95 transition-all hover:border-purple-100 group"
-         >
-            <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shadow-sm">
-               <CreditCard size={20} strokeWidth={2.5} />
-            </div>
-            <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest">Cards</span>
-         </div>
-      </div>
+
 
       {/* PROMO */}
-      <div className="px-5 mt-8">
-         <div 
-            onClick={() => navigate(`${basePath}/referral`)}
-            className="bg-gradient-to-r from-orange-50 to-white border border-orange-100 rounded-[32px] p-6 flex items-center gap-5 cursor-pointer active:scale-98 transition-all shadow-sm group"
-         >
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-orange-500 shadow-xl shadow-orange-100 group-hover:bg-orange-500 group-hover:text-white transition-all shrink-0 border border-orange-50">
-               <Gift size={24} strokeWidth={2.5} />
-            </div>
-            <div className="flex-1">
-               <h4 className="text-[15px] font-black text-gray-900 tracking-tight">Refer & Earn ₹50</h4>
-               <p className="text-[11px] font-bold text-gray-400 mt-0.5 uppercase tracking-wider">Invite friends to Rydon24</p>
-            </div>
-            <ArrowLeft size={20} className="text-orange-200 rotate-180 group-hover:text-orange-500 transition-colors" />
-         </div>
+      <div className="px-6 mt-8">
+        <div 
+          onClick={() => navigate(`${basePath}/referral`)}
+          className="bg-white border border-neutral-100 rounded-2xl p-4 flex items-center gap-4 cursor-pointer active:scale-[0.99] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.03)] group"
+        >
+          <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
+            <Gift size={18} strokeWidth={2} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-neutral-900">Refer & Earn ₹50</h4>
+            <p className="text-[11px] text-neutral-400 mt-0.5 uppercase tracking-wider font-medium">Invite friends to Rydon24</p>
+          </div>
+          <ArrowLeft size={16} className="text-neutral-300 rotate-180 group-hover:text-neutral-500 transition-colors" />
+        </div>
       </div>
 
       {/* RECENT TRANSACTIONS */}
-      <div className="px-5 mt-10">
-         <div className="flex items-center justify-between mb-6 px-1">
-            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-none">History Log</h3>
-            <button onClick={() => navigate(`${basePath}/activity`)} className="text-[10px] font-black text-orange-500 uppercase tracking-wider">View All</button>
-         </div>
-         <div className="bg-white rounded-[36px] border border-gray-50 shadow-sm p-3 flex flex-col gap-2">
-            {walletLoading ? (
-              <div className="p-6 text-center text-[12px] font-bold text-gray-400">Loading...</div>
-            ) : wallet.recentTransactions?.length ? (
-              wallet.recentTransactions.map((tx) => {
-                const isDebit = tx.kind === 'debit';
-                const title = tx.title || (isDebit ? 'Debit' : 'Credit');
-                const sign = isDebit ? '-' : '+';
-                const amountText = formatInr(tx.amount);
-                const whenText = tx.createdAt ? new Date(tx.createdAt).toLocaleString('en-IN') : '';
-                return (
-                  <div key={tx.id} className="flex items-center gap-4 p-4 rounded-[28px] hover:bg-gray-50 transition-all active:scale-[0.99] group">
+      <div className="px-6 mt-10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Recent Transactions</h3>
+          <button 
+            onClick={() => navigate(`${basePath}/activity`)} 
+            className="text-xs font-medium text-neutral-400 hover:text-neutral-800 transition-colors"
+          >
+            View All
+          </button>
+        </div>
+        
+        <div className="bg-white border border-neutral-100 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] divide-y divide-neutral-50">
+          {walletLoading ? (
+            <div className="py-8 text-center text-sm text-neutral-400">Loading activity...</div>
+          ) : wallet.recentTransactions?.length ? (
+            wallet.recentTransactions.map((tx) => {
+              const isDebit = tx.kind === 'debit';
+              const title = tx.title || (isDebit ? 'Debit' : 'Credit');
+              const sign = isDebit ? '-' : '+';
+              const amountText = formatInr(tx.amount);
+              const whenText = tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+              }) : '';
+
+              return (
+                <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-neutral-50/55 transition-colors group">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform ${
-                        isDebit ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'
+                      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-transform ${
+                        isDebit ? 'bg-neutral-100 text-neutral-600' : 'bg-emerald-50 text-emerald-600'
                       }`}
                     >
-                      {isDebit ? <ArrowLeft size={20} strokeWidth={3} className="rotate-45" /> : <Plus size={20} strokeWidth={3} />}
+                      {isDebit ? <ArrowLeft size={16} strokeWidth={2.5} className="rotate-45" /> : <Plus size={16} strokeWidth={2.5} />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-[15px] font-black text-gray-900 truncate tracking-tight">{title}</h4>
-                      <p className="text-[11px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{whenText}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <h4 className={`text-[16px] font-black tracking-tight ${isDebit ? 'text-gray-900' : 'text-emerald-600'}`}>
-                        {sign}₹{amountText}
-                      </h4>
-                      <div className="flex items-center gap-1 justify-end mt-0.5">
-                        <span className={`text-[8px] font-black uppercase tracking-widest ${isDebit ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {isDebit ? 'Debit' : 'Credit'}
-                        </span>
-                        <div className={`w-1.5 h-1.5 rounded-full ${isDebit ? 'bg-red-400' : 'bg-emerald-400'}`}></div>
-                      </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-medium text-neutral-800 truncate">{title}</h4>
+                      <p className="text-[11px] text-neutral-400 mt-0.5">{whenText}</p>
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="p-6 text-center text-[12px] font-bold text-gray-400">No transactions yet</div>
-            )}
-         </div>
+                  
+                  <div className="text-right shrink-0">
+                    <span className={`text-sm font-semibold tracking-tight ${isDebit ? 'text-neutral-800' : 'text-emerald-600'}`}>
+                      {sign}₹{amountText}
+                    </span>
+                    <p className="text-[10px] text-neutral-400 mt-0.5 uppercase tracking-wider font-medium">
+                      {isDebit ? 'Debit' : 'Credit'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-10 text-center text-sm text-neutral-400">No transactions yet</div>
+          )}
+        </div>
       </div>
     </div>
   );

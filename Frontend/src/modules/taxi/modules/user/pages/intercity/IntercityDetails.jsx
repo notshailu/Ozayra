@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Navigation, ChevronRight, Map as MapIcon, LoaderCircle, AlertTriangle, X, Check } from 'lucide-react';
 import { GoogleMap } from '@react-google-maps/api';
-import { HAS_VALID_GOOGLE_MAPS_KEY, INDIA_CENTER, useAppGoogleMapsLoader } from '../../../admin/utils/googleMaps';
+import { HAS_VALID_GOOGLE_MAPS_KEY, INDIA_CENTER, useAppGoogleMapsLoader, UBER_MAP_STYLE } from '../../../admin/utils/googleMaps';
 import {
   getSavedTaxiLocation,
   getSavedTaxiPickupCoords,
@@ -221,6 +221,7 @@ const IntercityDetails = () => {
                     disableDefaultUI: true,
                     clickableIcons: false,
                     gestureHandling: 'greedy',
+                    styles: UBER_MAP_STYLE,
                   }}
                 />
               ) : (

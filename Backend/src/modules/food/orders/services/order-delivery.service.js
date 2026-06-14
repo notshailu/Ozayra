@@ -303,14 +303,49 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
   const identity = buildOrderIdentityFilter(orderId);
   if (!identity) throw new ValidationError('Order id required');
 
-  const partnerId = new mongoose.Types.ObjectId(deliveryPartnerId);
-  const now = new Date();
+  const orderToAccept = await FoodOrder.findOne(identity).populate('restaurantId userId');
+  if (!orderToAccept) throw new NotFoundError('Order not found');
+
   const acceptedStatuses = ['created', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up'];
   const cancellableStatuses = [
     'cancelled_by_user',
     'cancelled_by_restaurant',
     'cancelled_by_admin',
   ];
+
+  if (cancellableStatuses.includes(orderToAccept.orderStatus)) {
+    throw new ValidationError('Order was cancelled');
+  }
+  if (orderToAccept.orderStatus === 'delivered') {
+    throw new ValidationError('Order already delivered');
+  }
+  if (!acceptedStatuses.includes(orderToAccept.orderStatus)) {
+    throw new ValidationError('Order not ready for delivery assignment');
+  }
+
+  // Check if already accepted by someone else
+  if (
+    orderToAccept.dispatch?.status === 'accepted' &&
+    String(orderToAccept.dispatch?.deliveryPartnerId || '') !== String(deliveryPartnerId)
+  ) {
+    throw new ForbiddenError('Order already accepted by another partner');
+  }
+
+  // --- CASH LIMIT CHECK ---
+  const paymentMethod = String(orderToAccept.payment?.method || orderToAccept.paymentMethod || '').toLowerCase();
+  const isCod = ['cash', 'cod', 'cash_on_delivery'].includes(paymentMethod);
+  if (isCod) {
+    const { getDeliveryPartnerWalletEnhanced } = await import('../../delivery/services/deliveryFinance.service.js');
+    const wallet = await getDeliveryPartnerWalletEnhanced(deliveryPartnerId);
+    if (Number(wallet.cashInHand) >= Number(wallet.totalCashLimit)) {
+      throw new ValidationError(
+        `Cash limit exceeded (Limit: ₹${wallet.totalCashLimit}, Held: ₹${wallet.cashInHand}). Please deposit the collected cash first to accept new Cash on Delivery orders.`
+      );
+    }
+  }
+
+  const partnerId = new mongoose.Types.ObjectId(deliveryPartnerId);
+  const now = new Date();
 
   const statusHistoryEntry = {
     byRole: 'DELIVERY_PARTNER',
@@ -348,37 +383,12 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
   ).populate('restaurantId userId');
 
   if (!order) {
-    const existing = await FoodOrder.findOne(identity)
-      .select('orderStatus dispatch')
-      .lean();
-
-    if (!existing) throw new NotFoundError('Order not found');
-    if (cancellableStatuses.includes(existing.orderStatus)) {
-      throw new ValidationError('Order was cancelled');
-    }
-    if (existing.orderStatus === 'delivered') {
-      throw new ValidationError('Order already delivered');
-    }
-    if (!acceptedStatuses.includes(existing.orderStatus)) {
-      throw new ValidationError('Order not ready for delivery assignment');
-    }
     if (
-      existing.dispatch?.status === 'accepted' &&
-      String(existing.dispatch?.deliveryPartnerId || '') === String(deliveryPartnerId)
+      orderToAccept.dispatch?.status === 'accepted' &&
+      String(orderToAccept.dispatch?.deliveryPartnerId || '') === String(deliveryPartnerId)
     ) {
-      const acceptedOrder = await FoodOrder.findOne(identity)
-        .populate('restaurantId userId');
-      return acceptedOrder
-        ? sanitizeOrderForExternal(acceptedOrder)
-        : null;
+      return sanitizeOrderForExternal(orderToAccept);
     }
-    if (
-      existing.dispatch?.status === 'accepted' &&
-      String(existing.dispatch?.deliveryPartnerId || '') !== String(deliveryPartnerId)
-    ) {
-      throw new ForbiddenError('Order already accepted by another partner');
-    }
-
     throw new ValidationError('Order is no longer available to accept');
   }
 

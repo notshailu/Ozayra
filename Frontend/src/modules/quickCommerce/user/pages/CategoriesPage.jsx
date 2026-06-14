@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import MainLocationHeader from '../components/shared/MainLocationHeader';
 import { customerApi } from '../services/customerApi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { resolveQuickImageUrl } from '../utils/image';
 
 const COLORS = [
     "#FDF2F2", "#F2F9F2", "#F2F2FD", "#FDFDF2",
@@ -24,17 +25,17 @@ const CategoryCard = ({ category, isFlipped }) => {
                 className="w-full h-full relative [transform-style:preserve-3d] cursor-pointer"
             >
                 {/* Front Side (Image) */}
-                <div className="absolute inset-0 [backface-visibility:hidden] bg-card dark:bg-background rounded-full p-1.5 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] border border-border flex items-center justify-center overflow-hidden transition-colors">
+                <div className="absolute inset-0 [backface-visibility:hidden] bg-card dark:bg-background rounded-full shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] border-2 border-white dark:border-white/20 flex items-center justify-center overflow-hidden transition-colors">
                     <img
                         src={category.image}
                         alt={category.name}
-                        className="w-[85%] h-[85%] object-contain mix-blend-multiply dark:mix-blend-normal group-hover:scale-110 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                 </div>
 
                 {/* Back Side (Name) */}
                 <div
-                    className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-full p-2.5 flex items-center justify-center text-center shadow-inner border border-border"
+                    className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-full p-2.5 flex items-center justify-center text-center shadow-inner border-2 border-white dark:border-white/20"
                     style={{ backgroundColor: category.color }}
                 >
                     <span className="text-[9px] md:text-[11px] font-black text-foreground uppercase tracking-widest leading-tight">
@@ -79,7 +80,7 @@ const CategoriesPage = () => {
                             categories: subs.map((cat, cIdx) => ({
                                 id: cat._id || `${idx}-${cIdx}`,
                                 name: cat.name,
-                                image: cat.image || "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-1_9.png",
+                                image: resolveQuickImageUrl(cat.image, cat.name),
                                 color: COLORS[(idx + cIdx) % COLORS.length]
                             }))
                         };

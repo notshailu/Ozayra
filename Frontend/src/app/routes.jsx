@@ -21,6 +21,7 @@ const QuickCommerceApp = lazy(() => import('../modules/quickCommerce/routes'))
 const SellerApp = lazy(() => import('../modules/seller/routes'))
 const TaxiApp = lazy(() => import('../modules/taxi/TaxiModuleApp'))
 const HotelModuleApp = lazy(() => import('../modules/hotel/HotelModuleApp.jsx'))
+const DeliveryRouter = lazy(() => import('../modules/DeliveryV2'))
 const FoodUserLayout = lazy(() => import('../modules/Food/components/user/UserLayout'))
 const FoodHomePage = lazy(() => import('../modules/Food/pages/user/Home'))
 const GlobalCartPage = lazy(() => import('../modules/Food/pages/user/cart/Cart'))
@@ -37,6 +38,8 @@ const SharedProfilePrivacyPage = lazy(() => import('../modules/Food/pages/user/p
 const SharedProfileRefundPage = lazy(() => import('../modules/Food/pages/user/profile/Refund'))
 const SharedProfileShippingPage = lazy(() => import('../modules/Food/pages/user/profile/Shipping'))
 const SharedProfileCancellationPage = lazy(() => import('../modules/Food/pages/user/profile/Cancellation'))
+const SharedProfileReferEarnPage = lazy(() => import('../modules/Food/pages/user/profile/ReferEarn'))
+const GlobalSubmitComplaintPage = lazy(() => import('../modules/Food/pages/user/complaints/SubmitComplaint'))
 
 const RouteAwarePageLoader = () => {
   const location = useLocation()
@@ -83,10 +86,16 @@ const SharedFoodHomeRoute = () => {
 }
 
 const RedirectToFood = () => {
+  return <Navigate to="/quick" replace />;
+};
+
+const RedirectToDelivery = () => {
   const location = useLocation();
-  // We safely replace the exact current pathname with a /food prefixed pathname
-  // This effectively catches programmatic navigation to absolute paths like '/restaurant/login'
-  // and turns them into '/food/restaurant/login'
+  return <Navigate to={`/food${location.pathname}${location.search}`} replace />;
+};
+
+const RedirectToRestaurant = () => {
+  const location = useLocation();
   return <Navigate to={`/food${location.pathname}${location.search}`} replace />;
 };
 
@@ -154,8 +163,10 @@ const AppRoutes = () => {
         <Route path="/portal" element={<Navigate to={`/user/auth/portal${location.search}`} replace />} />
         <Route path="/login" element={<Navigate to={`/user/auth/login${location.search}`} replace />} />
 
-        {/* Shared home entry so /food/user <-> /quick doesn't remount through different app trees */}
-        <Route path="/food/user" element={<SharedFoodHomeRoute />} />
+        {/* Redirect old food user storefront to new quick commerce */}
+        <Route path="/food/user/*" element={<Navigate to="/quick" replace />} />
+        <Route path="/food/delivery/*" element={<Navigate to="/delivery" replace />} />
+        <Route path="/food" element={<Navigate to="/quick" replace />} />
 
         {/* Food Module */}
         <Route path="/food/*" element={<FoodAppWrapper />} />
@@ -244,6 +255,22 @@ const AppRoutes = () => {
             path="/profile/cancellation"
             element={<SharedProfileCancellationPage />}
           />
+          <Route
+            path="/profile/refer-earn"
+            element={
+              <ProtectedRoute>
+                <SharedProfileReferEarnPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/complaints/submit/:orderId"
+            element={
+              <ProtectedRoute>
+                <GlobalSubmitComplaintPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* Quick storefront */}
@@ -268,7 +295,6 @@ const AppRoutes = () => {
         />
 
         {/* Seller Module */}
-        <Route path="/seller" element={<SellerAppWrapper />} />
         <Route path="/seller/auth" element={<SellerAuthEntry />} />
         <Route path="/seller/*" element={<SellerAppWrapper />} />
 
@@ -284,8 +310,15 @@ const AppRoutes = () => {
         
         {/* Dynamic intercept redirects for bare paths (accessed programmatically) */}
         <Route path="/user/*" element={<RedirectToFood />} />
-        <Route path="/restaurant/*" element={<RedirectToFood />} />
-        <Route path="/delivery/*" element={<RedirectToFood />} />
+        <Route path="/restaurant/*" element={<RedirectToRestaurant />} />
+        <Route
+          path="/delivery/*"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <DeliveryRouter />
+            </Suspense>
+          }
+        />
         <Route path="/usermain/*" element={<RedirectToFood />} />
         <Route path="/profile/*" element={<Navigate to="/profile" replace />} />
         <Route path="/orders/*" element={<RedirectToFood />} />

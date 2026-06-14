@@ -239,7 +239,7 @@ const getQuickCategoryImage = (category = {}) => {
     "";
 
   return (
-    resolveQuickImageUrl(candidate) ||
+    resolveQuickImageUrl(candidate, category?.name) ||
     "https://cdn-icons-png.flaticon.com/128/2321/2321831.png"
   );
 };
@@ -494,20 +494,22 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
         <QuickHomeLoadingState embedded={embedded} />
       ) : (
         <div className={cn("pt-0", embedded && "pt-0")}>
-          {/* Hero Banners (mobile): admin-configured or static fallback */}
+          {/* Hero Banners: admin-configured or static fallback */}
           <>
-            <div className={cn("block md:hidden", embedded ? "-mt-[1px]" : "mt-0")}>
+            <div className={cn(hasHeroBanners ? "w-full" : "block md:hidden", embedded ? "-mt-[1px]" : "mt-0")}>
               <div>
                 <div
                   className="relative w-full overflow-hidden"
                   style={embedded ? { backgroundColor: activeCategory?.headerColor || ALL_CATEGORY.headerColor } : undefined}>
                   {hasHeroBanners ? (
-                    <ExperienceBannerCarousel
-                      section={{ title: "" }}
-                      items={heroConfig.banners.items}
-                      fullWidth
-                      edgeToEdge
-                    />
+                    <div className="mx-0 md:mx-8 lg:mx-[50px] md:my-4 rounded-none md:rounded-[32px] overflow-hidden">
+                      <ExperienceBannerCarousel
+                        section={{ title: "" }}
+                        items={heroConfig.banners.items}
+                        fullWidth
+                        edgeToEdge
+                      />
+                    </div>
                   ) : shouldShowHeroFallback ? (
                     <div
                       className={cn(
@@ -723,7 +725,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
                         }}
                         className="flex flex-col items-center gap-1 min-w-[84px] md:min-w-[112px] lg:min-w-[128px] cursor-pointer group/item snap-start">
                         <div
-                          className="relative w-[84px] h-[96px] md:w-[112px] md:h-[126px] lg:w-[128px] lg:h-[140px] rounded-t-full rounded-b-[24px] shadow-[0_10px_22px_rgba(15,23,42,0.10)] border flex items-start justify-center p-2 transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-[0_16px_30px_rgba(15,23,42,0.14)] overflow-hidden"
+                          className="relative w-[84px] h-[96px] md:w-[112px] md:h-[126px] lg:w-[128px] lg:h-[140px] rounded-t-full rounded-b-[24px] shadow-[0_10px_22px_rgba(15,23,42,0.10)] border flex items-start justify-center transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-[0_16px_30px_rgba(15,23,42,0.14)] overflow-hidden"
                           style={{
                             backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.6) 24%, rgba(255,255,255,0.15) 100%), linear-gradient(135deg, ${palette.bgFrom}, ${palette.bgVia}, ${palette.bgTo})`,
                             borderColor: palette.frameColor,
@@ -736,10 +738,10 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
                             <img
                               src={categoryImage}
                               alt={cat.name}
-                              className="absolute left-1/2 top-3 z-10 h-[68px] w-[68px] -translate-x-1/2 object-contain drop-shadow-[0_5px_12px_rgba(0,0,0,0.10)] mix-blend-multiply group-hover/item:scale-110 transition-transform duration-500"
+                              className="absolute top-0 left-0 w-full h-[72%] object-cover group-hover/item:scale-110 transition-transform duration-500 rounded-t-full"
                             />
                           ) : (
-                            <div className="absolute left-1/2 top-3 z-10 flex h-[68px] w-[68px] -translate-x-1/2 items-center justify-center rounded-[20px] bg-white/55 text-2xl font-black uppercase text-slate-400">
+                            <div className="absolute top-0 left-0 w-full h-[72%] flex items-center justify-center bg-white/55 text-2xl font-black uppercase text-slate-400 rounded-t-full">
                               {(cat.name || "?").charAt(0)}
                             </div>
                           )}
@@ -801,7 +803,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
                 </div>
 
                 <div className="relative z-10 flex overflow-x-auto gap-3 md:gap-4 pb-5 md:pb-6 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory scroll-smooth">
-                  {products.slice(0, 12).map((product) => (
+                  {filteredProducts.slice(0, 12).map((product) => (
                     <div
                       key={product.id}
                       className="w-[125px] md:w-[155px] lg:w-[175px] shrink-0 snap-start">

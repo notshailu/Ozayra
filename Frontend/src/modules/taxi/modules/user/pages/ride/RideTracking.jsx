@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, MessageCircle, AlertTriangle, Shield, Star, ChevronLeft, Share2 } from 'lucide-react';
 import { GoogleMap, MarkerF, PolylineF } from '@react-google-maps/api';
-import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../../admin/utils/googleMaps';
+import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, UBER_MAP_STYLE } from '../../../admin/utils/googleMaps';
 import { socketService } from '../../../../shared/api/socket';
 import api from '../../../../shared/api/axiosInstance';
 import { clearCurrentRide, getCurrentRide, saveCurrentRide } from '../../services/currentRideService';
@@ -558,6 +558,7 @@ const RideTracking = () => {
               fullscreenControl: false,
               mapTypeControl: false,
               gestureHandling: 'greedy',
+              styles: UBER_MAP_STYLE,
             }}
           >
             {routePath.length > 1 && (

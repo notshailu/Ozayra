@@ -72,29 +72,21 @@ export default function Profile() {
     routerLocation.pathname.startsWith("/quick") ||
     (isSharedProfile && profileSource === "quick");
   const sharedSourceQuery = profileSource ? `?from=${profileSource}` : "";
-  const backPath = isQuickProfile ? "/quick" : "/food/user";
-  const walletPath = isQuickProfile ? "/quick/wallet" : "/food/user/wallet";
+  const backPath = "/quick";
+  const walletPath = "/quick/wallet";
   const couponPath = isSharedProfile
     ? `/profile/coupons${sharedSourceQuery}`
-    : isQuickProfile
-      ? "/quick/offers"
-      : "/user/profile/coupons";
-  const cartPath = isQuickProfile ? "/quick/cart" : "/cart";
+    : "/quick/offers";
+  const cartPath = "/cart";
   const profileEditPath = isSharedProfile
     ? `/profile/edit${sharedSourceQuery}`
-    : isQuickProfile
-      ? "/quick/profile/edit"
-      : "/user/profile/edit";
+    : "/profile/edit";
   const supportPath = isSharedProfile
     ? `/profile/support${sharedSourceQuery}`
-    : isQuickProfile
-      ? "/quick/support"
-      : "/user/profile/support";
+    : "/profile/support";
   const aboutPath = isSharedProfile
     ? `/profile/about${sharedSourceQuery}`
-    : isQuickProfile
-      ? "/quick/about"
-      : "/user/profile/about";
+    : "/profile/about";
   const defaultAddress = getDefaultAddress?.();
   const savedAddressSummary = defaultAddress
     ? [
@@ -305,7 +297,7 @@ export default function Profile() {
   const refId =
     userProfile?._id || userProfile?.id || userProfile?.referralCode || "";
   const referralLink = refId
-    ? `${window.location.origin}/food/user/auth/login?ref=${encodeURIComponent(String(refId))}`
+    ? `${window.location.origin}/user/auth/login?ref=${encodeURIComponent(String(refId))}`
     : "";
 
   const handleShareReferral = async () => {
@@ -634,7 +626,7 @@ export default function Profile() {
             </motion.div>
           </Link>
 
-          <Link to="/user/profile/refer-earn" className="block">
+          <Link to="/profile/refer-earn" className="block">
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
@@ -718,40 +710,6 @@ export default function Profile() {
             </Card>
           </motion.div>
 
-          <motion.div
-            whileHover={{ x: 4, scale: 1.01 }}
-            transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-            <Card
-              className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
-              onClick={() => setVegModeOpen(true)}>
-              <CardContent className="p-4  flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <motion.div
-                    className="bg-gray-100 dark:bg-gray-800 rounded-full p-2"
-                    whileHover={{ rotate: 15, scale: 1.1 }}
-                    transition={{ duration: 0.3 }}>
-                    <Leaf className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                  </motion.div>
-                  <span className="text-base font-medium text-gray-900 dark:text-white">
-                    Veg Mode
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <motion.span
-                    className="text-base font-medium text-gray-900 dark:text-white"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ duration: 0.2 }}>
-                    {vegMode ? "ON" : "OFF"}
-                  </motion.span>
-                  <motion.div
-                    whileHover={{ x: 4 }}
-                    transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </motion.div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
 
           <motion.div
             whileHover={{ x: 4, scale: 1.01 }}
@@ -789,108 +747,7 @@ export default function Profile() {
           </motion.div>
         </div>
 
-        {/* Food Section */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-[#EB590E] rounded"></div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-              Food
-            </h3>
-          </div>
-          <div className="space-y-2">
-            <Link to="/user/profile/favorites" className="block">
-              <motion.div
-                whileHover={{ x: 4, scale: 1.01 }}
-                transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
-                  <CardContent className="p-4  flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <motion.div
-                        className="bg-gray-100 dark:bg-gray-800 rounded-full p-2"
-                        whileHover={{ rotate: 15, scale: 1.1 }}
-                        transition={{ duration: 0.3 }}>
-                        <Bookmark className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        Food wishlist
-                      </span>
-                    </div>
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Link>
 
-            <Link to="/user/orders" className="block">
-              <motion.div
-                whileHover={{ x: 4, scale: 1.01 }}
-                transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <motion.div
-                        className="bg-gray-100 dark:bg-gray-800 rounded-full p-2"
-                        whileHover={{ rotate: 15, scale: 1.1 }}
-                        transition={{ duration: 0.3 }}>
-                        <Building2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        Food orders
-                      </span>
-                    </div>
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Link>
-          </div>
-        </div>
-
-        {/* Dining Section */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-[#EB590E] rounded"></div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-              Dining
-            </h3>
-          </div>
-          <div className="space-y-2">
-            <Link to="/food/user/bookings" className="block">
-              <motion.div
-                whileHover={{ x: 4, scale: 1.01 }}
-                transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <motion.div
-                        className="bg-gray-100 dark:bg-gray-800 rounded-full p-2"
-                        whileHover={{ rotate: 15, scale: 1.1 }}
-                        transition={{ duration: 0.3 }}>
-                        <Calendar className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        Your bookings
-                      </span>
-                    </div>
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Link>
-          </div>
-        </div>
 
 
 

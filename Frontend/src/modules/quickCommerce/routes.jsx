@@ -61,6 +61,7 @@ function QuickCommerceInnerRoutes() {
         </Route>
 
         {/* Redirects */}
+        <Route path="delivery/*" element={<Navigate to="/food/delivery" replace />} />
         <Route path="*" element={<Navigate to="/quick" replace />} />
       </Routes>
     </Suspense>
