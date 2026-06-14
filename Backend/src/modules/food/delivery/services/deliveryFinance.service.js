@@ -24,6 +24,15 @@ import { FoodDeliveryWallet } from "../models/deliveryWallet.model.js";
  * 3. Withdrawals (pending/payout)
  * 4. Cash collected vs limit
  */
+function getCurrentWeekMonday() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
 export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
   if (
     !deliveryPartnerId ||
@@ -35,6 +44,8 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
   const partnerId = new mongoose.Types.ObjectId(deliveryPartnerId);
   const partner = await FoodDeliveryPartner.findById(partnerId).lean();
   if (!partner) throw new ValidationError("Delivery partner not found");
+
+  const monday = getCurrentWeekMonday();
 
   const [
     cashLimitSettings,
@@ -58,6 +69,10 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
           "dispatch.deliveryPartnerId": partnerId,
           orderStatus: "delivered",
           "payment.method": { $in: ["cash", "cod", "cash_on_delivery"] },
+          $or: [
+            { "deliveryState.deliveredAt": { $gte: monday } },
+            { "deliveryState.deliveredAt": { $exists: false }, updatedAt: { $gte: monday } }
+          ]
         },
       },
       {
@@ -73,7 +88,6 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
                   amount: { $ifNull: ["$amount", 0] },
                   total: { $ifNull: ["$total", 0] },
                   pricingTotal: { $ifNull: ["$pricing.total", 0] },
-                  platformFee: { $ifNull: ["$pricing.platformFee", 0] },
                 },
                 in: {
                   $max: [
@@ -83,18 +97,7 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
                     "$$totalAmount",
                     "$$amount",
                     "$$total",
-                    {
-                      $add: [
-                        "$$pricingTotal",
-                        {
-                          $cond: [
-                            { $gt: ["$$platformFee", 0] },
-                            "$$platformFee",
-                            0,
-                          ],
-                        },
-                      ],
-                    },
+                    "$$pricingTotal",
                   ],
                 },
               },
@@ -104,7 +107,13 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
       },
     ]),
     FoodDeliveryCashDeposit.aggregate([
-      { $match: { deliveryPartnerId: partnerId, status: "Completed" } },
+      { 
+        $match: { 
+          deliveryPartnerId: partnerId, 
+          status: "Completed",
+          createdAt: { $gte: monday }
+        } 
+      },
       {
         $group: {
           _id: null,
@@ -181,7 +190,7 @@ export const getDeliveryPartnerWalletEnhanced = async (deliveryPartnerId) => {
     totalEarned: wallet.totalEarnings || 0,
     totalBonus: effectiveBonus,
     totalCashLimit,
-    availableCashLimit: Math.max(0, totalCashLimit - cashInHand),
+    availableCashLimit: totalCashLimit - cashInHand,
     deliveryWithdrawalLimit,
     totalDeliveries: Number(totalDeliveries) || 0,
     transactions,

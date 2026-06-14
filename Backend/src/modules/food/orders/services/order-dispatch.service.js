@@ -229,12 +229,16 @@ export async function tryAutoAssign(orderId, options = {}) {
       try {
         const { getDeliveryPartnerWalletEnhanced } = await import("../../delivery/services/deliveryFinance.service.js");
         const filtered = [];
+        const orderAmount = Number(order.pricing?.total || order.payableAmount || 0);
         for (const p of eligible) {
           const wallet = await getDeliveryPartnerWalletEnhanced(p.partnerId);
-          if (Number(wallet.cashInHand) < Number(wallet.totalCashLimit)) {
+          const cashInHand = Number(wallet.cashInHand || 0);
+          const totalCashLimit = Number(wallet.totalCashLimit || 0);
+          const availableCashLimit = Math.max(0, totalCashLimit - cashInHand);
+          if (cashInHand < totalCashLimit && availableCashLimit >= orderAmount) {
             filtered.push(p);
           } else {
-            logger.info(`[Dispatch] Rider ${p.partnerId} excluded from auto-assign for order ${order._id} due to cash limit: cashInHand=${wallet.cashInHand}, totalCashLimit=${wallet.totalCashLimit}`);
+            logger.info(`[Dispatch] Rider ${p.partnerId} excluded from auto-assign for order ${order._id} due to cash limit: cashInHand=${cashInHand}, totalCashLimit=${totalCashLimit}, availableCashLimit=${availableCashLimit}, orderAmount=${orderAmount}`);
           }
         }
         finalEligible = filtered;
@@ -258,9 +262,13 @@ export async function tryAutoAssign(orderId, options = {}) {
           try {
             const { getDeliveryPartnerWalletEnhanced } = await import("../../delivery/services/deliveryFinance.service.js");
             const filteredBroad = [];
+            const orderAmount = Number(order.pricing?.total || order.payableAmount || 0);
             for (const p of partners) {
               const wallet = await getDeliveryPartnerWalletEnhanced(p.partnerId);
-              if (Number(wallet.cashInHand) < Number(wallet.totalCashLimit)) {
+              const cashInHand = Number(wallet.cashInHand || 0);
+              const totalCashLimit = Number(wallet.totalCashLimit || 0);
+              const availableCashLimit = Math.max(0, totalCashLimit - cashInHand);
+              if (cashInHand < totalCashLimit && availableCashLimit >= orderAmount) {
                 filteredBroad.push(p);
               }
             }

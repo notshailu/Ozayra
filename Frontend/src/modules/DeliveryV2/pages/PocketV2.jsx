@@ -336,12 +336,12 @@ export const PocketV2 = () => {
                       <ShieldCheck className="w-6 h-6" />
                    </div>
                    <div>
-                      <span className="text-sm font-bold text-gray-800 block">Available cash limit</span>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Spend Control</p>
+                      <span className="text-sm font-bold text-gray-800 block">Remaining cash limit</span>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Available Limit</p>
                    </div>
                 </div>
                 <div className="flex items-center gap-2">
-                   <span className="text-base font-black text-black">₹{walletState.availableCashLimit.toFixed(2)}</span>
+                   <span className="text-base font-black text-black">{formatCurrency(walletState.availableCashLimit)}</span>
                    <ChevronRight className="w-4 h-4 text-gray-300" />
                 </div>
              </button>
@@ -438,12 +438,16 @@ export const PocketV2 = () => {
                       <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Settle Hand Dues</p>
                    </div>
                    
-                   <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
-                      <div className="flex justify-between items-center mb-4">
-                         <span className="text-xs font-bold text-gray-400 uppercase">Cash in your hand</span>
+                   <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100 space-y-3">
+                      <div className="flex justify-between items-center">
+                         <span className="text-xs font-bold text-gray-400 uppercase">Total Cash Limit</span>
+                         <span className="text-base font-black text-black">₹{walletState.totalCashLimit}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-t border-gray-100 pt-3">
+                         <span className="text-xs font-bold text-gray-400 uppercase">Cash in hand</span>
                          <span className="text-base font-black text-black">₹{walletState.cashInHand}</span>
                       </div>
-                      <div className="relative">
+                      <div className="relative pt-2">
                          <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                          <input 
                             type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)}

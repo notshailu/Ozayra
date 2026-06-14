@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Edit, Loader2, Plus, Save, Settings, Trash2, Truck } from 'lucide-react';
+import { Edit, IndianRupee, Loader2, Plus, Save, Settings, Trash2, Truck, Wallet } from 'lucide-react';
 import Card from '@shared/components/ui/Card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@shared/components/ui/Toast';
 import { adminApi } from '../services/adminApi';
+import { adminAPI as foodAdminApi } from '@food/api';
 
 const initialFeeSettings = {
   deliveryFee: '',
@@ -45,6 +46,11 @@ export default function BillingCharges() {
   const [editingRuleId, setEditingRuleId] = useState('');
   const [ruleForm, setRuleForm] = useState(initialRuleForm);
 
+  const [deliveryCashLimit, setDeliveryCashLimit] = useState('');
+  const [deliveryWithdrawalLimit, setDeliveryWithdrawalLimit] = useState('');
+  const [loadingCashLimit, setLoadingCashLimit] = useState(true);
+  const [savingCashLimit, setSavingCashLimit] = useState(false);
+
   const sortedRules = useMemo(
     () =>
       [...rules].sort(
@@ -54,7 +60,7 @@ export default function BillingCharges() {
   );
 
   useEffect(() => {
-    void Promise.all([loadFeeSettings(), loadRules()]);
+    void Promise.all([loadFeeSettings(), loadRules(), loadCashLimitSettings()]);
   }, []);
 
   const loadFeeSettings = async () => {
@@ -96,6 +102,51 @@ export default function BillingCharges() {
       showToast('Failed to load delivery commission rules', 'error');
     } finally {
       setRulesLoading(false);
+    }
+  };
+
+  const loadCashLimitSettings = async () => {
+    try {
+      setLoadingCashLimit(true);
+      const response = await foodAdminApi.getDeliveryCashLimit();
+      const data = response?.data?.data || response?.data || {};
+      setDeliveryCashLimit(data.deliveryCashLimit !== undefined && data.deliveryCashLimit !== null ? String(data.deliveryCashLimit) : '');
+      setDeliveryWithdrawalLimit(data.deliveryWithdrawalLimit !== undefined && data.deliveryWithdrawalLimit !== null ? String(data.deliveryWithdrawalLimit) : '');
+    } catch (error) {
+      console.error('Failed to load cash limit settings', error);
+      showToast('Failed to load cash limit settings', 'error');
+    } finally {
+      setLoadingCashLimit(false);
+    }
+  };
+
+  const handleSaveCashLimitSettings = async () => {
+    const cashValue = Number(deliveryCashLimit);
+    if (!Number.isFinite(cashValue) || cashValue < 0) {
+      showToast('Cash limit must be a number (>= 0)', 'error');
+      return;
+    }
+    const withdrawalValue = Number(deliveryWithdrawalLimit);
+    if (!Number.isFinite(withdrawalValue) || withdrawalValue < 0) {
+      showToast('Withdrawal limit must be a number (>= 0)', 'error');
+      return;
+    }
+
+    try {
+      setSavingCashLimit(true);
+      const response = await foodAdminApi.updateDeliveryCashLimit({
+        deliveryCashLimit: cashValue,
+        deliveryWithdrawalLimit: withdrawalValue,
+      });
+      const data = response?.data?.data || response?.data || {};
+      setDeliveryCashLimit(String(data.deliveryCashLimit ?? cashValue));
+      setDeliveryWithdrawalLimit(String(data.deliveryWithdrawalLimit ?? withdrawalValue));
+      showToast('Delivery cash limit settings updated successfully', 'success');
+    } catch (error) {
+      console.error('Failed to save cash limit settings', error);
+      showToast(error?.response?.data?.message || 'Failed to update cash limit settings', 'error');
+    } finally {
+      setSavingCashLimit(false);
     }
   };
 
@@ -453,6 +504,73 @@ export default function BillingCharges() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <Card className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <IndianRupee className="h-5 w-5 text-emerald-600" />
+              Delivery Cash Limit Settings
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Global cash limits and minimum withdrawal limits for delivery boy wallets.
+            </p>
+          </div>
+          <button
+            onClick={handleSaveCashLimitSettings}
+            disabled={loadingCashLimit || savingCashLimit}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-white',
+              savingCashLimit ? 'bg-emerald-400' : 'bg-emerald-600 hover:bg-emerald-700',
+            )}
+          >
+            {savingCashLimit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save Cash Limits
+          </button>
+        </div>
+
+        {loadingCashLimit ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+          </div>
+        ) : (
+          <div className="space-y-6 p-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <label className="space-y-2 block">
+                <span className="text-sm font-semibold text-slate-700">Delivery Boy Available Cash Limit (Global)</span>
+                <span className="block text-xs text-slate-500">
+                  When COD cash is collected, delivery partner's remaining limit will decrease automatically.
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={deliveryCashLimit}
+                  onChange={(e) => setDeliveryCashLimit(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500"
+                  placeholder="e.g., 2000"
+                />
+              </label>
+
+              <label className="space-y-2 block">
+                <span className="text-sm font-semibold text-slate-700">Minimum Withdrawal Amount (Global)</span>
+                <span className="block text-xs text-slate-500">
+                  Delivery boy can withdraw only when withdrawable amount is above this value.
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={deliveryWithdrawalLimit}
+                  onChange={(e) => setDeliveryWithdrawalLimit(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-500"
+                  placeholder="e.g., 100"
+                />
+              </label>
             </div>
           </div>
         )}

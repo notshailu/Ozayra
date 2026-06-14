@@ -9,9 +9,23 @@ import { addOrderJob } from '../../../../queues/producers/order.producer.js';
 
 export function enqueueOrderEvent(action, payload = {}) {
   try {
-    void addOrderJob({ action, ...payload }).catch((err) => {
-      logger.warn(`BullMQ enqueue order event failed: ${action} - ${err?.message || err}`);
-    });
+    void addOrderJob({ action, ...payload })
+      .then(async (job) => {
+        if (!job) {
+          if (action === 'delivery_completed') {
+            logger.info(`[SyncFallback] Processing delivery_completed locally for order ${payload.orderId}`);
+            try {
+              const { processPaymentJob } = await import('../../../../queues/processors/payment.processor.js');
+              await processPaymentJob({ data: { action, ...payload } });
+            } catch (fallbackErr) {
+              logger.error(`[SyncFallback] Failed to process payment job locally: ${fallbackErr.message}`);
+            }
+          }
+        }
+      })
+      .catch((err) => {
+        logger.warn(`BullMQ enqueue order event failed: ${action} - ${err?.message || err}`);
+      });
   } catch (err) {
     logger.warn(`BullMQ enqueue order event failed (sync): ${action} - ${err?.message || err}`);
   }

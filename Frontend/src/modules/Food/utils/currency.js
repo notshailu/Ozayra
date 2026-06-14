@@ -22,7 +22,11 @@ export const usdToInr = (usdAmount) => {
  * @returns {string} - Formatted amount string
  */
 export const formatCurrency = (amount, currency = '₹') => {
-  return `${currency} ${parseFloat(amount).toFixed(2)}`
+  const numericVal = parseFloat(amount) || 0;
+  if (numericVal < 0) {
+    return `-${currency} ${Math.abs(numericVal).toFixed(2)}`;
+  }
+  return `${currency} ${numericVal.toFixed(2)}`;
 }
 
 /**

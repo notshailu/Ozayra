@@ -6,7 +6,7 @@ export default function AvailableCashLimit({ onClose, walletData = {} }) {
   const cashInHand = Number(walletData.cashInHand) || 0
   const deductions = Number(walletData.deductions) || 0
   const pocketWithdrawals = Number(walletData.pocketWithdrawals) || 0
-  const availableCashLimit = Math.max(0, totalCashLimit - cashInHand - deductions)
+  const availableCashLimit = totalCashLimit - cashInHand - deductions
 
   return (
     <div className="bg-white text-black py-2">

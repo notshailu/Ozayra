@@ -43,10 +43,7 @@ const getOrderPayableAmount = (order) => {
 
   // In quick-commerce, `pricing.total` is subtotal + fees (delivery/handling/gst...) minus discounts.
   // Platform fee is stored separately and is part of what the customer pays.
-  const computed =
-    Number.isFinite(platformFee) && platformFee > 0
-      ? pricingTotal + platformFee
-      : pricingTotal;
+  const computed = pricingTotal;
 
   return Number.isFinite(computed) ? Math.max(0, computed) : 0;
 };
@@ -287,7 +284,7 @@ export const placeOrder = async (req, res) => {
       payment: {
         method: paymentMode,
         status: paymentMode === 'razorpay' ? 'created' : 'cod_pending',
-        amountDue: Math.max(0, total + Number(pricing.platformFee || 0)),
+        amountDue: Math.max(0, total),
       },
       orderStatus: 'placed',
       riderEarning: riderEarning || 0,

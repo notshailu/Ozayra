@@ -388,7 +388,31 @@ export const getDeliveryPartnerWallet = async (deliveryPartnerId) => {
             {
                 $group: {
                     _id: null,
-                    cashInHand: { $sum: { $ifNull: ['$riderEarning', 0] } }
+                    cashInHand: {
+                        $sum: {
+                            $let: {
+                                vars: {
+                                    amountDue: { $ifNull: ["$payment.amountDue", 0] },
+                                    payableAmount: { $ifNull: ["$payableAmount", 0] },
+                                    totalAmount: { $ifNull: ["$totalAmount", 0] },
+                                    amount: { $ifNull: ["$amount", 0] },
+                                    total: { $ifNull: ["$total", 0] },
+                                    pricingTotal: { $ifNull: ["$pricing.total", 0] },
+                                },
+                                in: {
+                                    $max: [
+                                        0,
+                                        "$$amountDue",
+                                        "$$payableAmount",
+                                        "$$totalAmount",
+                                        "$$amount",
+                                        "$$total",
+                                        "$$pricingTotal",
+                                    ],
+                                },
+                            },
+                        },
+                    }
                 }
             }
         ])
@@ -451,7 +475,7 @@ export const getDeliveryPartnerWallet = async (deliveryPartnerId) => {
 
     const totalWithdrawn = 0;
     const totalBalance = totalEarned + totalBonus;
-    const availableCashLimit = Math.max(0, totalCashLimit - cashInHand);
+    const availableCashLimit = totalCashLimit - cashInHand;
 
     return {
         totalBalance,

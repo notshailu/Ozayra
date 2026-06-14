@@ -200,7 +200,7 @@ const buildQuickAdminOrderResponse = (order, sellerMap = {}, sellerOrderMap = {}
     totalAmount,
     amount,
     total,
-    pricingTotal + platformFee,
+    pricingTotal,
   );
 
   const quickItems = Array.isArray(order?.items) ? order.items.filter((item) => item?.type === 'quick') : [];
@@ -927,7 +927,7 @@ export const getAdminCustomers = async (req, res) => {
         Number(order.totalAmount || 0),
         Number(order.amount || 0),
         Number(order.total || 0),
-        pricingTotal + platformFee,
+        pricingTotal,
       );
 
       customer.totalOrders += 1;
@@ -980,7 +980,7 @@ export const getAdminCustomerById = async (req, res) => {
         Number(o.totalAmount || 0),
         Number(o.amount || 0),
         Number(o.total || 0),
-        pricingTotal + platformFee,
+        pricingTotal,
       );
       return sum + payableTotal;
     }, 0);
@@ -1016,7 +1016,7 @@ export const getAdminCustomerById = async (req, res) => {
         Number(o.totalAmount || 0),
         Number(o.amount || 0),
         Number(o.total || 0),
-        pricingTotal + platformFee,
+        pricingTotal,
       );
 
       return {

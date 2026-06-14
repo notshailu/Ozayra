@@ -108,14 +108,7 @@ export async function getQuickCommerceFinanceSummary() {
           "$$totalAmount",
           "$$amount",
           "$$total",
-          {
-            $add: [
-              "$$pricingTotal",
-              {
-                $cond: [{ $gt: ["$$platformFee", 0] }, "$$platformFee", 0],
-              },
-            ],
-          },
+          "$$pricingTotal",
         ],
       },
     },

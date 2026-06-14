@@ -48,9 +48,23 @@ const USER_CANCEL_EDIT_WINDOW_MS = 60 * 1000;
  */
 function enqueueOrderEvent(action, payload = {}) {
     try {
-        void addOrderJob({ action, ...payload }).catch((err) => {
-            logger.warn(`BullMQ enqueue order event failed: ${action} - ${err?.message || err}`);
-        });
+        void addOrderJob({ action, ...payload })
+            .then(async (job) => {
+                if (!job) {
+                    if (action === 'delivery_completed') {
+                        logger.info(`[SyncFallback] Processing delivery_completed locally for order ${payload.orderId}`);
+                        try {
+                            const { processPaymentJob } = await import('../../../../queues/processors/payment.processor.js');
+                            await processPaymentJob({ data: { action, ...payload } });
+                        } catch (fallbackErr) {
+                            logger.error(`[SyncFallback] Failed to process payment job locally: ${fallbackErr.message}`);
+                        }
+                    }
+                }
+            })
+            .catch((err) => {
+                logger.warn(`BullMQ enqueue order event failed: ${action} - ${err?.message || err}`);
+            });
     } catch (err) {
         logger.warn(`BullMQ enqueue order event failed (sync): ${action} - ${err?.message || err}`);
     }
@@ -3157,11 +3171,41 @@ export async function getCurrentTripDelivery(deliveryPartnerId) {
 export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
   const { page, limit, skip } = buildPaginationOptions(query);
   const partnerObjectId = new mongoose.Types.ObjectId(deliveryPartnerId);
+
+  let wallet = null;
+  let cashInHand = 0;
+  let totalCashLimit = 0;
+  let isLimitExceeded = false;
+  let availableCashLimit = 0;
+  try {
+    const { getDeliveryPartnerWalletEnhanced } = await import("../../delivery/services/deliveryFinance.service.js");
+    wallet = await getDeliveryPartnerWalletEnhanced(deliveryPartnerId);
+    cashInHand = Number(wallet.cashInHand || 0);
+    totalCashLimit = Number(wallet.totalCashLimit || 0);
+    isLimitExceeded = cashInHand >= totalCashLimit;
+    availableCashLimit = Math.max(0, totalCashLimit - cashInHand);
+  } catch (err) {
+    logger.error(`[AvailableOrders] Error checking cash limit: ${err.message}`);
+  }
+
+  const codFilter = isLimitExceeded
+    ? { "payment.method": { $nin: ["cash", "cod", "cash_on_delivery"] } }
+    : {
+        $or: [
+          { "payment.method": { $nin: ["cash", "cod", "cash_on_delivery"] } },
+          {
+            "payment.method": { $in: ["cash", "cod", "cash_on_delivery"] },
+            "pricing.total": { $lte: availableCashLimit }
+          }
+        ]
+      };
+
   const filter = {
     $or: [
       {
         "dispatch.status": "unassigned",
         orderStatus: { $in: ["confirmed", "preparing", "ready_for_pickup"] },
+        ...codFilter
       },
       {
         "dispatch.deliveryPartnerId": partnerObjectId,
@@ -3208,6 +3252,7 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
             "cancelled_by_admin",
           ],
         },
+        ...codFilter
       },
     ],
   };
@@ -3244,6 +3289,16 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
     if (isSplitDispatchOrder(order)) {
       if (!isMarketplaceOrder) continue;
       for (const leg of eligibleLegs) {
+        // HIDE if rider exceeds cash limit capacity (available limit < order amount)
+        const paymentMethod = String(order.payment?.method || order.paymentMethod || "").toLowerCase();
+        const isCod = ["cash", "cod", "cash_on_delivery"].includes(paymentMethod);
+        if (isCod && wallet) {
+          const orderAmountTotal = Number(order.pricing?.total || order.payableAmount || 0);
+          if (Number(wallet.availableCashLimit) < orderAmountTotal) {
+            continue;
+          }
+        }
+
         docs.push(
           buildDeliveryOrderView(order, deliveryPartnerId, {
             dispatchLeg: leg,
@@ -3254,6 +3309,18 @@ export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
     }
 
     if (isMarketplaceOrder || assignedWholeOrder) {
+      if (isMarketplaceOrder && !assignedWholeOrder) {
+        // HIDE if rider exceeds cash limit capacity (available limit < order amount)
+        const paymentMethod = String(order.payment?.method || order.paymentMethod || "").toLowerCase();
+        const isCod = ["cash", "cod", "cash_on_delivery"].includes(paymentMethod);
+        if (isCod && wallet) {
+          const orderAmountTotal = Number(order.pricing?.total || order.payableAmount || 0);
+          if (Number(wallet.availableCashLimit) < orderAmountTotal) {
+            continue;
+          }
+        }
+      }
+
       docs.push(buildDeliveryOrderView(order, deliveryPartnerId));
     }
   }
@@ -3300,6 +3367,30 @@ export async function acceptOrderDelivery(orderId, deliveryPartnerId, body = {})
   });
 
   if (!order) throw new NotFoundError("Order not found");
+
+  // --- CASH LIMIT CHECK ---
+  const paymentMethod = String(order.payment?.method || order.paymentMethod || "").toLowerCase();
+  const isCashOrder = ["cash", "cod", "cash_on_delivery"].includes(paymentMethod);
+  if (isCashOrder) {
+    const { getDeliveryPartnerWalletEnhanced } = await import("../../delivery/services/deliveryFinance.service.js");
+    const wallet = await getDeliveryPartnerWalletEnhanced(deliveryPartnerId);
+    
+    const cashInHand = Number(wallet.cashInHand || 0);
+    const totalCashLimit = Number(wallet.totalCashLimit || 0);
+    if (cashInHand >= totalCashLimit) {
+      throw new ValidationError(
+        `Cash limit reached (Current COD: ₹${cashInHand}, Limit: ₹${totalCashLimit}). Please deposit your cash in hand to accept COD orders.`
+      );
+    }
+    
+    const orderAmount = Number(order.pricing?.total || order.payableAmount || 0);
+    const availableCashLimit = Math.max(0, totalCashLimit - cashInHand);
+    if (orderAmount > availableCashLimit) {
+      throw new ValidationError(
+        `Insufficient cash limit balance for this order (Order value: ₹${orderAmount}, Remaining limit: ₹${availableCashLimit}). Please deposit cash.`
+      );
+    }
+  }
 
   if (
     !["confirmed", "preparing", "ready_for_pickup", "picked_up"].includes(
@@ -3840,10 +3931,16 @@ export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
   enqueueOrderEvent('delivery_completed', {
       orderMongoId: order._id?.toString?.(),
       orderId: order.orderId,
+      restaurantId: order.restaurantId,
       deliveryPartnerId,
-      payMethod,
+      paymentMethod: payMethod,
+      payMethod, // backward compatibility
       prevPayStatus,
-      paymentStatus: order.payment?.status
+      paymentStatus: order.payment?.status,
+      riderEarning: order.riderEarning || 0,
+      platformProfit: order.platformProfit || 0,
+      commissionAmount: order.pricing?.restaurantCommission || 0,
+      total: order.pricing?.total || 0
   });
   return sanitizeOrderForExternal(order);
 }
