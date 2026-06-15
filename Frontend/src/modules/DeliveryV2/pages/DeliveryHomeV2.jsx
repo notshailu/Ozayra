@@ -622,14 +622,14 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
 
   return (
     <div className="relative h-screen w-full bg-white text-gray-900 overflow-hidden flex flex-col">
-      {/* ─── 1. TOP HEADER (Premium Dark Gray) ─── */}
+      {/* ─── 1. TOP HEADER (Redesigned Floating Capsule Overlay) ─── */}
       {currentTab === 'feed' && (
-      <div className="absolute top-0 inset-x-0 bg-[#121212]/95 backdrop-blur-2xl shadow-2xl z-[200] safe-top pb-2 border-b border-white/10">
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-4">
+      <div className="absolute top-[calc(20px+env(safe-area-inset-top,0px))] inset-x-4 bg-white/[0.07] backdrop-blur-[30px] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] z-[200] border border-white/60 p-3.5 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
              <div 
                 onClick={() => navigate('/delivery/profile')}
-                className="w-10 h-10 rounded-full border border-white/20 p-0.5 shadow-xl overflow-hidden bg-white/5 cursor-pointer active:scale-95 transition-all"
+                className={`w-10 h-10 rounded-full border-2 p-0.5 shadow-xl overflow-hidden cursor-pointer active:scale-95 transition-all ${isOnline ? 'border-green-500 shadow-green-500/20' : 'border-white/60 shadow-black/5'} bg-white/[0.03]`}
              >
                 <img src={profileImage || "https://i.ibb.co/3m2Yh7r/Ishsys-Brand-Image.png"} alt="Profile" className="w-full h-full object-cover rounded-full" />
              </div>
@@ -638,7 +638,6 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                  const nextState = !isOnline;
                  toggleOnline(); // Store action
                  if (nextState) {
-                    // Try to get location and sync immediately so we are visible for dispatch right away
                     navigator.geolocation.getCurrentPosition((pos) => {
                         deliveryAPI.updateLocation(pos.coords.latitude, pos.coords.longitude, true).catch(() => {});
                     }, (err) => console.warn('Online sync position failed:', err), { enableHighAccuracy: true });
@@ -646,19 +645,26 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                     deliveryAPI.updateOnlineStatus(false).catch(() => {});
                  }
                }}
-               className={`relative w-[92px] h-8 rounded-full p-1 transition-all duration-500 flex items-center ${isOnline ? 'bg-green-500 shadow-lg shadow-green-500/20' : 'bg-gray-400'}`}
+               className={`relative w-[100px] h-[34px] rounded-full p-1 transition-all duration-300 flex items-center ${isOnline ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-[0_2px_12px_rgba(16,185,129,0.2)]' : 'bg-white/[0.07] border border-white/40'}`}
              >
-               <div className={`flex items-center justify-between w-full px-2 text-[8.5px] font-black uppercase tracking-widest text-white`}>
+               <div className={`flex items-center justify-between w-full px-2.5 text-[8.5px] font-black uppercase tracking-widest ${isOnline ? 'text-white' : 'text-gray-800 font-bold'}`}>
                  <span>{isOnline ? 'Online' : ''}</span>
                  <span>{!isOnline ? 'Offline' : ''}</span>
                </div>
-               <motion.div animate={{ x: isOnline ? 59 : 0 }} className="absolute left-1 w-6 h-6 bg-white rounded-full shadow-sm" />
+               <motion.div 
+                 layout
+                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                 animate={{ x: isOnline ? 60 : 0 }} 
+                 className="absolute left-1 w-[26px] h-[26px] bg-white rounded-full shadow-lg flex items-center justify-center"
+               >
+                 <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+               </motion.div>
              </button>
           </div>
-          <div className="flex items-center gap-3">
-             <button onClick={() => setShowEmergencyPopup(true)} className="w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 active:scale-95 transition-all shadow-lg"><AlertTriangle className="w-4 h-4" /></button>
-             <button onClick={() => navigate('/delivery/help/id-card')} className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 active:scale-95 transition-all shadow-lg"><Contact className="w-4 h-4" /></button>
-             <button onClick={() => navigate('/delivery/notifications')} className="relative w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all shadow-lg"><Bell className="w-4 h-4" />{notificationUnreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-400 border border-[#1f1f1f]" />}</button>
+          <div className="flex items-center gap-2">
+             <button onClick={() => setShowEmergencyPopup(true)} className="w-8 h-8 rounded-full bg-white/20 dark:bg-black/30 flex items-center justify-center text-gray-800 dark:text-gray-200 border border-white/35 dark:border-white/10 active:scale-90 transition-all shadow-md"><AlertTriangle className="w-3.5 h-3.5" /></button>
+             <button onClick={() => navigate('/delivery/help/id-card')} className="w-8 h-8 rounded-full bg-white/20 dark:bg-black/30 flex items-center justify-center text-gray-800 dark:text-gray-200 border border-white/35 dark:border-white/10 active:scale-90 transition-all shadow-md"><Contact className="w-3.5 h-3.5" /></button>
+             <button onClick={() => navigate('/delivery/notifications')} className="relative w-8 h-8 rounded-full bg-white/20 dark:bg-black/30 flex items-center justify-center text-gray-800 dark:text-gray-200 border border-white/35 dark:border-white/10 active:scale-90 transition-all shadow-md"><Bell className="w-3.5 h-3.5" />{notificationUnreadCount > 0 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-orange-500 border border-white animate-pulse" />}</button>
           </div>
         </div>
 
@@ -669,53 +675,65 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="px-4 mt-1"
+              className="w-full"
             >
               {activeOrder ? (
-                <div className="grid grid-cols-2 gap-3 w-full">
+                <div className="grid grid-cols-2 gap-2.5 w-full">
                   {/* LEFT: DISTANCE (Vibrant Orange Card) */}
-                  <div className="bg-[#ff8100] rounded-2xl p-3.5 shadow-xl shadow-orange-500/20 border border-orange-400/50 flex items-center justify-between overflow-hidden relative">
+                  <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl p-3 shadow-lg shadow-orange-500/15 border border-white/10 flex items-center justify-between overflow-hidden relative">
                     <div className="flex flex-col z-10">
-                      <span className="text-[9px] text-white/70 font-black uppercase tracking-[0.15em] mb-1">Distance</span>
-                      <div className="flex items-end gap-1">
-                        <span className="text-2xl font-black text-white leading-none tracking-tighter">
+                      <span className="text-[8px] text-white/70 font-black uppercase tracking-[0.15em] mb-0.5">Distance</span>
+                      <div className="flex items-end gap-0.5">
+                        <span className="text-xl font-black text-white leading-none tracking-tighter">
                           {distanceToTarget && distanceToTarget !== Infinity ? (distanceToTarget / 1000).toFixed(1) : '--'}
                         </span>
-                        <span className="text-[11px] text-white/80 font-bold mb-0.5">KM</span>
+                        <span className="text-[10px] text-white/80 font-bold mb-0.5">KM</span>
                       </div>
                     </div>
-                    <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center z-10 shadow-lg">
-                      <Navigation2 className="w-4 h-4 text-[#ff8100] rotate-45" />
+                    <div className="w-8 h-8 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center z-10 shadow-inner">
+                      <Navigation2 className="w-3.5 h-3.5 text-white rotate-45" />
                     </div>
                   </div>
 
                   {/* RIGHT: TIME (Emerald PRO Content) */}
-                  <div className="bg-[#10B981] rounded-2xl p-3.5 shadow-xl shadow-green-500/20 border border-green-400/50 flex items-center justify-between relative overflow-hidden group">
+                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-3 shadow-lg shadow-green-500/15 border border-white/10 flex items-center justify-between relative overflow-hidden">
                     <div className="flex flex-col z-10">
-                      <span className="text-[9px] text-white/70 font-black uppercase tracking-[0.15em] mb-1">Arrival</span>
-                      <div className="flex items-end gap-1">
-                        <span className="text-2xl font-black text-white leading-none tracking-tighter">
+                      <span className="text-[8px] text-white/70 font-black uppercase tracking-[0.15em] mb-0.5">Arrival</span>
+                      <div className="flex items-end gap-0.5">
+                        <span className="text-xl font-black text-white leading-none tracking-tighter">
                           {eta ? String(eta) : '--'}
                         </span>
-                        <span className="text-[11px] text-white/80 font-bold mb-0.5">MIN</span>
+                        <span className="text-[10px] text-white/80 font-bold mb-0.5">MIN</span>
                       </div>
                     </div>
-                    <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center z-10 shadow-lg">
-                       <Clock className="w-4 h-4 text-[#10B981]" />
+                    <div className="w-8 h-8 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center z-10 shadow-inner">
+                       <Clock className="w-3.5 h-3.5 text-white" />
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white/5 rounded-2xl p-4 flex items-center border border-white/5 shadow-sm backdrop-blur-md">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                      <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+                <div className="bg-white/[0.03] rounded-xl p-3 flex items-center justify-between border border-white/20 shadow-inner backdrop-blur-[20px]">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-8 h-8 rounded-full flex items-center justify-center bg-white/[0.05]">
+                      <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-black dark:bg-white' : 'bg-gray-400'}`} />
+                      {isOnline && (
+                        <div className="absolute inset-0 rounded-full border border-black/30 dark:border-white/30 animate-ping opacity-75" />
+                      )}
                     </div>
                     <div>
-                      <h3 className="text-white font-black text-[11px] uppercase tracking-widest leading-none mb-1">{isOnline ? 'System Online' : 'System Offline'}</h3>
-                      <p className="text-gray-400 text-[10px] font-bold uppercase tracking-tight">{isOnline ? 'Waiting for order requests' : 'Go online to receive jobs'}</p>
+                      <h3 className="text-gray-950 font-black text-[10px] uppercase tracking-widest leading-none mb-0.5">
+                        {isOnline ? 'System Online' : 'System Offline'}
+                      </h3>
+                      <p className="text-gray-800 text-[9px] font-bold uppercase tracking-tight opacity-90">
+                        {isOnline ? 'Waiting for order requests' : 'Go online to receive jobs'}
+                      </p>
                     </div>
                   </div>
+                  {isOnline && (
+                    <span className="bg-black dark:bg-white text-white dark:text-black text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                      Ready
+                    </span>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -723,14 +741,13 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
         </AnimatePresence>
       </div>
       )}
-
       {/* ─── 2. MAIN CONTENT ─── */}
       <div 
         ref={scrollContainerRef}
-        className={`flex-1 relative overflow-y-auto ${currentTab === 'feed' ? 'pt-[120px]' : 'pt-0'} no-scrollbar`}
+        className="flex-1 relative overflow-y-auto no-scrollbar pb-28"
       >
          {currentTab === 'feed' ? (
-           <div className="absolute inset-0 top-[-120px]">
+           <div className="absolute inset-0 z-0">
                <LiveMap 
                  onMapLoad={(m) => mapRef.current = m}
                  onMapClick={handleMapClick}
@@ -745,63 +762,29 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
              
              {/* SIMULATION INDICATOR */}
              {isSimMode && (
-               <div className="absolute top-[180px] left-4 right-4 z-[100] bg-black/80 backdrop-blur-md rounded-xl p-4 border border-white/20 flex items-center justify-between shadow-2xl">
-                  <div className="flex items-center gap-4">
-                     <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center animate-pulse">
-                        <Play className="w-4 h-4 text-white fill-current" />
+               <div className="absolute top-[180px] left-4 right-4 z-[100] bg-black/85 backdrop-blur-md rounded-xl p-4 border border-white/10 flex items-center justify-between shadow-2xl">
+                  <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center animate-pulse shadow-md shadow-orange-500/20">
+                        <Play className="w-3.5 h-3.5 text-white fill-current" />
                      </div>
                      <div className="flex flex-col">
-                        <span className="text-orange-500 text-[10px] font-bold uppercase tracking-widest">Auto Navigation Active</span>
-                        <span className="text-white text-[11px] font-medium">Following actual road path...</span>
+                        <span className="text-orange-500 text-[10px] font-black uppercase tracking-widest leading-none mb-1">Simulation Mode</span>
+                        <span className="text-white text-[11px] font-medium opacity-85">Following mock road path...</span>
                      </div>
                   </div>
-                  <button onClick={() => setIsSimMode(false)} className="bg-white/10 text-white/50 hover:text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-white/10">Stop</button>
+                  <button onClick={() => setIsSimMode(false)} className="bg-white/10 hover:bg-white/15 text-white px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/10 active:scale-95 transition-all">Stop</button>
                </div>
              )}
 
-             <div className="absolute right-4 bottom-28 md:bottom-32 flex flex-col gap-4 z-[120]">
-                <div className="flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-                   <button onClick={() => setZoom(z => Math.min(22, z + 1))} className="p-3 hover:bg-gray-50 border-b border-gray-100 text-gray-900 active:scale-90 transition-all" aria-label="Zoom in"><Plus className="w-5 h-5 stroke-[2.75]" /></button>
-                   <button onClick={() => setZoom(z => Math.max(8, z - 1))} className="p-3 hover:bg-gray-50 text-gray-900 active:scale-90 transition-all" aria-label="Zoom out"><Minus className="w-5 h-5 stroke-[2.75]" /></button>
-                </div>
-                <button 
-                  onClick={() => {
-                    const nextSimState = !isSimMode;
-                    setIsSimMode(nextSimState);
-                    
-                    if (nextSimState) {
-                      toast.warning('Simulation Mode Active');
-                      // Initialize position if null
-                      if (!useDeliveryStore.getState().riderLocation && activeOrder) {
-                        const target = activeOrder.restaurantLocation || activeOrder.customerLocation;
-                        if (target) {
-                          setRiderLocation({ 
-                            lat: parseFloat(target.lat || target.latitude) + 0.001, 
-                            lng: parseFloat(target.lng || target.longitude) + 0.001, 
-                            heading: 0 
-                          });
-                        }
-                      }
-                    }
-                  }}
-                  className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center border border-gray-100 transition-all ${isSimMode ? 'bg-orange-500 text-white' : 'bg-white text-green-500'}`}
-                >
-                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${isSimMode ? 'border-white' : 'border-green-500'}`}>
-                    <Play className={`w-4 h-4 fill-current ml-0.5 ${isSimMode ? 'animate-pulse' : ''}`} />
-                  </div>
-                </button>
-                <button 
-                   onClick={() => mapRef.current?.setOptions({ gestureHandling: 'greedy' })} 
-                   className="w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center text-blue-600 border border-gray-100 active:scale-90 transition-all"
-                >
-                  <div className="w-8 h-8 rounded-full border-2 border-blue-600 flex items-center justify-center"><Navigation2 className="w-4 h-4" /></div>
-                </button>
-                <button 
+             <div className="absolute right-4 bottom-28 md:bottom-32 flex flex-col gap-3.5 z-[120]">
+                {/* Center rider button */}
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
                   onClick={handleCenterMap}
-                  className="w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center text-gray-900 border border-gray-100 group active:scale-90 transition-all"
+                  className="w-12 h-12 bg-[#141414]/95 rounded-full shadow-xl flex items-center justify-center text-white border border-white/10 hover:bg-white/5 active:scale-90 transition-all"
                 >
-                  <Target className="w-7 h-7" />
-                </button>
+                  <Target className="w-5.5 h-5.5" />
+                </motion.button>
              </div>
            </div>
          ) : currentTab === 'pocket' ? (
@@ -963,20 +946,55 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
         </motion.div>
       )}
 
-      {/* ─── 3. BOTTOM NAV (Fixed - Compact Pro) ─── */}
-      <div className="bg-white border-t border-gray-100 px-8 py-3 pb-6 flex justify-between items-center z-[200] shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-         <button onClick={() => navigate('/delivery/feed')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'feed' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
-            <LayoutGrid className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Feed</span>
-         </button>
-         <button onClick={() => navigate('/delivery/pocket')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'pocket' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
-            <Wallet className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Pocket</span>
-         </button>
-         <button onClick={() => navigate('/delivery/history')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'history' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
-            <History className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Trip History</span>
-         </button>
-         <button onClick={() => navigate('/delivery/profile')} className={`flex flex-col items-center gap-1 transition-all ${currentTab === 'profile' ? 'text-gray-950 scale-110' : 'text-gray-400 opacity-70'}`}>
-            <UserIcon className="w-6 h-6" /><span className="text-[11px] font-medium font-sans">Profile</span>
-         </button>
+      {/* ─── 3. BOTTOM NAV (Fixed - Floating Premium Capsule) ─── */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-md bg-white/90 dark:bg-black/80 backdrop-blur-xl px-4 py-2.5 flex justify-around items-center z-[200] rounded-2xl border border-gray-100/80 dark:border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.12)]">
+         {[
+           { id: 'feed', label: 'Feed', icon: LayoutGrid, path: '/delivery/feed' },
+           { id: 'pocket', label: 'Pocket', icon: Wallet, path: '/delivery/pocket' },
+           { id: 'history', label: 'History', icon: History, path: '/delivery/history' },
+           { id: 'profile', label: 'Profile', icon: UserIcon, path: '/delivery/profile' }
+         ].map((tab) => {
+           const isActive = currentTab === tab.id;
+           const Icon = tab.icon;
+           return (
+             <button
+               key={tab.id}
+               onClick={() => navigate(tab.path)}
+               className={`relative flex flex-col items-center justify-center py-2 px-5 rounded-xl transition-all duration-300 ${
+                 isActive 
+                   ? 'text-black dark:text-white font-bold' 
+                   : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
+               }`}
+             >
+                {/* Liquid-sliding background bubble */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeNavBubble"
+                    className="absolute inset-x-1 inset-y-1 bg-black/5 dark:bg-white/10 rounded-xl border border-black/5 dark:border-white/5 -z-10"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                
+                <motion.div
+                  animate={{ scale: isActive ? 1.15 : 1, y: isActive ? -1 : 0 }}
+                  transition={{ type: 'spring', stiffness: 450, damping: 22 }}
+                >
+                  <Icon className={`w-5 h-5 transition-all duration-300 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'}`} />
+                </motion.div>
+                
+                <span className="text-[10px] font-semibold tracking-wider font-sans mt-1">{tab.label}</span>
+                
+                {/* Active dot */}
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeNavIndicator" 
+                    className="absolute bottom-0.5 w-1.5 h-1.5 bg-black dark:bg-white rounded-full" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+             </button>
+           );
+         })}
       </div>
     </div>
   );

@@ -145,7 +145,7 @@ export const deleteDriverVehicle = (vehicleId) =>
   api.delete(`/drivers/vehicle/${vehicleId}`, withDriverAuth());
 
 export const getDriverVehicleTypes = () =>
-  api.get("/admin/types/vehicle-types", withDriverAuth());
+  api.get("/users/vehicle-types", withDriverAuth());
 
 export const getDriverApprovalStatus = () => {
   return api.get(

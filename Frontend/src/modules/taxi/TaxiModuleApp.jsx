@@ -102,9 +102,9 @@ const PhoneRegistration = lazy(() => import('./modules/driver/pages/registration
 const OTPVerification = lazy(() => import('./modules/driver/pages/registration/OTPVerification'));
 const RegistrationStatus = lazy(() => import('./modules/driver/pages/registration/RegistrationStatus'));
 const StepPersonal = lazy(() => import('./modules/driver/pages/registration/StepPersonal'));
-const StepReferral = lazy(() => import('./modules/driver/pages/registration/StepReferral'));
-const StepVehicle = lazy(() => import('./modules/driver/pages/registration/StepVehicle'));
-const StepDocuments = lazy(() => import('./modules/driver/pages/registration/StepDocuments'));
+const StepReferral = StepPersonal;
+const StepVehicle = StepPersonal;
+const StepDocuments = StepPersonal;
 const ApplicationStatus = lazy(() => import('./modules/driver/pages/registration/ApplicationStatus'));
 
 // Driver Module - Core
@@ -315,9 +315,9 @@ function App() {
               <Route path="reg-phone" element={<PhoneRegistration />} />
               <Route path="otp-verify" element={<OTPVerification />} />
               <Route path="step-personal" element={<StepPersonal />} />
-              <Route path="step-referral" element={<StepReferral />} />
-              <Route path="step-vehicle" element={<StepVehicle />} />
-              <Route path="step-documents" element={<StepDocuments />} />
+              <Route path="step-referral" element={<StepPersonal />} />
+              <Route path="step-vehicle" element={<StepPersonal />} />
+              <Route path="step-documents" element={<StepPersonal />} />
               <Route path="registration-status" element={<RegistrationStatus />} />
               <Route path="status" element={<ApplicationStatus />} />
 

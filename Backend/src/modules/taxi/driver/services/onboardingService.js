@@ -469,18 +469,31 @@ export const completeDriverOnboarding = async ({ registrationId, phone, document
   const vehicleType = selectedVehicle
     ? getGenericVehicleTypeFromCatalog(selectedVehicle)
     : getVehicleType(session.vehicle.vehicleTypeId, session.vehicle.registerFor);
+
+  let primaryVehicleTypeId = selectedVehicle?._id || null;
+  if (!primaryVehicleTypeId) {
+    const fallbackVehicle = await Vehicle.findOne({ icon_types: vehicleType }).lean();
+    if (fallbackVehicle) {
+      primaryVehicleTypeId = fallbackVehicle._id;
+    }
+  }
+
   const driver = await Driver.create({
     name: session.personal.fullName,
     phone: session.phone,
     email: session.personal.email,
     gender: session.personal.gender,
     password: session.personal.passwordHash,
+    service_location_id: resolvedServiceLocation?._id || null,
+    country: resolvedServiceLocation?.country || null,
     vehicleType,
-    vehicleTypeId: selectedVehicle?._id || null,
+    vehicleTypeId: primaryVehicleTypeId,
     vehicleIconType: selectedVehicle?.icon_types || vehicleType,
     registerFor: session.vehicle.registerFor,
     vehicleNumber: session.vehicle.number,
     vehicleColor: session.vehicle.color,
+    vehicleMake: session.vehicle.make || '',
+    vehicleModel: session.vehicle.model || '',
     city: session.vehicle.city || session.vehicle.locationName,
     referralCode: session.referralCode,
     approve: false,

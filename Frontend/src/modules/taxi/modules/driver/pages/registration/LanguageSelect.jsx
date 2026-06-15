@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Check, Globe, ChevronRight } from 'lucide-react';
+import { useSettings } from '../../../../shared/context/SettingsContext';
 
 const LanguageSelect = () => {
     const navigate = useNavigate();
+    const { settings } = useSettings() || {};
     const [selectedLang, setSelectedLang] = useState('english');
+    const appLogo = settings?.general?.logo || settings?.customization?.logo;
+    const appName = settings?.general?.app_name || 'App';
 
     const languages = [
         { id: 'english', label: 'English', sub: 'Standard Experience', native: 'English' },
         { id: 'hindi', label: 'Hindi', sub: 'मानक अनुभव', native: 'हिन्दी' },
         { id: 'marathi', label: 'Marathi', sub: 'मानक अनुभव', native: 'मराठी' },
-        { id: 'gujarati', label: 'Gujarati', sub: 'પ્રમાણભૂત અનુભવ', native: 'ગુજરાતી' }
+        { id: 'gujarati', label: 'Gujarati', sub: 'પ્રમાણભૂત अनुभव', native: 'ગુજરાતી' }
     ];
 
     const handleConfirm = () => {
@@ -24,7 +28,11 @@ const LanguageSelect = () => {
         <div className="min-h-screen bg-[#F8F9FA] font-sans select-none overflow-x-hidden flex flex-col p-6 pt-12 pb-10">
             {/* Branding */}
             <div className="mb-12 flex flex-col items-center text-center space-y-4">
-                <img src="/Rydon24.png" alt="RYDON24" className="h-10 object-contain drop-shadow-sm" />
+                {appLogo ? (
+                    <img src={appLogo} alt={appName} className="h-10 object-contain drop-shadow-sm" />
+                ) : (
+                    <span className="text-xl font-bold text-slate-800">{appName}</span>
+                )}
                 <div className="space-y-1">
                     <h1 className="text-3xl font-display font-bold text-slate-900 tracking-tight">Choose Language</h1>
                     <p className="text-[15px] font-medium text-slate-400">Select your preferred communication language</p>

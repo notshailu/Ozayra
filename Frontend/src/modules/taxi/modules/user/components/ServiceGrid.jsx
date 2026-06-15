@@ -34,7 +34,7 @@ const ServiceTile = ({ icon, label, description, path, accentClass }) => {
         <img
           src={icon}
           alt={label}
-          className="h-[75%] w-[75%] object-contain drop-shadow-[0_6px_12px_rgba(15,23,42,0.1)] transition-all duration-500 group-hover:scale-110"
+          className="h-full w-full object-contain mix-blend-multiply transition-all duration-500 group-hover:scale-110"
         />
       </div>
 
