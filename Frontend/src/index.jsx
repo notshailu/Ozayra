@@ -4,6 +4,11 @@ import { Toaster } from 'sonner'
 import App from './app/App.jsx'
 import { isModuleAuthenticated } from './modules/Food/utils/auth.js'
 import './shared/styles/global.css'
+import { installLegacyBackendShim } from './modules/taxi/shared/api/legacyBackendShim'
+
+// Install backend shim for legacy routes mapping
+installLegacyBackendShim()
+
 
 const NATIVE_LAST_ROUTE_KEY = 'native_last_route'
 

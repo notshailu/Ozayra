@@ -63,8 +63,23 @@ const StepPersonal = () => {
     const role = session.role || 'driver';
     const isOwner = role === 'owner';
 
-    // Steps definition
-    const [step, setStep] = useState(1); // 1: Personal, 2: Referral, 3: Vehicle, 4: Documents
+    // Steps definition derived from URL path
+    const step = useMemo(() => {
+        if (location.pathname.endsWith('/step-referral')) return 2;
+        if (location.pathname.endsWith('/step-vehicle')) return 3;
+        if (location.pathname.endsWith('/step-documents')) return 4;
+        return 1;
+    }, [location.pathname]);
+
+    const goToStep = (nextStep) => {
+        const paths = {
+            1: '/taxi/driver/step-personal',
+            2: '/taxi/driver/step-referral',
+            3: '/taxi/driver/step-vehicle',
+            4: '/taxi/driver/step-documents',
+        };
+        navigate(paths[nextStep], { state: session });
+    };
 
     // Step 1: Personal State
     const [personalForm, setPersonalForm] = useState({
@@ -259,13 +274,17 @@ const StepPersonal = () => {
         }
     }, [filteredVehicleTypes, vehicleForm.vehicleTypeId]);
 
-    const documentTemplates = useMemo(() => normalizeDriverDocumentTemplates(templates), [templates]);
+    const documentTemplates = useMemo(() => {
+        const list = normalizeDriverDocumentTemplates(templates);
+        const expectedType = isOwner ? 'fleet_drivers' : 'individual';
+        return list.filter(t => t.account_type === 'both' || t.account_type === expectedType);
+    }, [templates, isOwner]);
     const uploadFields = useMemo(() => flattenDriverDocumentFields(documentTemplates), [documentTemplates]);
 
     // Back navigation handler
     const handleBack = () => {
         if (step > 1) {
-            setStep(step - 1);
+            goToStep(step - 1);
             setError('');
         } else {
             navigate(-1);
@@ -295,7 +314,7 @@ const StepPersonal = () => {
                 ...safePersonalForm,
                 personalSession: response?.data?.session || null,
             });
-            setStep(2);
+            goToStep(2);
         } catch (err) {
             setError(err?.message || 'Unable to save personal details');
         } finally {
@@ -319,7 +338,7 @@ const StepPersonal = () => {
                 referralCode: codeToSave,
                 referralSession: response?.data?.session || null,
             });
-            setStep(3);
+            goToStep(3);
         } catch (err) {
             setError(err?.message || 'Unable to save referral code');
         } finally {
@@ -374,7 +393,7 @@ const StepPersonal = () => {
                 ...vehicleForm,
                 vehicleSession: response?.data?.session || null,
             });
-            setStep(4);
+            goToStep(4);
         } catch (err) {
             setError(err?.message || 'Unable to save vehicle details');
         } finally {
@@ -591,7 +610,7 @@ const StepPersonal = () => {
                                         <input 
                                             value={personalForm.fullName}
                                             onChange={(e) => setPersonalForm(p => ({ ...p, fullName: e.target.value }))}
-                                            placeholder="Hritik Raghuwanshi"
+                                            placeholder="John Doe"
                                             autoComplete="name"
                                             className="w-full bg-transparent border-none p-0 text-[14px] font-bold text-slate-900 focus:outline-none focus:ring-0 placeholder:text-slate-300"
                                         />
@@ -639,7 +658,7 @@ const StepPersonal = () => {
                                             type="email"
                                             value={personalForm.email}
                                             onChange={(e) => setPersonalForm(p => ({ ...p, email: e.target.value }))}
-                                            placeholder="hritik@redigo.in"
+                                            placeholder="john@redigo.in"
                                             autoComplete="email"
                                             className="w-full bg-transparent border-none p-0 text-[14px] font-bold text-slate-900 focus:outline-none focus:ring-0 placeholder:text-slate-300"
                                         />

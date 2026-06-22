@@ -37,8 +37,17 @@ const DriverDocuments = () => {
         getDriverDocumentTemplates(),
       ]);
 
-      setDriver(driverResponse?.data || null);
-      setTemplates(normalizeDriverDocumentTemplates(templateResponse?.data?.data?.results || templateResponse?.data?.results || []));
+      const driverData = driverResponse?.data?.data || driverResponse?.data || null;
+      setDriver(driverData);
+
+      const isOwner = String(driverData?.onboarding?.role || '').toLowerCase() === 'owner';
+      const expectedType = isOwner ? 'fleet_drivers' : 'individual';
+
+      const rawTemplates = templateResponse?.data?.data?.results || templateResponse?.data?.results || [];
+      const normalized = normalizeDriverDocumentTemplates(rawTemplates);
+      const filtered = normalized.filter(t => t.account_type === 'both' || t.account_type === expectedType);
+
+      setTemplates(filtered);
     } catch (err) {
       setError(err?.message || 'Unable to load driver documents');
     } finally {

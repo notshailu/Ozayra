@@ -224,14 +224,23 @@ const TaxiAdminRoutes = () => {
           <Route path="rental-packages" element={<AdminRentalPackageTypes />} />
           <Route path="rental-packages/create" element={<AdminRentalPackageTypes mode="create" />} />
           <Route path="rental-packages/edit/:id" element={<AdminRentalPackageTypes mode="edit" />} />
-          <Route path="set-price" element={<AdminSetPrices />} />
-          <Route path="set-price/create" element={<AdminSetPrices mode="create" />} />
-          <Route path="set-price/edit/:id" element={<AdminSetPrices mode="edit" />} />
-          <Route path="set-price/packages/:id" element={<AdminSetPackagePrices />} />
-          <Route path="set-price/packages/create/:id" element={<AdminCreatePackagePrice mode="create" />} />
-          <Route path="set-price/packages/edit/:packageId" element={<AdminCreatePackagePrice mode="edit" />} />
-          <Route path="set-price/incentive/:id" element={<AdminDriverIncentive />} />
-          <Route path="set-price/surge/:id" element={<AdminSurgePricing />} />
+          <Route path="taxi-commission" element={<AdminSetPrices filterType="taxi" />} />
+          <Route path="taxi-commission/create" element={<AdminSetPrices mode="create" filterType="taxi" />} />
+          <Route path="taxi-commission/edit/:id" element={<AdminSetPrices mode="edit" filterType="taxi" />} />
+          <Route path="taxi-commission/packages/:id" element={<AdminSetPackagePrices />} />
+          <Route path="taxi-commission/packages/create/:id" element={<AdminCreatePackagePrice mode="create" />} />
+          <Route path="taxi-commission/packages/edit/:packageId" element={<AdminCreatePackagePrice mode="edit" />} />
+          <Route path="taxi-commission/incentive/:id" element={<AdminDriverIncentive />} />
+          <Route path="taxi-commission/surge/:id" element={<AdminSurgePricing />} />
+
+          <Route path="parcel-commission" element={<AdminSetPrices filterType="delivery" />} />
+          <Route path="parcel-commission/create" element={<AdminSetPrices mode="create" filterType="delivery" />} />
+          <Route path="parcel-commission/edit/:id" element={<AdminSetPrices mode="edit" filterType="delivery" />} />
+          <Route path="parcel-commission/packages/:id" element={<AdminSetPackagePrices />} />
+          <Route path="parcel-commission/packages/create/:id" element={<AdminCreatePackagePrice mode="create" />} />
+          <Route path="parcel-commission/packages/edit/:packageId" element={<AdminCreatePackagePrice mode="edit" />} />
+          <Route path="parcel-commission/incentive/:id" element={<AdminDriverIncentive />} />
+          <Route path="parcel-commission/surge/:id" element={<AdminSurgePricing />} />
           <Route path="goods-types" element={<AdminGoodsTypes />} />
           <Route path="goods-types/create" element={<AdminGoodsTypes mode="create" />} />
           <Route path="goods-types/edit/:id" element={<AdminGoodsTypes mode="edit" />} />

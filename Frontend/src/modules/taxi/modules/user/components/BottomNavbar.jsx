@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Home, Clock, Map, User, ArrowUpRight, ShoppingBag } from 'lucide-react';
 
 const navItems = [
@@ -15,9 +15,10 @@ const BottomNavbar = () => {
   const { pathname } = useLocation();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto z-50 px-4 pb-6 pt-2 pointer-events-none">
+    <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto z-50 pointer-events-none">
       {/* Groceries Button - Floating Glassmorphic Pill */}
-      <div className="flex justify-end w-full mb-3 pr-2 pointer-events-auto">
+      {pathname === '/taxi/user/profile' && (
+        <div className="flex justify-end w-full mb-4 pr-4 pointer-events-auto">
         <motion.button
           type="button"
           initial={{ opacity: 0, y: 15 }}
@@ -36,28 +37,29 @@ const BottomNavbar = () => {
           whileHover={{ scale: 1.04, y: -4 }}
           whileTap={{ scale: 0.96 }}
           onClick={() => navigate('/quick')}
-          className="flex items-center gap-2.5 rounded-full border border-emerald-500/20 bg-white/90 backdrop-blur-xl px-4 py-2 shadow-[0_8px_30px_rgba(16,185,129,0.14),inset_0_1px_1px_rgba(255,255,255,0.8)]"
+          className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 shadow-sm"
         >
           {/* Subtle green pulse status dot */}
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </span>
           
-          <ShoppingBag size={13} className="text-emerald-600 animate-pulse" />
+          <ShoppingBag size={14} className="text-green-600" />
           
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800 font-sans">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-green-700">
             Groceries
           </span>
           
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
-            <ArrowUpRight size={11} strokeWidth={3} />
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-gray-500 ml-1">
+            <ArrowUpRight size={12} strokeWidth={2.5} />
           </div>
         </motion.button>
       </div>
+      )}
 
       {/* Main Navigation Bar Container */}
-      <div className="relative flex items-center justify-around bg-white/85 backdrop-blur-xl border border-white/60 rounded-[24px] shadow-[0_12px_40px_rgba(15,23,42,0.12)] px-2 py-1.5 pointer-events-auto">
+      <div className="relative flex items-center justify-around bg-white border-t border-gray-200 h-[68px] px-2 pointer-events-auto shadow-[0_-4px_20px_rgba(0,0,0,0.03)] pb-safe pt-1">
         {navItems.map(({ icon: Icon, label, path }) => {
           const isActive = pathname === path;
           return (
@@ -66,48 +68,38 @@ const BottomNavbar = () => {
               type="button"
               whileTap={{ scale: 0.92 }}
               onClick={() => navigate(path)}
-              className="flex-1 flex flex-col items-center gap-1.5 py-1.5 relative"
+              className="flex-1 flex flex-col items-center justify-center h-full relative group"
             >
-              {/* Sliding background bubble */}
+              {/* Active Top Line Indicator */}
               {isActive && (
                 <motion.div
-                  layoutId="taxiNavBubble"
-                  className="absolute inset-x-2 inset-y-1 bg-slate-900/5 rounded-[16px] -z-10"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  layoutId="taxiNavIndicator"
+                  className="absolute top-0 w-10 h-[3px] rounded-b-full bg-yellow-400"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
 
               {/* Icon Container */}
-              <motion.div 
-                animate={{ scale: isActive ? 1.12 : 1, y: isActive ? -1 : 0 }}
-                transition={{ type: 'spring', stiffness: 450, damping: 22 }}
-                className={`w-10 h-10 rounded-[16px] flex items-center justify-center transition-all duration-300 ${
+              <div 
+                className={`flex flex-col items-center transition-colors duration-200 mt-1 ${
                   isActive
-                    ? 'bg-slate-900 text-white shadow-[0_6px_20px_rgba(15,23,42,0.22)]'
-                    : 'text-slate-400 hover:text-slate-600 bg-transparent'
+                    ? 'text-gray-900'
+                    : 'text-gray-400 group-hover:text-gray-600'
                 }`}
               >
                 <Icon
-                  size={18}
+                  size={24}
                   strokeWidth={isActive ? 2.5 : 2}
+                  className={isActive ? 'text-gray-900' : 'text-gray-400'}
                 />
-              </motion.div>
-
-              {/* Label */}
-              <span className={`text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-300 ${
-                isActive ? 'text-slate-900' : 'text-slate-400'
-              }`}>
-                {label}
-              </span>
-
-              {/* Active indicator dot */}
-              {isActive && (
-                <motion.div
-                  layoutId="taxiNavIndicator"
-                  className="absolute bottom-0 w-1.5 h-1.5 rounded-full bg-slate-900"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
-              )}
+                
+                {/* Label */}
+                <span className={`text-[10px] font-bold mt-1 transition-colors duration-200 ${
+                  isActive ? 'text-gray-900' : 'text-gray-500'
+                }`}>
+                  {label}
+                </span>
+              </div>
             </motion.button>
           );
         })}
@@ -117,4 +109,3 @@ const BottomNavbar = () => {
 };
 
 export default BottomNavbar;
-

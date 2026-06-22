@@ -28,6 +28,11 @@ const explorerDestinationSchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
     },
+    description: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     label: {
       type: String,
       default: '',
@@ -37,6 +42,10 @@ const explorerDestinationSchema = new mongoose.Schema(
       type: String,
       default: '',
       trim: true,
+    },
+    images: {
+      type: [String],
+      default: [],
     },
     address: {
       type: String,

@@ -8,7 +8,7 @@ import {
   ArrowLeft,
   Settings
 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../../shared/api/axiosInstance';
 import toast from 'react-hot-toast';
 
@@ -18,9 +18,11 @@ const labelClass = "block text-xs font-semibold text-gray-500 mb-1.5";
 const SurgePricing = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Sunday');
   const [surges, setSurges] = useState([]);
+  const basePath = location.pathname.split('/pricing/')[0] + '/pricing/' + (location.pathname.includes('taxi-commission') ? 'taxi-commission' : 'parcel-commission');
   const [details, setDetails] = useState({ zone_name: '', vehicle_type: '' });
 
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -84,7 +86,9 @@ const SurgePricing = () => {
       {/* Header Block from Design System */}
       <div className="mb-8">
         <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
-           <span className="cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => navigate('/admin/pricing/set-price')}>Surge</span>
+           <span className="cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => navigate(basePath)}>
+             {location.pathname.includes('taxi-commission') ? 'Taxi Commission' : 'Parcel Commission'}
+           </span>
            <ChevronRight size={12} />
            <span className="text-gray-700 font-semibold tracking-tight uppercase">Surge Control</span>
         </div>

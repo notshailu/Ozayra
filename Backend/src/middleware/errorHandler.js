@@ -9,7 +9,7 @@ const errorHandler = (err, req, res, next) => {
     logger.error(
         `[${requestId}] ${req.method} ${req.originalUrl} ${statusCode} - ${err.name || 'Error'} - ${message}`
     );
-    if (config.nodeEnv === 'development' && err.stack) {
+    if (config.nodeEnv === 'development' && err.stack && statusCode >= 500) {
         logger.error(`[${requestId}] ${err.stack}`);
     }
 

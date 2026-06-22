@@ -439,9 +439,12 @@ export const completeDriverOnboarding = async ({ registrationId, phone, document
     normalizedDocuments[documentKey] = normalizeStoredDocument(value);
   }
 
+  const sessionRole = session.role || 'driver';
+  const expectedAccountType = sessionRole === 'owner' ? 'fleet_drivers' : 'individual';
+
   const configuredUploadFields = await listDriverDocumentUploadFields({ activeOnly: true });
   const requiredDocuments = configuredUploadFields
-    .filter((field) => field.required)
+    .filter((field) => field.required && (field.account_type === 'both' || field.account_type === expectedAccountType))
     .map((field) => field.key);
   const missingDocuments = requiredDocuments.filter((key) => !normalizedDocuments?.[key]);
 

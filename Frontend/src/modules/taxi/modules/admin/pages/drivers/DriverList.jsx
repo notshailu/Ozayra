@@ -3,6 +3,7 @@ import {
   Search,
   MoreVertical,
   FileText,
+  Download,
   Star,
   Plus,
   Eye,
@@ -19,11 +20,44 @@ import {
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { adminService } from '../../services/adminService';
 
 const ACTION_MENU_WIDTH = 176;
 const ACTION_MENU_GAP = 8;
 const ACTION_MENU_MAX_HEIGHT = 260;
+
+const normalizeDocuments = (raw) => {
+  if (!raw || typeof raw !== 'object') {
+    return [];
+  }
+  return Object.entries(raw).flatMap(([key, value]) => {
+    if (!value) return [];
+    const normalizeOne = (doc) => {
+      const images = Array.isArray(doc?.images)
+        ? doc.images.filter(Boolean)
+        : doc?.image
+          ? [doc.image]
+          : doc?.url
+            ? [doc.url]
+            : doc?.previewUrl
+              ? [doc.previewUrl]
+              : doc?.secureUrl
+                ? [doc.secureUrl]
+                : [];
+      return {
+        key,
+        name: doc?.name || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+        identify_number: doc?.identify_number ?? doc?.identifyNumber ?? doc?.number ?? doc?.id_number ?? 'N/A',
+        expiry_date: doc?.expiry_date ?? doc?.expiryDate ?? doc?.expiry ?? 'N/A',
+        status: doc?.status ?? 'Pending',
+        comment: doc?.comment ?? '-',
+        images,
+      };
+    };
+    return Array.isArray(value) ? value.map(normalizeOne) : [normalizeOne(value)];
+  });
+};
 
 const DriverList = () => {
   const navigate = useNavigate();
@@ -32,6 +66,7 @@ const DriverList = () => {
   const [menuPosition, setMenuPosition] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [passwordModal, setPasswordModal] = useState({ isOpen: false, driverId: null, password: '', isSubmitting: false });
+  const [detailModal, setDetailModal] = useState({ isOpen: false, driver: null });
   const [drivers, setDrivers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,13 +83,23 @@ const DriverList = () => {
           }).map(d => ({
             id: d._id,
             name: d.name || 'Unknown',
+            email: d.email || 'N/A',
+            gender: d.gender || 'N/A',
             serviceLocation: d.service_location_name || d.city || d.service_location?.name || 'India',
             phone: d.phone || d.mobile || 'N/A',
+            transport: d.transport_type || d.register_for || d.transport_type || 'N/A',
             transportType: d.transport_type || d.register_for || d.vehicle_type || 'All - Bike',
+            vehicle_make: d.vehicle_make || 'N/A',
+            vehicle_model: d.vehicle_model || 'N/A',
+            vehicle_number: d.vehicle_number || 'N/A',
+            vehicle_color: d.vehicle_color || 'N/A',
+            vehicle_image: d.vehicle_image || '',
+            referral_code: d.referral_code || 'N/A',
             rating: Number(d.rating_count || d.ratingCount || 0) > 0
               ? Number(d.rating || d.average_rating || d.avg_rating || 0)
               : 0,
             registeredAt: d.createdAt || null,
+            documents: d.documents || {},
             status: d.approve ? 'Approved' : (d.status || 'Approved')
           }));
           setDrivers(approved);
@@ -257,7 +302,6 @@ const DriverList = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Service Location</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Mobile Number</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Transport Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Document View</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Approved Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Rating</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Registered at</th>
@@ -267,7 +311,7 @@ const DriverList = () => {
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 <tr>
-                  <td colSpan="9" className="py-16 text-center">
+                  <td colSpan="8" className="py-16 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
                       <p className="text-sm text-gray-400">Loading drivers...</p>
@@ -276,7 +320,7 @@ const DriverList = () => {
                 </tr>
               ) : filteredDrivers.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-16 text-center text-sm text-gray-400">No drivers found.</td>
+                  <td colSpan="8" className="px-6 py-16 text-center text-sm text-gray-400">No drivers found.</td>
                 </tr>
               ) : (
                 filteredDrivers.map((driver) => (
@@ -285,14 +329,6 @@ const DriverList = () => {
                     <td className="px-4 py-4 text-sm text-gray-500">{driver.serviceLocation}</td>
                     <td className="px-4 py-4 text-sm text-gray-500">{driver.phone}</td>
                     <td className="px-4 py-4 text-sm text-gray-500">{driver.transportType}</td>
-                    <td className="px-4 py-4">
-                      <button
-                        onClick={() => navigate(`/admin/drivers/${driver.id}?tab=Documents`)}
-                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                      >
-                        <FileText size={16} />
-                      </button>
-                    </td>
                     <td className="px-4 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
                         {driver.status}
@@ -307,10 +343,21 @@ const DriverList = () => {
                     </td>
                     <td className="px-4 py-4 text-xs text-gray-400 whitespace-nowrap">{formatDate(driver.registeredAt)}</td>
                     <td className="px-4 py-4 text-center">
-                      <div className="relative inline-block">
+                      <div className="relative inline-block flex items-center gap-2 justify-end">
+                        <button
+                          onClick={() => {
+                            setDetailModal({
+                              isOpen: true,
+                              driver,
+                            });
+                          }}
+                          className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md hover:bg-indigo-100 transition-colors inline-flex items-center gap-1"
+                        >
+                          <Eye size={12} /> View
+                        </button>
                         <button 
                           onClick={(e) => toggleMenu(e, driver.id)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
                         >
                           <MoreVertical size={16} />
                         </button>
@@ -377,7 +424,13 @@ const DriverList = () => {
             <button
               onClick={() => {
                 closeMenu();
-                navigate(`/admin/drivers/${activeMenu}`);
+                const driver = drivers.find((d) => d.id === activeMenu);
+                if (driver) {
+                  setDetailModal({
+                    isOpen: true,
+                    driver,
+                  });
+                }
               }}
               className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
             >
@@ -447,6 +500,172 @@ const DriverList = () => {
           </div>
         </div>
       )}
+
+      {/* DETAIL MODAL (ONBOARDING DATA VIEW) */}
+      <AnimatePresence>
+        {detailModal.isOpen && detailModal.driver && (() => {
+          const d = detailModal.driver;
+          const normalizedDocs = normalizeDocuments(d.documents);
+          return (
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="bg-white rounded-xl w-full max-w-5xl shadow-xl border border-gray-200 p-6 space-y-6 animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4 flex-shrink-0">
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-900">Onboarding Profile Audit</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Driver Verification System</p>
+                  </div>
+                  <button 
+                    onClick={() => setDetailModal({ isOpen: false, driver: null })}
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <XCircle size={18} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 overflow-y-auto pr-2 flex-grow">
+                  {/* Left Column - Personal & Vehicle Details */}
+                  <div className="space-y-6">
+                    {/* Personal Card */}
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3">
+                      <h4 className="text-xs font-semibold uppercase text-gray-400 tracking-wider border-b border-gray-200 pb-1.5">Personal Information</h4>
+                      <div className="space-y-2.5 text-xs">
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Name</p>
+                          <p className="font-semibold text-gray-800">{d.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Email</p>
+                          <p className="font-semibold text-gray-800 break-all">{d.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Mobile Number</p>
+                          <p className="font-semibold text-gray-800">{d.phone}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Gender</p>
+                          <p className="font-semibold text-gray-800">{d.gender}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Service Location</p>
+                          <p className="font-semibold text-gray-800">{d.serviceLocation}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Referral Code</p>
+                          <p className="font-semibold text-gray-800">{d.referral_code || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Vehicle Card */}
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3">
+                      <h4 className="text-xs font-semibold uppercase text-gray-400 tracking-wider border-b border-gray-200 pb-1.5">Vehicle Details</h4>
+                      <div className="space-y-2.5 text-xs">
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Transport Type</p>
+                          <p className="font-semibold text-gray-800 capitalize">{d.transport}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Vehicle Make & Model</p>
+                          <p className="font-semibold text-gray-800">{d.vehicle_make} {d.vehicle_model}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Plate Number</p>
+                          <p className="font-semibold text-gray-800 uppercase">{d.vehicle_number}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Color</p>
+                          <p className="font-semibold text-gray-800">{d.vehicle_color}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Documents Table */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-semibold uppercase text-gray-400 tracking-wider border-b border-gray-100 pb-1.5">Documents Checklist</h4>
+                    <div className="overflow-x-auto border border-gray-150 rounded-lg">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500">
+                            <th className="px-6 py-3">Document Name</th>
+                            <th className="px-4 py-3">Identify Number</th>
+                            <th className="px-4 py-3">Expiry Date</th>
+                            <th className="px-4 py-3 text-center">Status</th>
+                            <th className="px-4 py-3">Comment</th>
+                            <th className="px-6 py-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                          {normalizedDocs.length === 0 ? (
+                            <tr>
+                              <td colSpan="6" className="px-6 py-12 text-center text-gray-400">No documents uploaded.</td>
+                            </tr>
+                          ) : (
+                            normalizedDocs.map((doc, idx) => (
+                              <tr key={`${doc.name}-${idx}`} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-6 py-4 font-semibold text-gray-900">{doc.name}</td>
+                                <td className="px-4 py-4">{doc.identify_number}</td>
+                                <td className="px-4 py-4">{doc.expiry_date}</td>
+                                <td className="px-4 py-4 text-center">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium capitalize ${
+                                    doc.status?.toLowerCase() === 'verified' || doc.status?.toLowerCase() === 'approved'
+                                      ? 'bg-emerald-50 text-emerald-700'
+                                      : doc.status?.toLowerCase() === 'declined' || doc.status?.toLowerCase() === 'rejected'
+                                        ? 'bg-rose-50 text-rose-700'
+                                        : 'bg-amber-50 text-amber-700'
+                                  }`}>
+                                    {doc.status || 'Pending'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 text-gray-400 italic">{doc.comment}</td>
+                                <td className="px-6 py-4 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    {doc.images.map((url, i) => (
+                                      <button
+                                        key={`view-${i}`}
+                                        onClick={() => window.open(url, '_blank')}
+                                        className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors inline-flex items-center gap-1"
+                                      >
+                                        <Eye size={12} /> View
+                                      </button>
+                                    ))}
+                                    {doc.images.map((url, i) => (
+                                      <a
+                                        key={`download-${i}`}
+                                        href={url}
+                                        download
+                                        className="px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-md hover:bg-emerald-100 transition-colors inline-flex items-center gap-1"
+                                      >
+                                        <Download size={12} /> Download
+                                      </a>
+                                    ))}
+                                    {doc.images.length === 0 && (
+                                      <span className="text-xs text-gray-400 italic">No File</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100 flex-shrink-0">
+                  <button
+                    onClick={() => setDetailModal({ isOpen: false, driver: null })}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 };

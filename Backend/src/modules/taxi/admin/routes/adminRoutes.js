@@ -88,6 +88,7 @@ import {
   getOwnerOnboarding,
   getOwnerBookings,
   getOwnerDashboardData,
+  getOwnerNeededDocument,
   getOwnerNeededDocuments,
   getPaymentGateways,
   getPaymentMethods,
@@ -281,6 +282,7 @@ adminRouter.post('/admin/owner-management/bookings', createOwnerBooking);
 adminRouter.patch('/admin/owner-management/bookings/:id', updateOwnerBooking);
 adminRouter.delete('/admin/owner-management/bookings/:id', deleteOwnerBooking);
 adminRouter.get('/admin/owner-management/owner-needed-document', getOwnerNeededDocuments);
+adminRouter.get('/admin/owner-management/owner-needed-document/:id', getOwnerNeededDocument);
 adminRouter.post('/admin/owner-management/owner-needed-document', createOwnerNeededDocument);
 adminRouter.patch('/admin/owner-management/owner-needed-document/:id', updateOwnerNeededDocument);
 adminRouter.delete('/admin/owner-management/owner-needed-document/:id', deleteOwnerNeededDocument);

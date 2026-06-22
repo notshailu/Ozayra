@@ -39,6 +39,8 @@ const Wallet = lazy(() => import('./modules/user/pages/Wallet'));
 // Coming Soon placeholder (for /tours and any unbuilt routes)
 const ComingSoon = lazy(() => import('./modules/shared/pages/ComingSoon'));
 
+const ExplorerDestinationDetails = lazy(() => import('./modules/user/pages/ExplorerDestinationDetails'));
+
 // Phase 1 — Parcel flow completions
 const ParcelSearchingDriver = lazy(() => import('./modules/user/pages/parcel/ParcelSearchingDriver'));
 const ParcelTracking = lazy(() => import('./modules/user/pages/parcel/ParcelTracking'));
@@ -255,6 +257,7 @@ function App() {
             <Route path="user/ride/chat" element={<Chat />} />
             <Route path="user/support" element={<Support />} />
             <Route path="user/ride/detail/:id" element={<RideDetail />} />
+            <Route path="user/explorer-details" element={<ExplorerDestinationDetails />} />
 
             <Route path="user/parcel/type" element={<ParcelType />} />
             <Route path="user/parcel/details" element={<ParcelDetails />} />

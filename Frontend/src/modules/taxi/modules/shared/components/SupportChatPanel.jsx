@@ -576,27 +576,33 @@ const SupportChatPanel = ({
   }
 
   return (
-    <div className={`overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.08)] ${className}`}>
-      <div className="flex items-center justify-between border-b border-slate-200/60 bg-white px-6 py-5 shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#405189] text-white shadow-lg shadow-indigo-600/10">
-            <MessageCircle size={20} />
+    <div className={`overflow-hidden ${isAdminPanel ? 'rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.08)]' : 'bg-transparent'} ${className}`}>
+      <div className={`flex items-center justify-between shrink-0 ${isAdminPanel ? 'border-b border-slate-200/60 bg-white px-6 py-5' : 'border-b border-slate-100 bg-transparent px-2 py-4'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`flex items-center justify-center ${isAdminPanel ? 'h-12 w-12 rounded-2xl bg-[#405189] text-white shadow-lg shadow-indigo-600/10' : 'h-10 w-10 rounded-full bg-slate-100 text-slate-600'}`}>
+            <MessageCircle size={isAdminPanel ? 20 : 18} />
           </div>
           <div>
-            <h2 className="text-[18px] font-black text-slate-900 tracking-tight">{title}</h2>
+            <h2 className={`font-semibold tracking-tight text-slate-900 ${isAdminPanel ? 'text-[18px]' : 'text-[16px]'}`}>{title}</h2>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Desk Terminal</span>
-              <span className="w-1 h-1 rounded-full bg-slate-300" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{subtitle}</p>
+              <span className={`font-medium uppercase tracking-wider ${isAdminPanel ? 'text-[10px] text-slate-400' : 'text-[11px] text-slate-500'}`}>
+                {isAdminPanel ? 'Desk Terminal' : subtitle}
+              </span>
+              {isAdminPanel && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-slate-300" />
+                  <p className="text-[10px] font-medium uppercase tracking-widest text-indigo-600">{subtitle}</p>
+                </>
+              )}
             </div>
           </div>
         </div>
-        <div className={`flex items-center gap-2.5 rounded-xl border px-4 py-2 transition-all ${
-          isConnected ? 'border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/5' : 'border-rose-100 bg-rose-50 text-rose-700'
+        <div className={`flex items-center gap-2.5 rounded-full border px-3 py-1.5 transition-all ${
+          isConnected ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-rose-100 bg-rose-50 text-rose-700'
         }`}>
-          <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-          <span className="text-[11px] font-black uppercase tracking-widest">
-            {isConnected ? 'Connection: Live' : 'Connection: Offline'}
+          <div className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+          <span className="text-[10px] font-semibold uppercase tracking-wider">
+            {isConnected ? 'Live' : 'Offline'}
           </span>
         </div>
       </div>
@@ -777,12 +783,12 @@ const SupportChatPanel = ({
               )}
             </AnimatePresence>
 
-            <div className="mx-auto flex max-w-4xl items-center gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className={`mx-auto flex max-w-4xl items-center gap-3 border bg-slate-50 px-4 py-2.5 ${isAdminPanel ? 'rounded-[24px] border-slate-200' : 'rounded-full border-slate-100'}`}>
               <button
                 type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-100"
+                className={`flex items-center justify-center ${isAdminPanel ? 'h-9 w-9 rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-100' : 'text-slate-400'}`}
               >
-                <ShieldCheck size={16} />
+                <ShieldCheck size={18} />
               </button>
               <input
                 value={draft}
@@ -793,28 +799,30 @@ const SupportChatPanel = ({
                   }
                 }}
                 placeholder={isAdminPanel ? 'Reply to support request' : 'Type a message to admin'}
-                className="flex-1 bg-transparent text-[14px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+                className={`flex-1 bg-transparent font-medium text-slate-900 outline-none ${isAdminPanel ? 'text-[14px] placeholder:text-slate-400' : 'text-[14px] placeholder:text-slate-400'}`}
               />
               <button
                 type="button"
                 onClick={handleSend}
                 disabled={sending || !draft.trim()}
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl text-white transition-all ${
-                  sending || !draft.trim() ? 'bg-slate-300' : 'bg-indigo-600 hover:bg-slate-800'
+                className={`inline-flex items-center justify-center transition-all ${
+                  isAdminPanel 
+                    ? `h-11 w-11 rounded-2xl text-white ${sending || !draft.trim() ? 'bg-slate-300' : 'bg-indigo-600 hover:bg-slate-800'}`
+                    : `h-8 w-8 rounded-full shrink-0 ${draft.trim() ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-400'}`
                 }`}
               >
-                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               </button>
             </div>
 
             {!isAdminPanel && (
-              <div className="mx-auto mt-3 flex max-w-4xl flex-wrap gap-2">
+              <div className="mx-auto mt-3 flex max-w-4xl flex-nowrap overflow-x-auto no-scrollbar gap-2 pb-1">
                 {quickReplies.map((reply) => (
                   <button
                     type="button"
                     key={reply}
                     onClick={() => setDraft(reply)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500"
+                    className="shrink-0 rounded-full border border-slate-100 bg-white px-4 py-2 text-[12px] font-medium text-slate-600 active:bg-slate-50 transition-all shadow-sm"
                   >
                     {reply}
                   </button>

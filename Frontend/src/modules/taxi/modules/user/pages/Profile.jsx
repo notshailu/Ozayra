@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Wallet, Bell, Shield, LogOut, ChevronRight, HelpCircle, MapPin, Star, Package, Wrench, Gift, Trash2, Camera, Check } from 'lucide-react';
+import { User, Wallet, Bell, MapPin, Star, Package, Gift, Trash2, Camera, Check, LogOut, ChevronRight, HelpCircle } from 'lucide-react';
 import BottomNavbar from '../components/BottomNavbar';
 import { clearLocalUserSession, getLocalUserInfo, getLocalUserToken, setLocalUserInfo, userAuthService } from '../services/authService';
 import { clearCurrentRide } from '../services/currentRideService';
 import { socketService } from '../../../shared/api/socket';
 import { useImageUpload } from '../../../shared/hooks/useImageUpload';
 
-const MotionDiv = motion.div;
 const MotionButton = motion.button;
 
 const menuItems = [
@@ -18,8 +17,8 @@ const menuItems = [
   { icon: Package, title: 'My Rides', sub: 'History & receipts', path: '/taxi/user/activity', bg: 'bg-indigo-50', color: 'text-indigo-500' },
   { icon: Bell, title: 'Notifications', sub: 'Offers & safety alerts', path: '/taxi/user/profile/notifications', bg: 'bg-purple-50', color: 'text-purple-500' },
   { icon: Gift, title: 'Refer & Earn', sub: 'Invite friends & get rewards', path: '/taxi/user/referral', bg: 'bg-amber-50', color: 'text-amber-500' },
-  { icon: HelpCircle, title: 'Support', sub: 'Help center & ticketing', path: '/taxi/user/support/tickets', bg: 'bg-slate-50', color: 'text-slate-500' },
-  { icon: Trash2, title: 'Delete Account', sub: 'Request account deletion', path: '/taxi/user/profile/delete-account', bg: 'bg-red-50', color: 'text-red-500' },
+  { icon: HelpCircle, title: 'Support', sub: 'Help center & ticketing', path: '/taxi/user/support/tickets', bg: 'bg-slate-100', color: 'text-slate-600' },
+  { icon: Trash2, title: 'Delete Account', sub: 'Request account deletion', path: '/taxi/user/profile/delete-account', bg: 'bg-rose-50', color: 'text-rose-500' },
 ];
 
 const Profile = () => {
@@ -55,7 +54,6 @@ const Profile = () => {
         setProfile((prev) => ({ ...prev, profileImage: previousImage }));
         setError(err?.message || 'Unable to update profile photo');
       } finally {
-        setIsUploading(true); // Wait a bit for Cloudinary if needed, or set to false
         setIsUploading(false);
       }
     },
@@ -114,27 +112,17 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 max-w-lg mx-auto font-sans pb-28 relative overflow-hidden">
-      {/* Dynamic Background Accents */}
-      <div className="absolute top-0 right-0 h-40 w-40 bg-orange-100/40 rounded-full blur-3xl" />
-      <div className="absolute top-40 left-0 h-56 w-56 bg-indigo-100/30 rounded-full blur-3xl" />
-
       {/* Header Profile Section */}
-      <div className="px-5 pt-12 pb-6">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">My Account</h1>
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mt-1.5 opacity-70">Manage your profile & settings</p>
-          </div>
+      <div className="px-5 pt-10 pb-4">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">My Account</h1>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mt-2">Manage your profile & settings</p>
         </div>
 
         {/* Hero Profile Card */}
-        <MotionDiv
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="rounded-[28px] bg-white border border-slate-100 shadow-xl shadow-slate-900/5 p-5 flex items-center gap-5"
-        >
+        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-4 flex items-center gap-4">
           <div className="relative group">
-            <div className="w-15 h-15 rounded-[22px] bg-slate-900 flex items-center justify-center shadow-lg relative overflow-hidden">
+            <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center relative overflow-hidden">
               {(imagePreview || profile.profileImage) ? (
                 <img 
                   src={imagePreview || profile.profileImage} 
@@ -142,7 +130,7 @@ const Profile = () => {
                   className={`w-full h-full object-cover ${(imageUploading || isUploading) ? 'opacity-60' : ''}`} 
                 />
               ) : (
-                <span className="text-xl font-bold text-white opacity-40">{initials || 'U'}</span>
+                <span className="text-xl font-semibold text-white opacity-40">{initials || 'U'}</span>
               )}
               
               {/* Overlay on hover */}
@@ -169,66 +157,66 @@ const Profile = () => {
               />
             </label>
 
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-lg border-2 border-white flex items-center justify-center shadow-sm">
-              <Check size={12} className="text-white" strokeWidth={4} />
+            <div className="absolute -bottom-0 -right-0 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+              <Check size={10} className="text-white" strokeWidth={3} />
             </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-[17px] font-bold text-slate-900 truncate capitalize leading-tight">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[17px] font-semibold text-slate-900 truncate capitalize leading-tight">
               {profile.name || 'User Name'}
             </h2>
-            <p className="text-[12px] font-semibold text-slate-400 mt-1">
+            <p className="text-[13px] text-slate-500 mt-0.5">
               {profile.phone ? `+91 ${profile.phone}` : '+91 Mobile Number'}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <div className="bg-amber-50 border border-amber-100 rounded-lg px-2 py-1 flex items-center gap-1">
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <div className="bg-amber-50 rounded px-2 py-1 flex items-center gap-1">
               <Star size={10} className="text-amber-500 fill-amber-500" />
-              <span className="text-[11px] font-bold text-slate-800">4.9</span>
+              <span className="text-[11px] font-semibold text-slate-800">4.9</span>
             </div>
-            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Active</span>
+            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Active</span>
           </div>
-        </MotionDiv>
+        </div>
         {error && (
-          <p className="mt-3 px-2 text-[11px] font-medium text-rose-500">{error}</p>
+          <p className="mt-3 px-2 text-[12px] text-rose-500">{error}</p>
         )}
       </div>
 
       {/* Menu Options */}
-      <div className="px-5 space-y-3">
-        <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 opacity-60">System Menu</h3>
+      <div className="px-5 space-y-4">
+        <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest ml-1">System Menu</h3>
 
-        <div className="rounded-[28px] border border-slate-100 bg-white shadow-sm overflow-hidden divide-y divide-slate-50">
+        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden divide-y divide-slate-50">
           {menuItems.map(({ icon: Icon, title, sub, path, bg, color }, idx) => (
             <MotionButton
               key={idx}
               whileTap={{ backgroundColor: '#F8FAFC' }}
               onClick={() => navigate(path)}
-              className="w-full flex items-center gap-4 px-5 py-4 text-left transition-colors"
+              className="w-full flex items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-slate-50"
             >
-              <div className={`w-10 h-10 rounded-[18px] flex items-center justify-center shrink-0 ${bg}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${bg}`}>
                 {React.createElement(Icon, { size: 18, className: color, strokeWidth: 2 })}
               </div>
               <div className="flex-1">
-                <p className="text-[14px] font-semibold text-slate-900 leading-tight">{title}</p>
-                <p className="text-[11px] font-medium text-slate-400 mt-1">{sub}</p>
+                <p className="text-[14px] font-medium text-slate-900 leading-tight">{title}</p>
+                <p className="text-[12px] text-slate-500 mt-0.5">{sub}</p>
               </div>
-              <ChevronRight size={16} className="text-slate-200" strokeWidth={3} />
+              <ChevronRight size={18} className="text-slate-300" strokeWidth={2} />
             </MotionButton>
           ))}
         </div>
 
         {/* Sign Out Action */}
-        <div className="pt-4 pb-8">
+        <div className="pt-2 pb-8">
           <button
             onClick={handleLogout}
-            className="w-full h-15 rounded-2xl border border-rose-100 bg-rose-50 text-rose-500 flex items-center justify-center gap-3 text-[14px] font-bold active:scale-98 transition-all"
+            className="w-full h-14 rounded-xl border border-rose-100 bg-rose-50 text-rose-600 flex items-center justify-center gap-2 text-[14px] font-medium active:scale-95 transition-all"
           >
             <LogOut size={16} strokeWidth={2.5} />
-            Sign Out from Session
+            Sign out
           </button>
 
-          <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-8">App Version 2.4.1 (Stable)</p>
+          <p className="text-center text-[11px] font-medium text-slate-400 uppercase tracking-widest mt-6">App Version 2.4.1 (Stable)</p>
         </div>
       </div>
 

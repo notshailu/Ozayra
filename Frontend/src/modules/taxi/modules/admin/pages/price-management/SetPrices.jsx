@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { API_BASE_URL } from '../../../../shared/api/runtimeConfig';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTaxiTransportTypes } from '../../../../shared/hooks/useTaxiTransportTypes';
 
 const inputClass = "w-full border border-gray-200 rounded-md px-4 py-3 text-sm text-gray-800 bg-white focus:border-indigo-500 transition-all outline-none";
@@ -92,12 +92,15 @@ const initialFormState = {
   parcel_weight_ranges: []
 };
 
-const SetPrices = ({ mode }) => {
+const SetPrices = ({ mode, filterType }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const isCreateOrEdit = mode === 'create' || mode === 'edit';
   const view = isCreateOrEdit ? 'create' : 'list';
   const editingId = id || null;
+
+  const basePath = location.pathname.split('/pricing/')[0] + '/pricing/' + (filterType === 'taxi' ? 'taxi-commission' : 'parcel-commission');
 
   const [prizes, setPrizes] = useState([]);
   const [prizesFull, setPrizesFull] = useState([]);
@@ -109,7 +112,10 @@ const SetPrices = ({ mode }) => {
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const { transportTypes } = useTaxiTransportTypes();
 
-  const [formData, setFormData] = useState(initialFormState);
+  const [formData, setFormData] = useState({
+    ...initialFormState,
+    transport_type: filterType || ''
+  });
 
   const baseUrl = `${API_BASE_URL}/admin`;
   const token = localStorage.getItem('adminToken');
@@ -142,9 +148,12 @@ const SetPrices = ({ mode }) => {
         });
       }
     } else if (mode === 'create') {
-      setFormData({ ...initialFormState });
+      setFormData({
+        ...initialFormState,
+        transport_type: filterType || ''
+      });
     }
-  }, [mode, id, prizesFull]);
+  }, [mode, id, prizesFull, filterType]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -196,7 +205,7 @@ const SetPrices = ({ mode }) => {
       });
       const data = await res.json();
       if (data.success) {
-        navigate('/admin/pricing/set-price');
+        navigate(basePath);
         fetchInitialData();
       } else alert(data.message || "Failed to save");
     } catch (error) { console.error(error); } finally { setSaving(false); }
@@ -204,7 +213,14 @@ const SetPrices = ({ mode }) => {
 
   const filteredPrizes = prizes.filter(p => {
     const q = searchTerm.toLowerCase();
-    return (p.zone_name || '').toLowerCase().includes(q) || (p.vehicle_type_name || '').toLowerCase().includes(q);
+    const matchesSearch = (p.zone_name || '').toLowerCase().includes(q) || (p.vehicle_type_name || '').toLowerCase().includes(q);
+    if (filterType === 'taxi') {
+      return matchesSearch && (p.transport_type === 'taxi' || p.transport_type === 'both' || p.transport_type === 'all');
+    }
+    if (filterType === 'delivery') {
+      return matchesSearch && (p.transport_type === 'delivery' || p.transport_type === 'both' || p.transport_type === 'all');
+    }
+    return matchesSearch;
   });
 
   return (
@@ -217,9 +233,13 @@ const SetPrices = ({ mode }) => {
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-6">
-               <h1 className="text-sm font-bold text-[#1E293B] uppercase tracking-[0.15em]">SET PRICES</h1>
+               <h1 className="text-sm font-bold text-[#1E293B] uppercase tracking-[0.15em]">
+                 {filterType === 'taxi' ? 'TAXI COMMISSION' : (filterType === 'delivery' ? 'PARCEL COMMISSION' : 'SET PRICES')}
+               </h1>
                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium tracking-tight">
-                  <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => fetchInitialData()}>Set Prices</span>
+                  <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => fetchInitialData()}>
+                    {filterType === 'taxi' ? 'Taxi Commission' : (filterType === 'delivery' ? 'Parcel Commission' : 'Set Prices')}
+                  </span>
                   <ChevronRight size={10} className="text-slate-300" />
                   <span className="text-slate-800 font-bold">Listing</span>
                </div>
@@ -244,8 +264,8 @@ const SetPrices = ({ mode }) => {
                     <button className="flex items-center gap-2 px-6 py-2 bg-[#F37048] text-white rounded text-sm font-bold shadow-sm">
                       <Filter size={16} /> Filters
                     </button>
-                    <button onClick={() => navigate('/admin/pricing/set-price/create')} className="flex items-center gap-2 px-6 py-2 bg-[#44516F] text-white rounded text-sm font-bold shadow-sm">
-                      <Plus size={18} /> Add Set Price
+                    <button onClick={() => navigate(`${basePath}/create`)} className="flex items-center gap-2 px-6 py-2 bg-[#44516F] text-white rounded text-sm font-bold shadow-sm">
+                      <Plus size={18} /> Add {filterType === 'taxi' ? 'Taxi Commission' : (filterType === 'delivery' ? 'Parcel Commission' : 'Set Price')}
                     </button>
                   </div>
                </div>
@@ -271,7 +291,7 @@ const SetPrices = ({ mode }) => {
                         <tr key={prize.id || prize._id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-8 py-6 text-sm font-semibold text-slate-700">{prize.zone_name || 'India'}</td>
                           <td className="px-8 py-6 text-sm text-slate-600 font-medium">
-                            {prize.transport_type === 'both' ? 'All' : (prize.transport_type === 'taxi' ? 'Ride Hailing' : (prize.transport_type || 'All'))}
+                            {prize.transport_type === 'both' ? 'All' : (prize.transport_type === 'taxi' ? 'Ride Hailing' : (prize.transport_type === 'delivery' ? 'Parcel Delivery' : (prize.transport_type || 'All')))}
                           </td>
                           <td className="px-8 py-6 text-sm text-slate-800 font-bold">{prize.vehicle_type_name || 'Premium Car'}</td>
                           <td className="px-8 py-6">
@@ -288,24 +308,24 @@ const SetPrices = ({ mode }) => {
                           </td>
                           <td className="px-8 py-6 text-right pr-12">
                              <div className="flex items-center justify-end gap-2">
-                                <button onClick={() => navigate(`/admin/pricing/set-price/edit/${prize.id || prize._id}`)} className="w-8 h-8 flex items-center justify-center bg-[#FFF7ED] text-[#F97316] rounded transition-colors hover:bg-orange-100"><Edit2 size={14} /></button>
+                                <button onClick={() => navigate(`${basePath}/edit/${prize.id || prize._id}`)} className="w-8 h-8 flex items-center justify-center bg-[#FFF7ED] text-[#F97316] rounded transition-colors hover:bg-orange-100"><Edit2 size={14} /></button>
                                  <button 
                                    title="set package prices"
-                                   onClick={() => navigate(`/admin/pricing/set-price/packages/${prize.id || prize._id}`)}
+                                   onClick={() => navigate(`${basePath}/packages/${prize.id || prize._id}`)}
                                    className="w-8 h-8 flex items-center justify-center bg-[#F0FDFA] text-[#14B8A6] rounded transition-colors hover:bg-emerald-100"
                                  >
                                     <Gift size={14} />
                                  </button>
                                  <button 
                                    title="Surge"
-                                   onClick={() => navigate(`/admin/pricing/set-price/surge/${prize.id || prize._id}`)}
+                                   onClick={() => navigate(`${basePath}/surge/${prize.id || prize._id}`)}
                                    className="w-8 h-8 flex items-center justify-center bg-[#FEF2F2] text-[#EF4444] rounded transition-colors hover:bg-red-100"
                                  >
                                     <Zap size={14} />
                                  </button>
                                  <button 
                                    title="driver incentive"
-                                   onClick={() => navigate(`/admin/pricing/set-price/incentive/${prize.id || prize._id}`)}
+                                   onClick={() => navigate(`${basePath}/incentive/${prize.id || prize._id}`)}
                                    className="w-8 h-8 flex items-center justify-center bg-[#EEF2FF] text-[#6366F1] rounded transition-colors hover:bg-indigo-100"
                                  >
                                     <Cone size={14} />
@@ -327,9 +347,13 @@ const SetPrices = ({ mode }) => {
           >
             {/* Form Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-8">
-               <h1 className="text-sm font-bold text-[#1E293B] uppercase tracking-[0.15em]">{mode === 'edit' ? 'EDIT' : 'CREATE'}</h1>
+               <h1 className="text-sm font-bold text-[#1E293B] uppercase tracking-[0.15em]">
+                 {mode === 'edit' ? 'EDIT' : 'CREATE'} {filterType === 'taxi' ? 'TAXI COMMISSION' : (filterType === 'delivery' ? 'PARCEL COMMISSION' : 'PRICE')}
+               </h1>
                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
-                  <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => navigate('/admin/pricing/set-price')}>Set Prices</span>
+                  <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => navigate(basePath)}>
+                    {filterType === 'taxi' ? 'Taxi Commission' : (filterType === 'delivery' ? 'Parcel Commission' : 'Set Prices')}
+                  </span>
                   <ChevronRight size={10} className="text-slate-300" />
                   <span className="text-slate-800 font-bold">{mode === 'edit' ? 'Edit' : 'Create'}</span>
                </div>
@@ -376,7 +400,7 @@ const SetPrices = ({ mode }) => {
                      <div>
                         <label className={labelClass}>Transport Type <span className="text-rose-500">*</span></label>
                         <div className="relative">
-                            <select required className={inputClass + " appearance-none cursor-pointer"} value={formData.transport_type} onChange={e => setFormData(p=>({...p, transport_type: e.target.value}))}>
+                            <select required disabled={!!filterType} className={inputClass + " appearance-none cursor-pointer disabled:bg-gray-100 disabled:text-gray-500"} value={formData.transport_type} onChange={e => setFormData(p=>({...p, transport_type: e.target.value}))}>
                                <option value="">Select Transport Type</option>
                                {transportTypes.map(t => (
                                  <option key={t.id || t._id} value={t.name}>{t.display_name}</option>

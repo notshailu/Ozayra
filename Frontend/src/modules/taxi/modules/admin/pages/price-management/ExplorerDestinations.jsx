@@ -37,7 +37,9 @@ const defaultFormData = {
   code: '',
   label: '',
   image: '',
+  images: [],
   address: '',
+  description: '',
   latitude: '',
   longitude: '',
   status: 'active',
@@ -161,14 +163,34 @@ const ExplorerDestinations = ({ mode: initialMode = "list" }) => {
   };
 
   const handleImageChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    
+    const currentCount = formData.images?.length || 0;
+    const allowedToAdd = 4 - currentCount;
+    if (allowedToAdd <= 0) {
+      alert('You can only upload up to 4 images.');
+      return;
+    }
+
+    const filesToProcess = files.slice(0, allowedToAdd);
+    
     try {
-      const dataUrl = await fileToDataUrl(file);
-      setFormData(prev => ({ ...prev, image: dataUrl }));
+      const dataUrls = await Promise.all(filesToProcess.map(fileToDataUrl));
+      setFormData(prev => ({ 
+        ...prev, 
+        images: [...(prev.images || []), ...dataUrls]
+      }));
     } catch (err) {
       alert('Failed to read image file');
     }
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      images: (prev.images || []).filter((_, idx) => idx !== indexToRemove)
+    }));
   };
 
   const handleSave = async () => {
@@ -181,6 +203,7 @@ const ExplorerDestinations = ({ mode: initialMode = "list" }) => {
       const payload = {
         ...formData,
         title: formData.title.trim(),
+        description: formData.description?.trim() || '',
         latitude: Number(formData.latitude),
         longitude: Number(formData.longitude),
       };
@@ -209,7 +232,9 @@ const ExplorerDestinations = ({ mode: initialMode = "list" }) => {
       code: dest.code || '',
       label: dest.label || '',
       image: dest.image || '',
+      images: Array.isArray(dest.images) ? dest.images : (dest.image ? [dest.image] : []),
       address: dest.address || '',
+      description: dest.description || '',
       latitude: dest.latitude ?? '',
       longitude: dest.longitude ?? '',
       status: dest.status || 'active',
@@ -314,8 +339,8 @@ const ExplorerDestinations = ({ mode: initialMode = "list" }) => {
                         <tr key={dest._id || dest.id} className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="w-12 h-8 rounded bg-gray-100 overflow-hidden border border-gray-200">
-                              {dest.image ? (
-                                <img src={dest.image} alt={dest.title} className="w-full h-full object-cover" />
+                              {dest.images?.[0] || dest.image ? (
+                                <img src={dest.images?.[0] || dest.image} alt={dest.title} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-slate-300">
                                   <Compass size={14} />
@@ -435,6 +460,16 @@ const ExplorerDestinations = ({ mode: initialMode = "list" }) => {
                      />
                    </div>
 
+                   <div>
+                     <label className={labelClass}>Description / More Info</label>
+                     <textarea 
+                       value={formData.description} onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                       placeholder="Additional details about the place"
+                       className={inputClass}
+                       rows={3}
+                     />
+                   </div>
+
                    <div className="grid grid-cols-2 gap-4">
                      <div>
                        <label className={labelClass}>Latitude</label>
@@ -453,27 +488,36 @@ const ExplorerDestinations = ({ mode: initialMode = "list" }) => {
                    </div>
 
                    <div>
-                     <label className={labelClass}>Card Image</label>
+                     <div className="flex items-center justify-between mb-1.5">
+                       <label className="block text-xs font-semibold text-gray-500">Destination Images (Up to 4)</label>
+                       <span className="text-[10px] text-gray-400 font-medium">
+                         {formData.images?.length || 0} / 4 uploaded
+                       </span>
+                     </div>
                      <div className="rounded-2xl border border-dashed border-slate-300 p-4">
-                       <div className="group relative flex min-h-[160px] items-center justify-center overflow-hidden rounded-2xl bg-slate-50 border border-slate-100">
-                         {formData.image ? (
-                           <>
-                             <img src={formData.image} alt="Destination preview" className="max-h-[140px] w-full object-contain p-2" />
-                             <button
-                               type="button"
-                               onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
-                               className="absolute right-3 top-3 rounded-xl bg-white p-2 text-red-500 shadow-sm border border-red-100 transition hover:bg-red-500 hover:text-white"
-                             >
-                               <Trash2 size={14} />
-                             </button>
-                           </>
-                         ) : (
-                           <label className="flex cursor-pointer flex-col items-center gap-2">
-                             <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm border border-gray-100">
-                               <Upload size={16} />
+                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                         {(formData.images || []).map((img, idx) => (
+                           <div key={idx} className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm">
+                             <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                               <button
+                                 type="button"
+                                 onClick={() => handleRemoveImage(idx)}
+                                 className="w-8 h-8 rounded-full bg-white text-red-500 flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+                               >
+                                 <Trash2 size={14} />
+                               </button>
+                             </div>
+                           </div>
+                         ))}
+                         
+                         {(formData.images?.length || 0) < 4 && (
+                           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 aspect-[4/3] rounded-xl bg-slate-50 border border-dashed border-slate-300 hover:bg-slate-100 hover:border-indigo-300 transition-colors">
+                             <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-indigo-600 shadow-sm border border-gray-100">
+                               <Plus size={16} />
                              </span>
-                             <span className="text-xs font-semibold text-slate-700">Upload Image Card</span>
+                             <span className="text-[10px] font-semibold text-slate-500">Add Image</span>
                            </label>
                          )}
                        </div>

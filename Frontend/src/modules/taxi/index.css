@@ -1,17 +1,19 @@
 .redigo-app,
 .redigo-admin-root {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 
   color-scheme: light;
-  color: #1C2833;
+  color: #272324;
   background-color: #F9F9F9;
-  --primary: #E85D04;
-  --secondary: #F48C06;
-  --color-primary: #E85D04;
-  --color-secondary: #F48C06;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --primary: #F9C922; /* Rapido primary yellow */
+  --secondary: #272324; /* Rapido secondary charcoal */
+  --color-primary: #F9C922;
+  --color-secondary: #272324;
+  --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
   --font-display: 'Outfit', sans-serif;
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
@@ -23,6 +25,73 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enforce Outfit Font Globally in Taxi Module */
+.redigo-app *,
+.redigo-admin-root *,
+.driver-theme * {
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+}
+.redigo-app .font-sans,
+.redigo-admin-root .font-sans,
+.driver-theme .font-sans,
+.redigo-app .font-serif,
+.redigo-admin-root .font-serif,
+.driver-theme .font-serif,
+.redigo-app .font-mono,
+.redigo-admin-root .font-mono,
+.driver-theme .font-mono {
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Rapido exact text color mappings to override Tailwind defaults */
+.redigo-app .text-slate-900,
+.redigo-admin-root .text-slate-900,
+.driver-theme .text-slate-900,
+.redigo-app .text-gray-900,
+.redigo-admin-root .text-gray-900,
+.driver-theme .text-gray-900,
+.redigo-app .text-slate-800,
+.redigo-admin-root .text-slate-800,
+.driver-theme .text-slate-800,
+.redigo-app .text-gray-800,
+.redigo-admin-root .text-gray-800,
+.driver-theme .text-gray-800,
+.redigo-app .text-black,
+.redigo-admin-root .text-black,
+.driver-theme .text-black {
+  color: #272324 !important;
+}
+
+.redigo-app .text-slate-700,
+.redigo-admin-root .text-slate-700,
+.driver-theme .text-slate-700,
+.redigo-app .text-gray-700,
+.redigo-admin-root .text-gray-700,
+.driver-theme .text-gray-700,
+.redigo-app .text-slate-600,
+.redigo-admin-root .text-slate-600,
+.driver-theme .text-slate-600,
+.redigo-app .text-gray-600,
+.redigo-admin-root .text-gray-600,
+.driver-theme .text-gray-600 {
+  color: #545E68 !important;
+}
+
+.redigo-app .text-slate-500,
+.redigo-admin-root .text-slate-500,
+.driver-theme .text-slate-500,
+.redigo-app .text-gray-500,
+.redigo-admin-root .text-gray-500,
+.driver-theme .text-gray-500,
+.redigo-app .text-slate-400,
+.redigo-admin-root .text-slate-400,
+.driver-theme .text-slate-400,
+.redigo-app .text-gray-400,
+.redigo-admin-root .text-gray-400,
+.driver-theme .text-gray-400 {
+  color: #8C96A0 !important;
 }
 
 body {

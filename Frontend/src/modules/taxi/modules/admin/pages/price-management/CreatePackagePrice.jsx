@@ -6,7 +6,7 @@ import {
   Save,
   ArrowLeft
 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../../shared/api/axiosInstance';
 import toast from 'react-hot-toast';
 
@@ -16,9 +16,11 @@ const labelClass = "block text-[12px] font-semibold text-gray-700 mb-1.5";
 const CreatePackagePrice = ({ mode = 'create' }) => {
   const { id, packageId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [packageTypes, setPackageTypes] = useState([]);
+  const basePath = location.pathname.split('/pricing/')[0] + '/pricing/' + (location.pathname.includes('taxi-commission') ? 'taxi-commission' : 'parcel-commission');
   
   const [formData, setFormData] = useState({
     package_type_id: '',
@@ -91,7 +93,9 @@ const CreatePackagePrice = ({ mode = 'create' }) => {
       <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-8">
         <h1 className="text-sm font-bold text-[#1E293B] uppercase tracking-[0.15em]">{mode === 'edit' ? 'EDIT' : 'CREATE'}</h1>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium tracking-tight">
-           <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => navigate('/admin/pricing/set-price')}>Set Prices</span>
+           <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => navigate(basePath)}>
+             {location.pathname.includes('taxi-commission') ? 'Taxi Commission' : 'Parcel Commission'}
+           </span>
            <ChevronRight size={10} className="text-slate-300" />
            <span className="text-slate-800 font-bold">{mode === 'edit' ? 'Edit' : 'Create'}</span>
         </div>

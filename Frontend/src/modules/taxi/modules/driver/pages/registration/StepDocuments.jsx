@@ -72,16 +72,19 @@ const StepDocuments = () => {
       try {
         const response = await getDriverDocumentTemplates();
         const results = response?.data?.data?.results || response?.data?.results || [];
-        setTemplates(normalizeDriverDocumentTemplates(results));
+        const normalized = normalizeDriverDocumentTemplates(results);
+        const expectedType = String(session.role || 'driver').toLowerCase() === 'owner' ? 'fleet_drivers' : 'individual';
+        const filtered = normalized.filter(t => t.account_type === 'both' || t.account_type === expectedType);
+        setTemplates(filtered);
       } catch {
-        setTemplates(normalizeDriverDocumentTemplates([]));
+        setTemplates([]);
       } finally {
         setTemplatesLoading(false);
       }
     };
 
     loadTemplates();
-  }, []);
+  }, [session.role]);
 
   const documentTemplates = useMemo(
     () => normalizeDriverDocumentTemplates(templates),

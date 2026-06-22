@@ -10,14 +10,17 @@ import {
   Edit2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../../shared/api/axiosInstance';
 
 const SetPackagePrices = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [packages, setPackages] = useState([]);
+
+  const basePath = location.pathname.split('/pricing/')[0] + '/pricing/' + (location.pathname.includes('taxi-commission') ? 'taxi-commission' : 'parcel-commission');
 
   useEffect(() => {
     // Simulated fetch - replace with real API call if needed
@@ -34,7 +37,9 @@ const SetPackagePrices = () => {
       <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-6">
         <h1 className="text-sm font-bold text-[#1E293B] uppercase tracking-[0.15em]">SET PACKAGE PRICES</h1>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium tracking-tight">
-           <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => navigate('/admin/pricing/set-price')}>Set Package Prices</span>
+           <span className="hover:text-slate-600 transition-colors cursor-pointer" onClick={() => navigate(basePath)}>
+             {location.pathname.includes('taxi-commission') ? 'Taxi Commission' : 'Parcel Commission'}
+           </span>
            <ChevronRight size={10} className="text-slate-300" />
            <span className="text-slate-800 font-bold">Set Package Prices</span>
         </div>
@@ -57,7 +62,7 @@ const SetPackagePrices = () => {
                 <button className="flex items-center gap-2 px-6 py-2 bg-[#F37048] text-white rounded text-sm font-bold shadow-sm">
                   <Filter size={16} /> Filters
                 </button>
-                <button onClick={() => navigate(`/admin/pricing/set-price/packages/create/${id}`)} className="flex items-center gap-2 px-6 py-2 bg-[#44516F] text-white rounded text-sm font-bold shadow-sm">
+                <button onClick={() => navigate(`${basePath}/packages/create/${id}`)} className="flex items-center gap-2 px-6 py-2 bg-[#44516F] text-white rounded text-sm font-bold shadow-sm">
                   <Plus size={18} /> Add Package Price
                 </button>
               </div>

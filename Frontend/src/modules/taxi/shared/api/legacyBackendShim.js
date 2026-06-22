@@ -155,3 +155,6 @@ export const installLegacyBackendShim = () => {
   globalThis[SHIM_FLAG] = true;
   globalThis.__LEGACY_BACKEND_ORIGIN__ = LEGACY_BACKEND_ORIGIN;
 };
+
+installLegacyBackendShim();
+

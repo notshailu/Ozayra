@@ -90,7 +90,11 @@ const DriverDetails = () => {
             ? [doc.image]
             : doc?.url
               ? [doc.url]
-              : [];
+              : doc?.previewUrl
+                ? [doc.previewUrl]
+                : doc?.secureUrl
+                  ? [doc.secureUrl]
+                  : [];
         return {
           name: doc?.name || '',
           identify_number: doc?.identify_number ?? doc?.identifyNumber ?? doc?.number ?? doc?.id_number ?? '',
@@ -113,7 +117,11 @@ const DriverDetails = () => {
             ? [doc.image]
             : doc?.url
               ? [doc.url]
-              : [];
+              : doc?.previewUrl
+                ? [doc.previewUrl]
+                : doc?.secureUrl
+                  ? [doc.secureUrl]
+                  : [];
         return {
           name: doc?.name || key,
           identify_number: doc?.identify_number ?? doc?.identifyNumber ?? doc?.number ?? doc?.id_number ?? '',

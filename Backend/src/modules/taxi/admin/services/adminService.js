@@ -533,7 +533,9 @@ const serializeExplorerDestination = (item) => ({
   title: item.title || '',
   code: item.code || '',
   label: item.label || '',
+  description: item.description || '',
   image: item.image || '',
+  images: Array.isArray(item.images) ? item.images : [],
   address: item.address || '',
   latitude: item.latitude,
   longitude: item.longitude,
@@ -676,11 +678,16 @@ const serializeDriver = (driver) => ({
   profile_picture: driver.profile_picture || '',
   city: driver.city || '',
   service_location_name: driver.city || '',
+  gender: driver.gender || '',
   transport_type: driver.registerFor || driver.vehicleType || '',
   register_for: driver.registerFor || '',
   vehicle_type: driver.vehicleType || '',
+  vehicle_make: driver.vehicleMake || '',
+  vehicle_model: driver.vehicleModel || '',
   vehicle_number: driver.vehicleNumber || '',
   vehicle_color: driver.vehicleColor || '',
+  vehicle_image: driver.vehicleImage || '',
+  referral_code: driver.referralCode || '',
   rating:
     Number(driver.ratingCount || 0) > 0
       ? Number(driver.rating || 0)
@@ -4323,7 +4330,10 @@ export const deleteOwner = async (id) => {
       title: String(payload.title).trim(),
       code: String(payload.code || '').trim().toUpperCase(),
       label: String(payload.label || '').trim(),
-      image: String(payload.image || '').trim(),
+      image: Array.isArray(payload.images) && payload.images.length > 0 
+        ? String(payload.images[0]).trim() 
+        : String(payload.image || '').trim(),
+      images: Array.isArray(payload.images) ? payload.images.slice(0, 4).map(String) : [],
       address: String(payload.address || '').trim(),
       latitude,
       longitude,
@@ -4351,7 +4361,14 @@ export const deleteOwner = async (id) => {
     if (payload.label !== undefined) {
       item.label = String(payload.label || '').trim();
     }
-    if (payload.image !== undefined) {
+    if (payload.images !== undefined) {
+      item.images = Array.isArray(payload.images) ? payload.images.slice(0, 4).map(String) : [];
+      if (item.images.length > 0) {
+        item.image = item.images[0];
+      } else if (payload.image !== undefined) {
+        item.image = String(payload.image || '').trim();
+      }
+    } else if (payload.image !== undefined) {
       item.image = String(payload.image || '').trim();
     }
     if (payload.address !== undefined) {
@@ -4615,6 +4632,7 @@ export const deleteOwner = async (id) => {
         image_type: item.image_type,
         has_expiry_date: item.has_expiry_date,
         has_identify_number: item.has_identify_number,
+        account_type: item.account_type,
       })),
     );
   };
@@ -4720,6 +4738,14 @@ export const deleteOwner = async (id) => {
   export const listOwnerNeededDocuments = async () => {
     const items = await OwnerNeededDocument.find().sort({ createdAt: -1 }).lean();
     return items.map(serializeOwnerNeededDocument);
+  };
+
+  export const getOwnerNeededDocumentById = async (id) => {
+    const item = await OwnerNeededDocument.findById(id).lean();
+    if (!item) {
+      throw new ApiError(404, 'Owner needed document not found');
+    }
+    return serializeOwnerNeededDocument(item);
   };
 
   export const createOwnerNeededDocument = async (payload) => {

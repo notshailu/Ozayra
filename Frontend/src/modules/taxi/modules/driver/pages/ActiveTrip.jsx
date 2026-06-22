@@ -34,7 +34,7 @@ const MAP_CONTAINER_STYLE = {
 const DEFAULT_CENTER = { lat: 22.7196, lng: 75.8577 };
 const DEFAULT_DRIVER_COORDS = [75.8577, 22.7196];
 
-const mapStyles = [
+const RAPIDO_MAP_STYLE = [
     { elementType: 'geometry', stylers: [{ color: '#f8fafc' }] },
     { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
     { elementType: 'labels.text.fill', stylers: [{ color: '#475569' }] },
@@ -762,7 +762,7 @@ const ActiveTrip = () => {
     };
 
     const mapOptions = useMemo(() => ({
-        styles: mapStyles,
+        styles: RAPIDO_MAP_STYLE,
         disableDefaultUI: true,
         zoomControl: true,
         clickableIcons: false,
