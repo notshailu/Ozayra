@@ -63,6 +63,8 @@ const isLikelyVehiclePhoto = (value = '') => /^(https?:|data:image\/|blob:|\/upl
 const RideTracking = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [otherReason, setOtherReason] = useState('');
   const [shareToast, setShareToast] = useState(false);
   const [rideRealtime, setRideRealtime] = useState(null);
   const [routePath, setRoutePath] = useState([]);
@@ -114,8 +116,8 @@ const RideTracking = () => {
   const driver = rideRealtime?.driver || fallbackDriver;
   const vehicleIcon = getTrackingVehicleIcon(state, driver);
   const vehicleLabel = driver.vehicle || driver.vehicleType || (serviceType === 'parcel' ? 'Parcel' : 'Taxi');
-  const driverImage = driver.profileImage || '';
-  const vehicleImage = driver.vehicleImage || '';
+  const driverImage = driver.profileImage || driver.profile_picture || driver.photo || driver.user?.profileImage || driver.user?.profile_picture || driver.user?.photo || driver.profilePic || 'https://randomuser.me/api/portraits/men/32.jpg';
+  const vehicleImage = driver.vehicleImage || driver.vehicle_image || '';
   const hasVehiclePhoto = isLikelyVehiclePhoto(vehicleImage) && !vehicleImageBroken;
   const driverSubtitle = tripStatus === 'started'
     ? (serviceType === 'parcel' ? 'Parcel picked up' : 'Trip started')
@@ -132,7 +134,11 @@ const RideTracking = () => {
   const handleCancelRide = async () => {
     try {
       if (rideId) {
-        await api.patch(`/rides/${rideId}/cancel`);
+        const payload = {};
+        if (cancelReason || otherReason) {
+           payload.reason = cancelReason || otherReason;
+        }
+        await api.patch(`/rides/${rideId}/cancel`, payload);
       }
     } catch (_error) {
       // If the ride has already advanced or ended, we still clear the local state below.
@@ -631,131 +637,162 @@ const RideTracking = () => {
         className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md rounded-t-[28px] shadow-[0_-8px_32px_rgba(15,23,42,0.10)] z-20 border-t border-white/80"
       >
         <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mt-3 mb-4 cursor-pointer" onClick={() => setDrawerOpen(!drawerOpen)} />
-
-        <div className="px-5 pb-8 space-y-4">
-          <div className="flex items-center gap-3.5 pb-4 border-b border-slate-50">
-            <div className="relative shrink-0">
-              <div className="w-14 h-14 rounded-[16px] bg-slate-100 overflow-hidden border border-slate-100">
-                {driverImage ? (
-                  <img
-                    src={driverImage}
-                    className="w-full h-full object-cover"
-                    alt={driver.name || 'Driver'}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-slate-900 text-[18px] font-black text-white">
-                    {getInitials(driver.name)}
-                  </div>
-                )}
+        <div className="px-5 pb-8">
+          {/* Driver & OTP Row */}
+          <div className="flex items-start justify-between pb-5 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-14 h-14 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm">
+                  {driverImage ? (
+                    <img src={driverImage} className="w-full h-full object-cover" alt="Driver" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#FACC15] text-[18px] font-bold text-slate-900">
+                      {getInitials(driver.name)}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-900 px-1.5 py-0.5 rounded-[6px] border border-white flex items-center gap-0.5 shadow-sm">
+                  <Star size={9} className="text-[#FACC15] fill-[#FACC15]" />
+                  <span className="text-[9px] font-bold text-white">{driver.rating || '4.9'}</span>
+                </div>
               </div>
-              <div className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-[9px] border-2 border-white bg-slate-900 shadow-sm">
-                <img src={vehicleIcon} alt={vehicleLabel} className="h-4 w-4 object-contain" draggable={false} />
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-yellow-400 px-1.5 py-0.5 rounded-[8px] border-2 border-white flex items-center gap-0.5 shadow-sm">
-                <Star size={9} className="text-slate-900 fill-slate-900" />
-                <span className="text-[9px] font-bold text-slate-900">{driver.rating || '4.9'}</span>
+              <div className="min-w-0 pt-1">
+                <h3 className="text-[17px] font-bold text-slate-900 leading-tight truncate">{driver.name || 'Captain'}</h3>
+                <div className="inline-block mt-1 bg-[#FACC15] px-2 py-0.5 rounded-[4px] shadow-sm">
+                   <p className="text-[11px] font-bold text-slate-900 tracking-wide">{driver.plate || driver.vehicleNumber || 'ASSIGNED'}</p>
+                </div>
               </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[18px] font-black text-slate-900 leading-tight">{driver.name || 'Captain'}</h3>
-              <p className="text-[12px] font-black text-orange-500 mt-0.5">
-                {driverSubtitle}
-              </p>
-              <p className="text-[11px] font-bold text-slate-400 mt-0.5">{driver.plate || driver.vehicleNumber || 'Assigned'} · {driver.vehicle || driver.vehicleType || 'Taxi'}</p>
-            </div>
-            <div className="shrink-0 bg-orange-50 border border-orange-100 rounded-[14px] px-3 py-2 text-right shadow-sm">
-              <p className="text-[8px] font-black text-orange-400 uppercase tracking-wider">OTP</p>
-              <p className="text-[17px] font-black text-slate-900 tracking-[0.16em] leading-tight">{otp}</p>
+            <div className="shrink-0 text-center pl-3">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-0.5">OTP</p>
+              <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-[8px]">
+                 <p className="text-[20px] font-bold text-slate-900 tracking-[0.1em]">{otp}</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-[16px] border border-slate-100 bg-slate-50/80 px-3 py-2.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
-            {hasVehiclePhoto ? (
-              <div className="h-12 w-16 shrink-0 overflow-hidden rounded-[10px] border border-slate-100 bg-white">
-                <img
-                  src={vehicleImage}
-                  alt={vehicleLabel}
-                  className="h-full w-full object-contain bg-white"
-                  draggable={false}
-                  onError={() => setVehicleImageBroken(true)}
-                />
-              </div>
-            ) : (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] border border-slate-100 bg-white">
-                <img src={vehicleIcon} alt={vehicleLabel} className="h-6 w-6 object-contain" draggable={false} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Vehicle</p>
-              <p className="truncate text-[13px] font-black text-slate-900">{vehicleLabel}</p>
-              <p className="truncate text-[11px] font-bold text-slate-500">{vehicleDetails || 'Assigned vehicle'}</p>
+          {/* Vehicle Info */}
+          <div className="py-4 flex items-center justify-between border-b border-slate-100">
+            <div className="flex items-center gap-3">
+               <div className="w-12 h-12 rounded-[12px] bg-slate-50 flex items-center justify-center border border-slate-100">
+                  {hasVehiclePhoto ? (
+                    <img src={vehicleImage} className="w-full h-full object-contain rounded-[12px]" onError={() => setVehicleImageBroken(true)} />
+                  ) : (
+                    <img src={vehicleIcon} className="w-7 h-7 object-contain" />
+                  )}
+               </div>
+               <div>
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">{vehicleLabel}</p>
+                  <p className="text-[13px] font-semibold text-slate-900">{driverSubtitle}</p>
+               </div>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          {/* Action Buttons */}
+          <div className="py-4 flex justify-between gap-2">
             <ActionBtn icon={Phone} label="Call" onClick={() => window.open(`tel:${driver.phone || ''}`)} />
             <ActionBtn icon={MessageCircle} label="Chat" onClick={() => navigate('/taxi/user/ride/chat')} />
             <ActionBtn icon={Share2} label="Share" onClick={handleShare} />
-            <ActionBtn icon={AlertTriangle} label="Help" onClick={() => navigate('/taxi/user/support')} />
+            <ActionBtn icon={Shield} label="Safety" onClick={() => navigate('/taxi/user/support')} colorClass="text-blue-600" />
           </div>
 
-          <div className="flex items-center justify-between rounded-[18px] border border-white/80 bg-slate-50/80 px-4 py-3.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Fare</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[20px] font-bold text-slate-900 tracking-tighter leading-none">Rs {fare}.00</span>
-                <span className="text-[9px] font-black bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full uppercase tracking-wide">{paymentMethod}</span>
-              </div>
+          {/* Fare & Cancel */}
+          <div className="mt-2 flex items-center justify-between px-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[22px] font-extrabold text-slate-900 tracking-tight">₹{fare}</span>
+              <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-[4px] uppercase tracking-wider">{paymentMethod}</span>
             </div>
-            <motion.button
-              whileTap={{ scale: 0.96 }}
+            <button
               onClick={() => setShowCancelConfirm(true)}
-              className="bg-white border border-red-100 text-red-400 font-bold text-[11px] uppercase tracking-widest px-4 py-2.5 rounded-[12px] shadow-sm"
+              className="text-[12px] font-semibold text-slate-500 uppercase tracking-widest hover:text-slate-900 transition-colors"
             >
               Cancel
-            </motion.button>
+            </button>
           </div>
         </div>
       </motion.div>
 
       <AnimatePresence>
         {showCancelConfirm && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+          <div className="z-[100] relative">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowCancelConfirm(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] max-w-lg mx-auto"
-            />
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0, y: 40 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: 40 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[82%] max-w-sm bg-white rounded-[28px] p-7 z-[101] shadow-2xl text-center"
-            >
-              <div className="w-14 h-14 bg-red-50 rounded-[18px] flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle size={26} className="text-red-400" strokeWidth={2} />
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] max-w-lg mx-auto" />
+            
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white rounded-t-[24px] z-[101] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col max-h-[85vh]">
+              
+              {/* Floating Close Button */}
+              <div className="absolute -top-14 right-4">
+                 <button onClick={() => setShowCancelConfirm(false)} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                    <span className="text-[18px] font-bold text-slate-900 leading-none">✕</span>
+                 </button>
               </div>
-              <h3 className="text-[18px] font-bold text-slate-900 mb-1.5">Cancel your ride?</h3>
-              <p className="text-[13px] font-bold text-slate-400 mb-6 leading-relaxed">Your captain is already on the way.</p>
-              <div className="space-y-2.5">
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
+
+              <div className="overflow-y-auto px-5 pt-6 pb-24 scrollbar-hide">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center shrink-0">
+                     <span className="text-[24px]">🎧</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[18px] font-extrabold text-slate-900 leading-tight">We are listening</h3>
+                    <p className="text-[11px] font-medium text-slate-500 mt-1 leading-snug pr-4">Your feedback matters! Share your ride experience to help us improve</p>
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-slate-50 rounded-[8px] px-4 py-2.5 mb-6">
+                  <p className="text-[12px] font-semibold text-slate-600">Don't worry! 🤐 This feedback is sent to Ozayra team</p>
+                </div>
+
+                {/* Reasons List */}
+                <div className="space-y-4 mb-6">
+                  {[
+                    "Captain vehicle is different",
+                    "Captain himself is a different person",
+                    "Captain is over-speeding",
+                    "Captain is doing rash driving",
+                    "Captain use phone while driving",
+                    "Captain behavior is not good"
+                  ].map((reason) => (
+                    <label key={reason} className="flex items-center justify-between cursor-pointer group">
+                      <span className="text-[14px] font-bold text-slate-700">{reason}</span>
+                      <div className={`w-5 h-5 rounded-[4px] border-[2px] flex items-center justify-center transition-colors ${cancelReason === reason ? 'bg-[#FACC15] border-[#FACC15]' : 'border-slate-200 bg-slate-50'}`}>
+                        {cancelReason === reason && <span className="text-white text-[12px] font-bold">✓</span>}
+                      </div>
+                      <input type="checkbox" className="hidden" checked={cancelReason === reason} onChange={() => setCancelReason(reason)} />
+                    </label>
+                  ))}
+                </div>
+
+                {/* Other Input */}
+                <div className="bg-slate-50 rounded-t-[12px] border-b-2 border-slate-900 px-4 py-3">
+                  <input 
+                    type="text" 
+                    placeholder="Some other issue? Tell us more..."
+                    className="w-full bg-transparent text-[13px] font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+                    value={otherReason}
+                    onChange={(e) => {
+                      setOtherReason(e.target.value);
+                      if (e.target.value) setCancelReason('');
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Sticky Bottom Action */}
+              <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4">
+                <motion.button 
+                  whileTap={{ scale: 0.98 }} 
                   onClick={handleCancelRide}
-                  className="w-full bg-slate-900 text-white py-3.5 rounded-[16px] text-[13px] font-bold uppercase tracking-widest"
+                  className="w-full bg-[#FACC15] text-slate-900 py-4 rounded-full text-[15px] font-bold shadow-sm"
                 >
-                  Yes, Cancel
+                  Send feedback to Ozayra
                 </motion.button>
-                <button
-                  onClick={() => setShowCancelConfirm(false)}
-                  className="w-full py-3.5 text-[13px] font-bold text-slate-400 uppercase tracking-widest"
-                >
-                  No, Go Back
-                </button>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
     </div>

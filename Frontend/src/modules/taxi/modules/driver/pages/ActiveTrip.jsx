@@ -18,12 +18,17 @@ import {
     Clock3,
     MapPinned,
 } from 'lucide-react';
+import QRCode from "react-qr-code";
+import { initRazorpayPayment } from '@food/utils/razorpay';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GoogleMap, MarkerF, OverlayView, PolylineF } from '@react-google-maps/api';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../admin/utils/googleMaps';
 import { socketService } from '../../../shared/api/socket';
 import api from '../../../shared/api/axiosInstance';
 import carIcon from '../../../assets/icons/car.png';
+import bikeIcon from '../../../assets/icons/bike.png';
+import autoIcon from '../../../assets/icons/auto.png';
+import deliveryIcon from '../../../assets/icons/Delivery.png';
 import { getLocalDriverToken } from '../services/registrationService';
 
 const MAP_CONTAINER_STYLE = {
@@ -38,12 +43,23 @@ const RAPIDO_MAP_STYLE = [
     { elementType: 'geometry', stylers: [{ color: '#f8fafc' }] },
     { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
     { elementType: 'labels.text.fill', stylers: [{ color: '#475569' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#eef2f7' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#f8fafc', weight: 4 }] },
     { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e2e8f0' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#dbeafe' }] },
+    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#ffffff', weight: 2 }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#f1f5f9', weight: 3 }] },
+    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#e2e8f0', weight: 1 }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e2e8f0' }] },
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
+
+const getDriverVehicleIcon = (driverObj, isParcel) => {
+    if (isParcel) return deliveryIcon;
+    const iconType = String(driverObj?.vehicleIconType || driverObj?.vehicleType || '').toLowerCase();
+    if (iconType.includes('bike') || iconType.includes('motorcycle')) return bikeIcon;
+    if (iconType.includes('auto') || iconType.includes('rickshaw')) return autoIcon;
+    return carIcon;
+};
 
 const toLatLng = (coordinates, fallback = DEFAULT_CENTER) => {
     const [lng, lat] = coordinates || [];
@@ -394,22 +410,27 @@ const ActiveTrip = () => {
         },
         pickup: liveRaw.pickupAddress || liveRequest?.pickup || formatAddressFromPoint(liveRaw.pickupLocation, 'Flat 402, Swamclose Apts, JP Nagar'),
         drop: liveRaw.dropAddress || liveRequest?.drop || formatAddressFromPoint(liveRaw.dropLocation, 'Tea Villa Cafe, 12th Main, HSR Layout'),
-        fare: `Rs ${liveRaw.fare || effectiveState?.fare || 120}`,
-        payment: effectiveState?.paymentMethod || 'Online'
+        fare: `₹${liveRaw.fare || effectiveState?.fare || 120}`,
+        payment: effectiveState?.paymentMethod || 'Online',
+        distance: liveRaw.distance || liveRequest?.distance || '4.2 km'
     } : {
         user: {
             name: liveRaw.user?.name || liveRequest?.user?.name || 'Passenger',
             rating: liveRaw.user?.rating || liveRequest?.user?.rating || '4.8',
             phone: liveRaw.user?.phone || liveRequest?.user?.phone || '',
+            profileImage: liveRaw.user?.profileImage || liveRequest?.user?.profileImage || liveRaw.user?.profile_picture || liveRaw.user?.photo || '',
         },
         pickup: liveRaw.pickupAddress || liveRequest?.pickup || formatAddressFromPoint(liveRaw.pickupLocation, 'Swamclose Apartments, JP Nagar'),
         drop: liveRaw.dropAddress || liveRequest?.drop || formatAddressFromPoint(liveRaw.dropLocation, 'Tea Villa Cafe, HSR Layout'),
-        fare: `Rs ${liveRaw.fare || effectiveState?.fare || 120}`,
-        payment: liveRequest?.payment || effectiveState?.paymentMethod || 'Online'
+        fare: `₹${liveRaw.fare || effectiveState?.fare || 120}`,
+        payment: liveRequest?.payment || effectiveState?.paymentMethod || 'Online',
+        distance: liveRaw.distance || liveRequest?.distance || '4.2 km'
     };
 
     const displayFare = liveRequest?.fare || tripData.fare;
     const expectedOtp = String(liveRequest?.raw?.otp || liveRequest?.otp || effectiveState?.otp || '1234');
+    const activeDriver = liveRaw?.driver || liveRequest?.driver || {};
+    const currentVehicleIcon = useMemo(() => getDriverVehicleIcon(activeDriver, isParcel), [activeDriver, isParcel]);
 
     useEffect(() => {
         if (!liveRaw) return;
@@ -834,9 +855,9 @@ const ActiveTrip = () => {
                                     }}
                                 >
                                     <img
-                                        src={carIcon}
+                                        src={currentVehicleIcon}
                                         alt="Driver vehicle"
-                                        className="h-full w-full object-contain drop-shadow-[0_8px_12px_rgba(15,23,42,0.35)]"
+                                        className="h-full w-full object-contain mix-blend-multiply"
                                     />
                                 </div>
                             </div>
@@ -864,62 +885,33 @@ const ActiveTrip = () => {
 
                 <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-white/70 via-white/25 to-transparent pointer-events-none" />
 
-                <button
-                    onClick={() => navigate(-1)}
-                    className="absolute top-8 left-4 z-50 w-10 h-10 rounded-2xl bg-white/95 border border-white/80 shadow-lg flex items-center justify-center"
-                >
-                    <ArrowLeft size={18} className="text-slate-900" />
-                </button>
+                <div className="absolute top-10 left-4 right-4 z-50 flex items-center bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] rounded-[1.25rem] p-1.5">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-11 h-11 shrink-0 rounded-[1rem] bg-slate-50 flex items-center justify-center text-slate-700 active:scale-95 transition-all hover:bg-slate-100"
+                    >
+                        <ArrowLeft size={18} strokeWidth={2.5} />
+                    </button>
 
-                <div className="absolute top-8 left-16 right-4 z-50 grid grid-cols-[minmax(0,1.15fr)_minmax(66px,0.72fr)_minmax(0,1fr)] gap-1.5">
-                    {tripStats.map((stat) => {
-                        const Icon = stat.icon;
-
-                        return (
-                            <div key={stat.label} className="min-w-0 rounded-2xl border border-white/80 bg-white/92 px-2.5 py-2 shadow-lg backdrop-blur-md">
-                                <p className="truncate text-[7px] font-black uppercase tracking-[0.18em] text-slate-400">{stat.label}</p>
-                                <div className="mt-1 flex min-w-0 items-center gap-1.5">
-                                    {Icon ? <Icon size={11} className={`shrink-0 ${stat.iconClassName || 'text-slate-500'}`} /> : null}
-                                    <p className="truncate text-[10px] font-black leading-none text-slate-900">{stat.value}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
+                    <div className="flex-1 flex items-center pl-2 pr-1">
+                        {tripStats.map((stat, idx) => {
+                            const Icon = stat.icon;
+                            return (
+                                <React.Fragment key={stat.label}>
+                                    <div className="flex flex-col items-center justify-center min-w-0 flex-1 px-1">
+                                        <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                                        <div className="flex items-center justify-center gap-1.5 w-full">
+                                            {Icon && <Icon size={12} strokeWidth={2.5} className={`shrink-0 ${stat.iconClassName || 'text-slate-400'}`} />}
+                                            <p className="text-[12px] font-bold text-slate-800 truncate">{stat.value}</p>
+                                        </div>
+                                    </div>
+                                    {idx < tripStats.length - 1 && <div className="w-px h-8 bg-slate-100 shrink-0"></div>}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {canSimulateMovement && (
-                    <div className="absolute top-44 left-4 z-40 w-[168px] rounded-2xl border border-white/80 bg-white/94 px-3 py-2 shadow-lg backdrop-blur">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">Simulation</p>
-                                <p className="mt-0.5 truncate text-[10px] font-black uppercase text-slate-900">
-                                    {isSimulatingMovement ? `${simulationProgress}% complete` : 'Vehicle movement'}
-                                </p>
-                            </div>
-                            <div className="h-8 w-8 shrink-0 rounded-xl bg-slate-900 p-1.5">
-                                <img src={carIcon} alt="" className="h-full w-full object-contain" />
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={startMovementSimulation}
-                            disabled={isSimulatingMovement}
-                            className={`h-9 w-full rounded-xl text-[10px] font-black uppercase tracking-wider transition active:scale-95 ${
-                                isSimulatingMovement
-                                    ? 'bg-slate-100 text-slate-400'
-                                    : 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
-                            }`}
-                        >
-                            {isSimulatingMovement ? 'Driving...' : 'Simulate Drive'}
-                        </button>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                            <div
-                                className="h-full rounded-full bg-emerald-500 transition-all duration-200"
-                                style={{ width: `${simulationProgress}%` }}
-                            />
-                        </div>
-                    </div>
-                )}
 
                 {routeError && (
                     <div className="absolute top-44 right-4 z-40 rounded-2xl bg-white/92 border border-amber-100 shadow-lg px-3 py-2 min-w-[148px]">
@@ -941,8 +933,8 @@ const ActiveTrip = () => {
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center">
-                                        {isParcel ? <Package size={22} className="text-slate-900" /> : <User size={22} className="text-slate-400" />}
+                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center overflow-hidden">
+                                        {isParcel ? <Package size={22} className="text-slate-900" /> : (tripData.user.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={22} className="text-slate-400" />)}
                                     </div>
                                     <div className="space-y-0.5">
                                         <h4 className="text-[15px] font-semibold text-slate-900 tracking-tight uppercase">
@@ -982,13 +974,13 @@ const ActiveTrip = () => {
                             exit={{ y: '100%' }}
                             className="bg-white rounded-t-[2.5rem] p-6 pb-8 shadow-2xl border-t border-slate-100"
                         >
-                            <div className="text-center mb-6">
-                                <h3 className="text-xl font-semibold text-slate-900 tracking-tight uppercase leading-none">Security Pin</h3>
-                                <p className="text-[10px] font-bold text-slate-400 tracking-wide uppercase mt-2">
-                                    Ask <span className="text-slate-900">{isParcel ? 'Sender' : 'Passenger'}</span> for Start PIN
+                            <div className="text-center mb-8">
+                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Enter PIN</h3>
+                                <p className="text-[13px] font-medium text-slate-500 mt-1">
+                                    Ask <span className="font-bold text-slate-800">{isParcel ? 'sender' : 'passenger'}</span> for the 4-digit PIN
                                 </p>
                             </div>
-                            <div className="flex justify-center gap-3 mb-8">
+                            <div className="flex justify-center gap-4 mb-8">
                                 {otp.map((digit, index) => (
                                     <input
                                         key={index}
@@ -998,28 +990,27 @@ const ActiveTrip = () => {
                                         value={digit}
                                         onChange={(e) => handleOTPChange(index, e.target.value)}
                                         onKeyDown={(e) => handleOTPKeyDown(index, e)}
-                                        className="w-12 h-16 bg-slate-50 border-2 border-slate-100 rounded-2xl text-center text-3xl font-semibold text-slate-900 focus:outline-none focus:border-slate-900 transition-all shadow-inner"
+                                        className="w-14 h-16 bg-slate-50 border-2 border-slate-100 rounded-2xl text-center text-3xl font-bold text-slate-900 focus:outline-none focus:border-[#FACC15] focus:bg-white transition-all shadow-sm"
                                     />
                                 ))}
                             </div>
                             {otpError && (
-                                <p className="-mt-5 mb-5 text-center text-[11px] font-black text-red-500 uppercase tracking-wider">
+                                <p className="-mt-4 mb-6 text-center text-[12px] font-bold text-red-500">
                                     {otpError}
                                 </p>
                             )}
                             <button
                                 onClick={() => startTripAfterOtp(otp.join(''))}
-                                className="mb-3 h-13 w-full rounded-xl bg-slate-900 text-[12px] font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/15 active:scale-95 transition-all"
+                                className="mb-3 h-14 w-full rounded-2xl bg-[#FACC15] text-[15px] font-bold uppercase tracking-wide text-slate-900 active:scale-95 transition-all shadow-lg shadow-[#FACC15]/30"
                             >
-                                Submit PIN
+                                Verify & Start Ride
                             </button>
-                            <div className="flex gap-3">
-                                <button onClick={() => {
-                                    setPhase('to_pickup');
-                                    publishRideStatus('accepted');
-                                }} className="flex-1 h-13 border-2 border-slate-100 text-slate-400 rounded-xl text-[12px] font-semibold uppercase tracking-wide active:scale-95 transition-all">Go Back</button>
-                                <button className="flex-1 h-13 bg-slate-100 text-slate-900 rounded-xl text-[12px] font-semibold uppercase tracking-wide active:scale-95 transition-all">Support</button>
-                            </div>
+                            <button onClick={() => {
+                                setPhase('to_pickup');
+                                publishRideStatus('accepted');
+                            }} className="h-12 w-full text-slate-500 rounded-2xl text-[14px] font-semibold active:scale-95 transition-all hover:bg-slate-50">
+                                Go Back
+                            </button>
                         </motion.div>
                     )}
 
@@ -1031,40 +1022,72 @@ const ActiveTrip = () => {
                             exit={{ y: '100%' }}
                             className="bg-white rounded-t-[2.5rem] p-5 pb-8 shadow-2xl border-t border-slate-100"
                         >
-                            <div className="mb-5 rounded-[22px] border border-slate-100 bg-slate-50/85 px-4 py-3.5 shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="text-[9px] font-semibold text-rose-500 uppercase tracking-[0.22em] leading-none mb-1.5">Destination</h4>
-                                        <p className="text-[15px] font-semibold text-slate-900 tracking-tight leading-5 break-words">
-                                            {tripData.drop}
-                                        </p>
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center">
+                                        {isParcel ? <Package size={20} className="text-slate-400" /> : (tripData.user.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={20} className="text-slate-300" />)}
                                     </div>
-                                    <button onClick={() => navigate('/taxi/driver/security')} className="shrink-0 w-11 h-11 bg-white text-rose-500 rounded-xl border border-rose-100 flex items-center justify-center active:scale-90 transition-transform shadow-sm">
-                                        <ShieldAlert size={22} strokeWidth={2.5} />
+                                    <div>
+                                        <h3 className="text-[18px] font-semibold text-slate-900 tracking-tight capitalize">{isParcel ? tripData.receiver.name : tripData.user.name}</h3>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <Star size={12} className="text-slate-400 fill-slate-400" />
+                                            <span className="text-[13px] text-slate-500">{tripData.user.rating || '4.8'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => navigate('/taxi/driver/security')} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors">
+                                        <ShieldAlert size={18} strokeWidth={2} />
+                                    </button>
+                                    <button onClick={() => { window.location.href = `tel:${isParcel ? tripData.receiver.phone : tripData.user.phone}`; }} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-900 hover:bg-slate-100 transition-colors">
+                                        <Phone size={18} strokeWidth={2} />
                                     </button>
                                 </div>
                             </div>
-                            <div className="bg-slate-50 rounded-2xl p-3 mb-6 border border-slate-100 flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
-                                        {isParcel ? <Package size={18} className="text-white" /> : <User size={18} className="text-white opacity-40" />}
+
+                            <div className="w-full h-px bg-slate-100 mb-6"></div>
+
+                            <div className="mb-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-6 flex flex-col items-center pt-1.5">
+                                        <div className="w-2 h-2 rounded-full bg-rose-500"></div>
                                     </div>
-                                    <div className="min-w-0 space-y-0.5">
-                                        <p className="text-[13px] font-semibold text-slate-900 leading-none uppercase truncate">{isParcel ? tripData.receiver.name : tripData.user.name}</p>
-                                        <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wide">{isParcel ? 'Receiver' : 'Passenger'}</p>
+                                    <div className="flex-1">
+                                        <p className="text-[13px] font-medium text-slate-400 mb-0.5">{isParcel ? 'Delivery Address' : 'Drop-off Location'}</p>
+                                        <p className="text-[16px] font-medium text-slate-800 leading-relaxed">
+                                            {tripData.drop}
+                                        </p>
                                     </div>
                                 </div>
-                                <button onClick={() => { console.log('Dialing receiver/user:', isParcel ? tripData.receiver.phone : tripData.user.phone); window.location.href = `tel:${isParcel ? tripData.receiver.phone : tripData.user.phone}`; }} className="shrink-0 w-9 h-9 bg-white rounded-lg border border-slate-100 flex items-center justify-center text-emerald-500"><Phone size={16} strokeWidth={2.5} /></button>
                             </div>
-                            <motion.button
-                                whileTap={{ scale: 0.96 }}
+                            
+                            <div className="w-full h-px bg-slate-100 mb-6"></div>
+
+                            <div className="flex items-center justify-between mb-8 px-1">
+                                <div className="flex flex-col">
+                                    <p className="text-[12px] font-medium text-slate-400 mb-1">Total Fare</p>
+                                    <p className="text-[16px] font-bold text-slate-900">{displayFare || tripData.fare}</p>
+                                </div>
+                                <div className="w-px h-8 bg-slate-100"></div>
+                                <div className="flex flex-col items-center">
+                                    <p className="text-[12px] font-medium text-slate-400 mb-1">Distance</p>
+                                    <p className="text-[16px] font-bold text-slate-900">{tripData.distance}</p>
+                                </div>
+                                <div className="w-px h-8 bg-slate-100"></div>
+                                <div className="flex flex-col items-end">
+                                    <p className="text-[12px] font-medium text-slate-400 mb-1">Payment</p>
+                                    <p className="text-[16px] font-bold text-slate-900 capitalize">{tripData.payment}</p>
+                                </div>
+                            </div>
+
+                            <button
                                 onClick={() => {
                                     setPhase('payment_confirm');
                                 }}
-                                className="w-full h-15 bg-slate-900 text-white rounded-xl flex items-center justify-center gap-3 text-[14px] font-semibold uppercase tracking-wide shadow-xl"
+                                className="w-full h-14 bg-slate-900 text-white rounded-xl flex items-center justify-center text-[15px] font-medium active:scale-[0.98] transition-transform shadow-sm hover:bg-slate-800"
                             >
-                                {isParcel ? 'Deliver Parcel' : 'Arrived at Destination'} <ChevronRight size={18} strokeWidth={3} />
-                            </motion.button>
+                                {isParcel ? 'Deliver Parcel' : 'Arrived at Destination'}
+                            </button>
                         </motion.div>
                     )}
 
@@ -1078,17 +1101,18 @@ const ActiveTrip = () => {
                         >
                             <div className="text-center mb-6">
                                 <div className={`w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-3 shadow-lg transition-all duration-500 ${driverPaymentStatus === 'success' ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white'}`}>
-                                    {driverPaymentStatus === 'success' ? <Check size={32} strokeWidth={4} /> : <QrCode size={32} strokeWidth={2} />}
+                                    {driverPaymentStatus === 'success' ? <Check size={32} strokeWidth={4} /> : <Scan size={32} strokeWidth={2} />}
                                 </div>
-                                <h2 className="text-2xl font-semibold text-slate-900 uppercase">
-                                    {driverPaymentStatus === 'success' ? 'Payment Success!' : 'Collect Amount'}
+                                <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">
+                                    {driverPaymentStatus === 'success' ? 'Payment Received' : 'Collect Payment'}
                                 </h2>
-                                <p className="text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                                    Fare: <span className="text-slate-900 font-semibold text-lg ml-1">{displayFare}</span>
+                                <p className="text-[14px] font-medium text-slate-500 mt-1">
+                                    Total Amount Due: <span className="font-bold text-slate-900">{displayFare}</span>
                                 </p>
                             </div>
+                            
                             {driverPaymentStatus === 'pending' && (
-                                <div className="grid grid-cols-3 gap-3 mb-6">
+                                <div className="grid grid-cols-3 gap-4 mb-8">
                                     {[
                                         { id: 'cash', label: 'Cash', icon: Banknote },
                                         { id: 'online', label: 'Online', icon: Scan },
@@ -1100,32 +1124,37 @@ const ActiveTrip = () => {
                                                 setSelectedPaymentMode(mode.id);
                                                 setDriverPaymentStatus(mode.id === 'online' ? 'qr_generated' : 'success');
                                             }}
-                                            className={`flex flex-col items-center justify-center py-4 rounded-2xl border-2 transition-all ${selectedPaymentMode === mode.id ? 'border-slate-900 bg-slate-50' : 'border-slate-50 bg-slate-50/50'}`}
+                                            className={`flex flex-col items-center justify-center py-5 rounded-[1.25rem] border-2 transition-all ${selectedPaymentMode === mode.id ? 'border-slate-900 bg-slate-50 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'}`}
                                         >
-                                            <mode.icon size={22} className={selectedPaymentMode === mode.id ? 'text-slate-900' : 'text-slate-400'} strokeWidth={2.5} />
-                                            <span className="text-[9px] font-semibold text-slate-900 uppercase tracking-wide mt-2">{mode.label}</span>
+                                            <mode.icon size={24} className={selectedPaymentMode === mode.id ? 'text-slate-900' : 'text-slate-400'} strokeWidth={selectedPaymentMode === mode.id ? 2.5 : 2} />
+                                            <span className={`text-[13px] font-semibold mt-3 ${selectedPaymentMode === mode.id ? 'text-slate-900' : 'text-slate-500'}`}>{mode.label}</span>
                                         </button>
                                     ))}
                                 </div>
                             )}
+
                             {driverPaymentStatus === 'qr_generated' && (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-900 rounded-3xl p-6 mb-6 text-center shadow-2xl">
-                                    <div className="bg-white p-4 rounded-2xl inline-block mb-3 relative overflow-hidden">
-                                        <QrCode size={90} className="text-slate-900 opacity-90" />
-                                        <motion.div animate={{ top: ['0%', '100%', '0%'] }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }} className="absolute left-0 w-full h-0.5 bg-slate-200" />
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-50 rounded-[1.5rem] p-6 mb-8 text-center border border-slate-100">
+                                    <div className="bg-white p-4 rounded-2xl inline-block mb-4 shadow-sm border border-slate-100 relative overflow-hidden">
+                                        <QRCode 
+                                            value={`upi://pay?pa=razorpay@icici&pn=Razorpay%20Merchant&am=${String(displayFare).replace(/[^0-9.]/g, '')}&cu=INR`} 
+                                            size={140} 
+                                            level="M" 
+                                        />
+                                        <motion.div animate={{ top: ['0%', '100%', '0%'] }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }} className="absolute left-0 w-full h-0.5 bg-[#FACC15]" />
                                     </div>
-                                    <p className="text-white font-semibold text-sm uppercase tracking-wide mb-4">Scan Code - {displayFare}</p>
-                                    <button onClick={() => setDriverPaymentStatus('success')} className="w-full py-3 bg-white/10 text-white rounded-xl text-[10px] font-semibold uppercase tracking-wide border border-white/5">Confirm Received</button>
+                                    <p className="text-slate-600 font-medium text-[13px] mb-5">Scan this Razorpay QR code to pay {displayFare}</p>
+                                    <button onClick={() => setDriverPaymentStatus('success')} className="w-full h-12 bg-white text-slate-900 rounded-xl text-[14px] font-semibold border border-slate-200 hover:bg-slate-50 shadow-sm transition-all">Confirm Payment Received</button>
                                 </motion.div>
                             )}
-                            <motion.button
-                                whileTap={{ scale: 0.96 }}
+
+                            <button
                                 disabled={driverPaymentStatus !== 'success'}
                                 onClick={() => setPhase('review')}
-                                className={`w-full h-15 rounded-xl flex items-center justify-center gap-3 text-[14px] font-semibold uppercase tracking-wide shadow-xl transition-all ${driverPaymentStatus === 'success' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-300 pointer-events-none'}`}
+                                className={`w-full h-14 rounded-xl flex items-center justify-center text-[15px] font-medium transition-transform shadow-sm ${driverPaymentStatus === 'success' ? 'bg-slate-900 text-white active:scale-[0.98] hover:bg-slate-800' : 'bg-slate-100 text-slate-400 pointer-events-none'}`}
                             >
-                                {driverPaymentStatus === 'success' ? 'Finalize Earnings' : 'Waiting...'} <ChevronRight size={18} strokeWidth={3} />
-                            </motion.button>
+                                {driverPaymentStatus === 'success' ? 'Complete Trip' : 'Awaiting Payment'}
+                            </button>
                         </motion.div>
                     )}
 
@@ -1137,7 +1166,9 @@ const ActiveTrip = () => {
                             className="bg-white rounded-t-[2.5rem] p-6 pb-8 shadow-2xl border-t border-slate-50 text-center"
                         >
                             <div className="mb-8 space-y-4">
-                                <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-lg"><User size={24} className="text-white" /></div>
+                                <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-lg overflow-hidden">
+                                    {tripData.user.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={24} className="text-white" />}
+                                </div>
                                 <h3 className="text-xl font-semibold text-slate-900 uppercase tracking-tight">Rate Experience</h3>
                                 <div className="flex justify-center gap-2">
                                     {[1, 2, 3, 4, 5].map((score) => (

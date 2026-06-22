@@ -888,7 +888,7 @@ const SelectVehicle = () => {
           loadError={mapLoadError}
         />
 
-        <div className="absolute top-14 left-4 right-4 z-20 flex items-center gap-2.5">
+        <div className="absolute top-10 left-4 right-4 z-20 flex items-center gap-2.5">
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => navigate(-1)}

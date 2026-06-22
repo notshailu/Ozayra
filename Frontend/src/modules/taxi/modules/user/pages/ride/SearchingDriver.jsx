@@ -7,30 +7,11 @@ import { socketService } from '../../../../shared/api/socket';
 import api from '../../../../shared/api/axiosInstance';
 import { getLocalUserToken, userAuthService } from '../../services/authService';
 import { saveCurrentRide } from '../../services/currentRideService';
-import { useAppGoogleMapsLoader, HAS_VALID_GOOGLE_MAPS_KEY } from '../../../admin/utils/googleMaps';
+import { useAppGoogleMapsLoader, HAS_VALID_GOOGLE_MAPS_KEY, RAPIDO_MAP_STYLE } from '../../../admin/utils/googleMaps';
 
 const MAP_OPTIONS = {
   disableDefaultUI: true,
-  styles: [
-    { "elementType": "geometry", "stylers": [{ "color": "#f5f5f5" }] },
-    { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-    { "elementType": "labels.text.fill", "stylers": [{ "color": "#616161" }] },
-    { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f5f5f5" }] },
-    { "featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{ "color": "#bdbdbd" }] },
-    { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#eeeeee" }] },
-    { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-    { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#e5e5e5" }] },
-    { "featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] },
-    { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
-    { "featureType": "road.arterial", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-    { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#dadada" }] },
-    { "featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [{ "color": "#616161" }] },
-    { "featureType": "road.local", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] },
-    { "featureType": "transit.line", "elementType": "geometry", "stylers": [{ "color": "#e5e5e5" }] },
-    { "featureType": "transit.station", "elementType": "geometry", "stylers": [{ "color": "#eeeeee" }] },
-    { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#c9c9c9" }] },
-    { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] }
-  ]
+  styles: RAPIDO_MAP_STYLE
 };
 
 const generateOTP = () => String(Math.floor(1000 + Math.random() * 9000));
@@ -257,22 +238,21 @@ const SearchingDriver = () => {
 
       clearTimeout(timerRef.current);
       clearInterval(activeRidePollRef.current);
-      timerRef.current = setTimeout(() => {
-        navigate(`${routePrefix}/ride/tracking`, {
-          state: {
-            ...routeState,
-            pickup: rideSnapshot?.pickupAddress || routeState.pickup,
-            drop: rideSnapshot?.dropAddress || routeState.drop,
-            pickupCoords: rideSnapshot?.pickupLocation?.coordinates || routeState.pickupCoords,
-            dropCoords: rideSnapshot?.dropLocation?.coordinates || routeState.dropCoords,
-            rideId: activeRideIdRef.current,
-            otp,
-            driver: nextDriver,
-            fare: rideSnapshot?.fare || routeState.fare || routeState.vehicle?.price || 22,
-            paymentMethod: routeState.paymentMethod || 'Cash',
-          },
-        });
-      }, 1800);
+      navigate(`${routePrefix}/ride/tracking`, {
+        replace: true,
+        state: {
+          ...routeState,
+          pickup: rideSnapshot?.pickupAddress || routeState.pickup,
+          drop: rideSnapshot?.dropAddress || routeState.drop,
+          pickupCoords: rideSnapshot?.pickupLocation?.coordinates || routeState.pickupCoords,
+          dropCoords: rideSnapshot?.dropLocation?.coordinates || routeState.dropCoords,
+          rideId: activeRideIdRef.current,
+          otp,
+          driver: nextDriver,
+          fare: rideSnapshot?.fare || routeState.fare || routeState.vehicle?.price || 22,
+          paymentMethod: routeState.paymentMethod || 'Cash',
+        },
+      });
     };
 
     const onRideAccepted = ({ driver: acceptedDriver, rideId }) => {
@@ -442,9 +422,7 @@ const SearchingDriver = () => {
 
     navigate(routePrefix || '/taxi/user');
   };
-  const isSearching = stage === STAGES.SEARCHING;
-  const isAssigned  = stage === STAGES.ASSIGNED;
-  const isAccepted  = stage === STAGES.ACCEPTED || stage === STAGES.COMPLETING;
+  const isSearching = [STAGES.SEARCHING, STAGES.ASSIGNED, STAGES.ACCEPTED].includes(stage);
 
   return (
     <div className="min-h-screen bg-slate-50 max-w-lg mx-auto relative font-['Plus_Jakarta_Sans'] overflow-hidden">
@@ -478,10 +456,10 @@ const SearchingDriver = () => {
                 position={dropPos}
                 icon={{
                   path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z',
-                  fillColor: '#f97316',
+                  fillColor: '#FACC15',
                   fillOpacity: 1,
                   strokeWeight: 2,
-                  strokeColor: '#ffffff',
+                  strokeColor: '#000000',
                   scale: 1.6,
                   anchor: new window.google.maps.Point(12, 22)
                 }}
@@ -515,7 +493,7 @@ const SearchingDriver = () => {
                           delay: i * 0.75,
                           ease: "easeOut"
                         }}
-                        className="absolute w-20 h-20 rounded-full border-2 border-orange-400/40 bg-orange-400/5 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
+                        className="absolute w-20 h-20 rounded-full border-[3px] border-yellow-400 bg-yellow-400/10 shadow-[0_0_20px_rgba(250,204,21,0.3)]"
                       />
                     ))}
 
@@ -525,7 +503,7 @@ const SearchingDriver = () => {
                       transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
                       className="absolute w-[320px] h-[320px] rounded-full overflow-hidden"
                       style={{ 
-                        background: 'conic-gradient(from 0deg, rgba(249, 115, 22, 0.5) 0deg, transparent 60deg, transparent 360deg)' 
+                        background: 'conic-gradient(from 0deg, rgba(250, 204, 21, 0.6) 0deg, transparent 60deg, transparent 360deg)' 
                       }}
                     />
                   </motion.div>
@@ -554,8 +532,8 @@ const SearchingDriver = () => {
                   }}
                   className="relative -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                 >
-                  <div className="absolute inset-0 rounded-full bg-orange-400/30 blur-md" />
-                  <div className="relative w-11 h-11 rounded-full border-2 border-white bg-white/95 p-2 shadow-[0_10px_26px_rgba(15,23,42,0.22)]">
+                  <div className="absolute inset-0 rounded-full bg-yellow-400/40 blur-md" />
+                  <div className="relative w-11 h-11 rounded-full border-2 border-slate-900 bg-white p-2 shadow-[0_10px_26px_rgba(15,23,42,0.22)]">
                     <img
                       src={getVehicleIcon(nearbyDriver.vehicleIconType || nearbyDriver.vehicleType || selectedVehicleIconType)}
                       alt={nearbyDriver.vehicleType || selectedVehicleName}
@@ -620,143 +598,38 @@ const SearchingDriver = () => {
               {/* Intentional Bottom Sheet Handle */}
               <div className="w-10 h-1.5 bg-slate-100 rounded-full mx-auto mb-2" />
 
-              <div className="text-center space-y-1.5">
-                <h1 className="text-[22px] font-extrabold text-slate-950 tracking-tight">Finding your ride</h1>
-                <p className="text-[13px] font-semibold text-slate-400 max-w-[260px] mx-auto leading-normal">{searchStatus}</p>
-              </div>
-
-              <div className="flex justify-center py-1">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.12, 1],
-                    opacity: [0.72, 1, 0.72],
-                  }}
-                  transition={{ repeat: Infinity, duration: 1.05, ease: 'easeInOut' }}
-                  className="relative h-20 w-20 rounded-[28px] bg-gradient-to-br from-orange-50 to-white p-3 shadow-[0_18px_38px_rgba(249,115,22,0.20)] border border-orange-100"
-                >
-                  <motion.div
-                    animate={{ scale: [0.8, 1.65], opacity: [0.35, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.2, ease: 'easeOut' }}
-                    className="absolute inset-0 rounded-[28px] border-2 border-orange-300"
-                  />
-                  <img src={selectedVehicleIcon} alt={selectedVehicleName} className="relative h-full w-full object-contain drop-shadow-md" />
-                </motion.div>
-              </div>
-
-              {/* Animated Progress Dots */}
-              <div className="flex justify-center gap-2.5 py-1">
-                {[0, 1, 2, 3].map(i => (
-                  <motion.div key={i} animate={{ 
-                    scale: [1, 1.4, 1],
-                    opacity: [0.3, 1, 0.3],
-                    backgroundColor: ['#e2e8f0', '#f97316', '#e2e8f0'] 
-                  }} transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2 }}
-                    className="w-2.5 h-2.5 rounded-full" />
-                ))}
-              </div>
-
-              {/* Stats Row */}
-              <div className="flex items-center justify-between px-5 py-4 rounded-[24px] bg-slate-50/80 border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Fast Matching</span>
+              <div className="flex items-start justify-between mb-5">
+                <div className="space-y-1">
+                  <h1 className="text-[20px] font-extrabold text-slate-900 tracking-tight">Requesting Captain...</h1>
+                  <p className="text-[13px] font-medium text-slate-500 max-w-[240px] leading-snug">
+                    {searchStatus === 'Booking created. Searching nearby drivers...' ? 'Connecting to captains nearby...' : searchStatus}
+                  </p>
                 </div>
-                <div className="w-px h-8 bg-slate-200" />
-                <div className="flex items-center gap-3">
-                   <ShieldCheck size={20} className="text-blue-500" strokeWidth={2.5} />
-                   <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Top Safety</span>
+                <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center shrink-0 border border-slate-100 shadow-sm">
+                  <img src={selectedVehicleIcon} alt={selectedVehicleName} className="h-7 w-7 object-contain drop-shadow-sm" />
                 </div>
+              </div>
+
+              {/* Rapido Sweeping Progress Bar */}
+              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mb-6 relative">
+                 <motion.div 
+                    animate={{ x: ["-100%", "200%"] }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                    className="absolute top-0 bottom-0 w-1/2 bg-[#FACC15] rounded-full"
+                 />
               </div>
 
               <motion.button 
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowCancelConfirm(true)}
-                className="w-full py-4.5 rounded-[22px] bg-red-50 text-[13px] font-extrabold text-red-500 uppercase tracking-[0.1em] hover:bg-red-100 transition-colors border border-red-100/50"
+                className="w-full py-4 rounded-[16px] bg-slate-100 text-[14px] font-bold text-slate-900 uppercase tracking-widest hover:bg-slate-200 transition-colors"
               >
-                Cancel Search
+                Cancel Request
               </motion.button>
             </motion.div>
           )}
 
-          {/* Assigned */}
-          {isAssigned && (
-            <motion.div key="assigned" initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}>
-              <DriverCard driver={driver}
-                bannerGradient="bg-gradient-to-r from-emerald-500/90 to-emerald-600/90"
-                banner={<>
-                  <CheckCircle2 size={18} className="text-white shrink-0" strokeWidth={2.5} />
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-[14px] leading-tight">Captain Found!</p>
-                    <p className="text-emerald-100 text-[11px] font-medium opacity-90">Waiting for captain to accept</p>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {[0,1,2].map(d => (
-                      <motion.div key={d} animate={{ opacity:[0.3,1,0.3] }} transition={{ repeat:Infinity, duration:1.2, delay:d*0.25 }}
-                        className="w-1.5 h-1.5 rounded-full bg-white/70 shadow-sm" />
-                    ))}
-                  </div>
-                </>}>
-                <div className="flex gap-3">
-                  <ActionBtn icon={Phone} label="Call" onClick={() => window.open(`tel:${driver.phone}`)} />
-                  <ActionBtn icon={MessageCircle} label="Chat" onClick={() => navigate('/taxi/user/ride/chat', { state: { driver } })} />
-                  <ActionBtn icon={Shield} label="Safety" onClick={() => navigate('/taxi/user/support')} />
-                </div>
-                <div className="flex items-center gap-3 rounded-[18px] border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3">
-                  <div className="w-9 h-9 rounded-[12px] bg-slate-200/60 flex items-center justify-center text-lg shadow-inner">🔒</div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">OTP</p>
-                    <p className="text-[12px] font-semibold text-slate-500">Shown after captain accepts</p>
-                  </div>
-                </div>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowCancelConfirm(true)}
-                  className="w-full py-4 rounded-[20px] bg-slate-950 text-[13px] font-bold text-white uppercase tracking-widest shadow-lg shadow-slate-950/20">
-                  Cancel This Ride
-                </motion.button>
-              </DriverCard>
-            </motion.div>
-          )}
-
-          {/* Accepted */}
-          {isAccepted && (
-            <motion.div key="accepted" initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}>
-              <DriverCard driver={driver}
-                bannerGradient="bg-gradient-to-r from-orange-500 to-orange-400"
-                banner={<>
-                  <Navigation size={16} className="text-white shrink-0" strokeWidth={2.5} />
-                  <div>
-                    <p className="text-white font-bold text-[13px] leading-tight">Ride Accepted!</p>
-                    <p className="text-orange-100 text-[10px] font-bold">Your captain is on the way</p>
-                  </div>
-                </>}>
-                <div className="flex gap-2">
-                  <ActionBtn icon={Phone} label="Call" onClick={() => window.open(`tel:${driver.phone}`)} />
-                  <ActionBtn icon={MessageCircle} label="Chat" onClick={() => navigate('/taxi/user/ride/chat', { state: { driver } })} />
-                  <ActionBtn icon={Shield} label="Safety" onClick={() => navigate('/taxi/user/support')} />
-                </div>
-                <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className="rounded-[14px] border border-orange-100 bg-orange-50/60 px-3 py-2.5 flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[9px] font-bold text-orange-500 uppercase tracking-wider">Share OTP with Captain</p>
-                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">To start your ride</p>
-                  </div>
-                  <div className="flex gap-1">
-                    {otp.split('').map((d, i) => (
-                      <motion.div key={i} initial={{ y: -8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: i * 0.07 }}
-                        className="w-8 h-9 bg-white rounded-[8px] border-2 border-orange-200 flex items-center justify-center shadow-sm">
-                        <span className="text-[17px] font-bold text-slate-900">{d}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ride in Progress</span>
-                </div>
-              </DriverCard>
-            </motion.div>
-          )}
+          {/* Removed assigned and accepted flashing UIs */}
         </AnimatePresence>
       </div>
 
@@ -767,24 +640,25 @@ const SearchingDriver = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowCancelConfirm(false)}
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] max-w-lg mx-auto" />
-            <motion.div initial={{ scale: 0.92, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.92, opacity: 0, y: 40 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[82%] max-w-sm bg-white rounded-[28px] p-7 z-[101] shadow-2xl text-center">
-              <div className="w-14 h-14 bg-red-50 rounded-[18px] flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle size={26} className="text-red-400" strokeWidth={2} />
-              </div>
-              <h3 className="text-[18px] font-bold text-slate-900 mb-1.5">Cancel ride?</h3>
-              <p className="text-[13px] font-bold text-slate-400 mb-6 leading-relaxed">
-                {isAssigned ? 'A captain has been assigned. Sure you want to cancel?' : "We're still searching. Stop looking?"}
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white rounded-t-[24px] p-6 z-[101] shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
+              
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
+
+              <h3 className="text-[20px] font-extrabold text-slate-900 mb-2 tracking-tight">Cancel Request?</h3>
+              <p className="text-[14px] font-medium text-slate-500 mb-8 leading-relaxed">
+                {isAssigned ? 'A captain has been assigned. Are you sure you want to cancel?' : "We're still searching. Do you want to stop looking?"}
               </p>
-              <div className="space-y-2.5">
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handleCancel}
-                  className="w-full bg-slate-900 text-white py-3.5 rounded-[16px] text-[13px] font-bold uppercase tracking-widest">
+              
+              <div className="flex gap-3">
+                <button onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 py-4 text-[14px] font-bold text-slate-900 bg-slate-100 rounded-[16px] uppercase tracking-widest active:scale-95 transition-all">
+                  {isSearching ? 'Keep Searching' : 'Don\'t Cancel'}
+                </button>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={handleCancel}
+                  className="flex-1 bg-[#FACC15] text-slate-900 py-4 rounded-[16px] text-[14px] font-extrabold uppercase tracking-widest shadow-sm">
                   Yes, Cancel
                 </motion.button>
-                <button onClick={() => setShowCancelConfirm(false)}
-                  className="w-full py-3.5 text-[13px] font-bold text-slate-400 uppercase tracking-widest">
-                  {isSearching ? 'Keep Searching' : 'Go Back'}
-                </button>
               </div>
             </motion.div>
           </div>
