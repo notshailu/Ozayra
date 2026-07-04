@@ -1,15 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
 import {
   ArrowRight,
-  Banknote,
-  Bike,
   ChevronRight,
-  Clock,
-  CreditCard,
   MapPin,
-  Navigation,
-  Package,
   X,
 } from 'lucide-react';
 
@@ -23,15 +17,20 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
   const slideFillWidth = useTransform(slideX, [0, 180], ['58px', '100%']);
   const data = requestData;
 
+  const onDeclineRef = useRef(onDecline);
+
+  useEffect(() => {
+    onDeclineRef.current = onDecline;
+  }, [onDecline]);
+
   useEffect(() => {
     let interval;
-    let resetTimer;
     if (visible) {
-      resetTimer = setTimeout(() => setTimer(15), 0);
+      setTimer(15);
       interval = setInterval(() => {
         setTimer((current) => {
           if (current <= 1) {
-            onDecline();
+            onDeclineRef.current?.();
             return 0;
           }
           return current - 1;
@@ -40,10 +39,9 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
     }
 
     return () => {
-      clearTimeout(resetTimer);
       clearInterval(interval);
     };
-  }, [visible, onDecline]);
+  }, [visible]);
 
   useEffect(() => {
     slideX.set(0);
@@ -58,6 +56,19 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
   const category = data.raw?.parcel?.category || data.raw?.parcel?.weight || (isParcel ? 'Parcel delivery' : isIntercity ? intercityRoute || 'Intercity trip' : 'Passenger ride');
   const payment = normalizePayment(data.payment);
   const timerProgress = Math.max(0, Math.min(100, (timer / 15) * 100));
+
+  const radius = 22;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (timerProgress / 100) * circumference;
+
+  const getVehicleIconPath = (type) => {
+    const val = String(type).toLowerCase();
+    if (val.includes('bike') || val.includes('motorcycle')) return '/1_Bike.png';
+    if (val.includes('auto') || val.includes('rickshaw')) return '/2_AutoRickshaw.png';
+    if (val.includes('parcel') || val.includes('delivery')) return '/5_Parcel.png';
+    return '/4_Taxi.png';
+  };
+  const iconPath = getVehicleIconPath(data.type || data.raw?.vehicleType);
 
   const handleSlideEnd = (_event, info) => {
     if (isAccepting) return;
@@ -77,60 +88,81 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/40 px-3 pb-6 sm:pb-8 backdrop-blur-sm"
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 px-3 pb-6 sm:pb-8 backdrop-blur-sm"
       >
         <Motion.div
           initial={{ y: '100%', scale: 0.95 }}
           animate={{ y: 0, scale: 1 }}
           exit={{ y: '100%', scale: 0.95 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="relative w-full max-w-[440px] overflow-hidden rounded-[32px] bg-white shadow-[0_40px_100px_rgba(0,0,0,0.15)] border border-slate-100"
+          className="relative w-full max-w-[420px] overflow-hidden rounded-[30px] bg-white shadow-[0_24px_64px_rgba(0,0,0,0.22)] border border-slate-100"
         >
-          {/* Progress Header */}
-          <div className="absolute inset-x-0 top-0 h-1.5 bg-slate-50">
-            <Motion.div
-              className={`h-full rounded-r-full ${isParcel ? 'bg-orange-400' : 'bg-slate-900'}`}
-              animate={{ width: `${timerProgress}%` }}
-              transition={{ duration: 0.4 }}
-            />
-          </div>
-
-          <div className="px-6 pb-6 pt-8">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`flex h-[60px] w-[60px] items-center justify-center rounded-2xl shadow-sm ${isParcel ? 'bg-orange-50 text-orange-600' : isIntercity ? 'bg-yellow-400 text-slate-950' : 'bg-slate-900 text-white'}`}>
-                  {isParcel ? <Package size={28} /> : isIntercity ? <Navigation size={28} /> : <Bike size={28} />}
-                </div>
-                <div>
-                  <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isParcel ? 'bg-orange-50 text-orange-600' : isIntercity ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {title}
-                  </div>
-                  <h2 className="mt-1 text-[22px] font-bold tracking-tight text-slate-950">Incoming Order</h2>
-                  <p className="text-[12px] font-medium text-slate-500">{category}</p>
-                </div>
+          {/* Rapido Yellow Header */}
+          <div className="bg-[#FCB702] px-6 py-4 flex items-center justify-between border-b border-yellow-500/20">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center p-1.5 shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-yellow-400">
+                <img src={iconPath} alt={title} className="w-full h-full object-contain" />
               </div>
-
-              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-slate-50 bg-slate-50 shadow-inner">
-                <span className="text-[22px] font-bold text-slate-900">{timer}</span>
-                <Clock size={12} className="absolute -top-1.5 -right-1.5 p-0.5 bg-white border border-slate-100 rounded-full text-slate-400" />
+              <div>
+                <span className="text-[10px] font-black text-slate-950/65 uppercase tracking-[0.16em] leading-none">
+                  {title}
+                </span>
+                <h2 className="text-[18px] font-black text-slate-950 tracking-tight leading-tight mt-0.5">
+                  Incoming Order
+                </h2>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="mb-6 flex items-center justify-between px-2 py-4 rounded-[22px] bg-slate-50/70 border border-slate-100/50">
-               <div className="text-center flex-1">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Distance</p>
-                  <p className="text-[15px] font-bold text-slate-900">{data.distance}</p>
+            {/* Circular Progress Timer (Rapido Style) */}
+            <div className="relative flex h-[50px] w-[50px] items-center justify-center rounded-full bg-white shadow-md border border-slate-50">
+              <svg className="absolute inset-0 -rotate-90" width="50" height="50">
+                <circle
+                  className="text-slate-100"
+                  strokeWidth="3.5"
+                  stroke="currentColor"
+                  fill="transparent"
+                  r={radius}
+                  cx="25"
+                  cy="25"
+                />
+                <Motion.circle
+                  className="text-[#FCB702]"
+                  strokeWidth="3.5"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="transparent"
+                  r={radius}
+                  cx="25"
+                  cy="25"
+                  transition={{ duration: 0.4 }}
+                />
+              </svg>
+              <span className="text-[18px] font-black text-slate-900 z-10">{timer}</span>
+            </div>
+          </div>
+
+          <div className="px-6 pb-6 pt-5">
+            {/* Quick Stats Grid */}
+            <div className="mb-6 flex items-center justify-between rounded-[22px] bg-slate-50/70 border border-slate-100/50 p-4 text-center">
+               <div className="flex-1 text-left pl-2">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Distance</p>
+                  <p className="text-[16px] font-black text-slate-900 tracking-tight leading-none">{data.distance}</p>
                </div>
-               <div className="w-px h-8 bg-slate-200" />
-               <div className="text-center flex-[1.5] px-4">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Earnings</p>
-                  <p className="text-[20px] font-bold text-slate-900 leading-none">{data.fare}</p>
+               <div className="w-px h-8 bg-slate-200 shrink-0 self-center mx-1" />
+               <div className="flex-1 text-center px-1">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Earnings</p>
+                  <p className="text-[22px] font-black text-[#FCB702] leading-none drop-shadow-sm filter saturate-150">
+                    {data.fare.replace('Rs', '₹')}
+                  </p>
                </div>
-               <div className="w-px h-8 bg-slate-200" />
-               <div className="text-center flex-1">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Payment</p>
-                  <p className="text-[13px] font-bold text-emerald-600">{payment}</p>
+               <div className="w-px h-8 bg-slate-200 shrink-0 self-center mx-1" />
+               <div className="flex-1 text-right pr-2">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Payment</p>
+                  <p className={`text-[13px] font-black uppercase tracking-wider leading-none ${payment.includes('CASH') ? 'text-orange-600' : 'text-emerald-600'}`}>
+                    {payment}
+                  </p>
                </div>
             </div>
 
@@ -152,23 +184,23 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
             )}
 
             {/* Journey Timeline */}
-            <div className="mb-6 relative">
-              <div className="absolute left-[7px] top-3 bottom-3 w-[1.5px] border-l-2 border-dashed border-slate-100" />
-              <div className="space-y-6">
+            <div className="mb-6 relative bg-slate-50/40 rounded-2xl p-4 border border-slate-100">
+              <div className="absolute left-[23px] top-[26px] bottom-[26px] w-[1.5px] border-l-2 border-dashed border-slate-200" />
+              <div className="space-y-5">
                 <div className="flex items-start gap-4">
-                  <div className="relative z-10 mt-1.5 h-3.5 w-3.5 rounded-full border-2 border-emerald-500 bg-white shadow-sm" />
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Pickup Point</p>
-                    <p className="mt-1 text-[15px] font-semibold leading-snug text-slate-950 truncate max-w-[280px]">
+                  <div className="mt-1.5 h-3.5 w-3.5 rounded-full border-[3px] border-emerald-500 bg-white flex items-center justify-center shadow-sm shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Pickup Point</p>
+                    <p className="mt-0.5 text-[14px] font-bold leading-tight text-slate-900 truncate">
                       {data.raw?.pickupAddress || data.pickup}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="relative z-10 mt-1.5 h-3.5 w-3.5 rounded-full border-2 border-orange-500 bg-white shadow-sm" />
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Drop Point</p>
-                    <p className="mt-1 text-[15px] font-semibold leading-snug text-slate-950 truncate max-w-[280px]">
+                  <div className="mt-1.5 h-3.5 w-3.5 rounded-full border-[3px] border-orange-500 bg-white flex items-center justify-center shadow-sm shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Drop Point</p>
+                    <p className="mt-0.5 text-[14px] font-bold leading-tight text-slate-900 truncate">
                       {data.raw?.dropAddress || data.drop}
                     </p>
                   </div>
@@ -176,23 +208,24 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {/* Action Buttons (Rapido Style) */}
+            <div className="flex gap-3.5">
               <button
                 type="button"
                 onClick={onDecline}
                 disabled={isAccepting}
-                className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm active:scale-95 transition-all hover:text-rose-500"
+                className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm active:scale-95 transition-all hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100"
               >
-                <X size={26} />
+                <X size={24} strokeWidth={2.8} />
               </button>
 
-              <div className="relative h-[64px] flex-1 overflow-hidden rounded-2xl bg-slate-900 shadow-xl shadow-slate-200">
-                <Motion.div style={{ width: slideFillWidth }} className="absolute inset-y-0 left-0 rounded-2xl bg-emerald-500" />
+              <div className="relative h-[60px] flex-1 overflow-hidden rounded-2xl bg-slate-950 shadow-lg shadow-slate-200">
+                <Motion.div style={{ width: slideFillWidth }} className="absolute inset-y-0 left-0 rounded-2xl bg-[#FCB702]" />
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center pl-10">
-                  <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-white">
+                  <span className="text-[12px] font-black uppercase tracking-[0.16em] text-white">
                     {isAccepting ? 'Accepting...' : 'Slide to accept'}
                   </span>
-                  {!isAccepting && <ArrowRight size={18} className="ml-2 text-white/50" />}
+                  {!isAccepting && <ArrowRight size={16} className="ml-2 text-white/50 animate-pulse" />}
                 </div>
                 <Motion.div
                   drag={isAccepting ? false : 'x'}
@@ -201,9 +234,9 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
                   dragMomentum={false}
                   style={{ x: slideX }}
                   onDragEnd={handleSlideEnd}
-                  className="absolute left-1 top-1 z-10 flex h-[56px] w-[56px] cursor-grab items-center justify-center rounded-[14px] bg-white text-slate-950 shadow-lg active:cursor-grabbing"
+                  className="absolute left-1 top-1 z-10 flex h-[52px] w-[52px] cursor-grab items-center justify-center rounded-[12px] bg-[#FCB702] text-slate-950 shadow-md active:cursor-grabbing hover:brightness-105"
                 >
-                  <ChevronRight size={28} />
+                  <ChevronRight size={26} strokeWidth={3} />
                 </Motion.div>
               </div>
             </div>

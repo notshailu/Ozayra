@@ -114,6 +114,7 @@ const VehicleFleet = () => {
     const ActiveIcon = iconFor(selectedType?.icon_types || driver?.vehicleIconType || driver?.vehicleType);
     const activeVehicleName = getTypeLabel(selectedType) || driver?.vehicleType || 'Vehicle';
     const vehicleModel = [driver?.vehicleMake, driver?.vehicleModel].filter(Boolean).join(' ') || activeVehicleName;
+    const isApproved = driver?.approve === true;
 
     useEffect(() => {
         let active = true;
@@ -208,28 +209,28 @@ const VehicleFleet = () => {
                 </div>
             ) : (
                 <main className="space-y-6">
-                    <div className="bg-slate-900 p-7 rounded-[2.5rem] text-white relative overflow-hidden shadow-xl border border-white/5">
+                    <div className="bg-white p-7 rounded-[2.5rem] text-slate-900 relative overflow-hidden shadow-sm border border-slate-100">
                         <div className="relative z-10 space-y-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="space-y-1.5 min-w-0 flex-1">
-                                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40">Primary Vehicle</h3>
-                                    <p className="text-[22px] font-bold tracking-tight leading-none truncate">{vehicleModel}</p>
-                                    <p className="text-[14px] font-semibold tracking-widest text-white/50 truncate uppercase mt-1">{driver?.vehicleNumber || 'Number not set'}</p>
-                                    <p className="text-[11px] font-medium text-white/30 truncate">{activeVehicleName} • {driver?.vehicleColor || 'Color not set'}</p>
+                                    <h3 className="text-[12px] font-medium text-slate-500">Primary Vehicle</h3>
+                                    <p className="text-[22px] font-semibold tracking-tight leading-none truncate">{vehicleModel}</p>
+                                    <p className="text-[14px] font-medium text-slate-600 truncate mt-1">{driver?.vehicleNumber || 'Number not set'}</p>
+                                    <p className="text-[12px] font-medium text-slate-400 truncate">{activeVehicleName} • {driver?.vehicleColor || 'Color not set'}</p>
                                 </div>
                                 {driver?.vehicleImage ? (
-                                    <div className="h-16 w-20 overflow-hidden rounded-2xl border border-white/10 shadow-lg shrink-0 bg-white/5">
+                                    <div className="h-16 w-20 overflow-hidden rounded-2xl border border-slate-100 shadow-sm shrink-0 bg-slate-50">
                                         <img src={driver.vehicleImage} alt="Vehicle" className="h-full w-full object-cover" />
                                     </div>
                                 ) : (
-                                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-white border border-white/10 shadow-lg shrink-0">
+                                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 shadow-sm shrink-0">
                                         <ActiveIcon size={26} />
                                     </div>
                                 )}
                             </div>
-                            <div className="inline-flex items-center gap-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-2.5 rounded-2xl">
+                            <div className="inline-flex items-center gap-2.5 bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-2.5 rounded-2xl">
                                 <CheckCircle2 size={15} />
-                                <span className="text-[11px] font-semibold uppercase tracking-wider">Map icon linked to selected type</span>
+                                <span className="text-[12px] font-medium">Map icon linked to selected type</span>
                             </div>
                         </div>
                     </div>
@@ -240,38 +241,49 @@ const VehicleFleet = () => {
 
                     <section className="space-y-5">
                         <div className="flex items-center justify-between px-1">
-                            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Configuration</h3>
-                            <button
-                                onClick={() => {
-                                    setFormData(buildForm(driver));
-                                    setIsEditing(true);
-                                }}
-                                className="text-[11px] font-bold text-blue-600 flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg"
-                            >
-                                <Edit3 size={13} /> Edit Details
-                            </button>
+                            <h3 className="text-[13px] font-medium text-slate-500">Configuration</h3>
+                            {!isApproved && (
+                                <button
+                                    onClick={() => {
+                                        setFormData(buildForm(driver));
+                                        setIsEditing(true);
+                                    }}
+                                    className="text-[12px] font-medium text-blue-600 flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg"
+                                >
+                                    <Edit3 size={13} /> Edit Details
+                                </button>
+                            )}
                         </div>
 
-                        <div className="bg-amber-50/50 border border-amber-100/50 rounded-2xl px-5 py-4">
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 mb-1">Dispatch Matching</p>
-                            <p className="text-[12px] font-medium text-slate-500 leading-relaxed">
-                                Update the primary vehicle here if requests are not reaching this driver. The system uses the selected vehicle type exactly for job distribution.
-                            </p>
-                        </div>
+                        {isApproved ? (
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-4">
+                                <p className="text-[13px] font-medium text-emerald-700 mb-0.5">Approved by admin</p>
+                                <p className="text-[12px] font-medium text-emerald-600/70 leading-relaxed">
+                                    Vehicle details are locked after admin approval. Contact admin to make changes.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4">
+                                <p className="text-[13px] font-medium text-slate-700 mb-1">Dispatch Matching</p>
+                                <p className="text-[12px] font-medium text-slate-500 leading-relaxed">
+                                    Update the primary vehicle here if requests are not reaching this driver. The system uses the selected vehicle type exactly for job distribution.
+                                </p>
+                            </div>
+                        )}
 
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex items-center justify-between gap-4">
+                        <div className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
                             <div className="flex items-center gap-4 min-w-0">
-                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white text-slate-900 border border-slate-100 shadow-sm shrink-0">
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-50 text-slate-600 border border-slate-100 shrink-0">
                                     <ActiveIcon size={20} />
                                 </div>
                                 <div className="space-y-0.5 min-w-0">
-                                    <h4 className="text-[15px] font-bold text-slate-900 leading-tight truncate">{activeVehicleName}</h4>
-                                    <p className="text-[12px] font-medium text-slate-400 truncate">
+                                    <h4 className="text-[15px] font-semibold text-slate-900 leading-tight truncate">{activeVehicleName}</h4>
+                                    <p className="text-[13px] font-medium text-slate-500 truncate">
                                         {driver?.vehicleNumber || 'No number'} • {driver?.vehicleColor || 'No color'}
                                     </p>
                                 </div>
                             </div>
-                            <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+                            <div className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-medium">
                                 Active
                             </div>
                         </div>

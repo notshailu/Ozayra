@@ -41,6 +41,7 @@ import {
   startDriverOnboarding,
   verifyDriverOtp,
 } from "../services/onboardingService.js";
+import { resolveRazorpayCredentials, razorpayRequest } from "../../user/controllers/userController.js";
 
 const generateDriverReferralCode = (driver) => {
   const idPart = String(driver?._id || "")
@@ -628,6 +629,16 @@ const getGenericVehicleType = (vehicle = {}) => {
 };
 
 export const updateDriverVehicle = async (req, res) => {
+  const currentDriver = await Driver.findById(req.auth.sub).select("approve").lean();
+
+  if (!currentDriver) {
+    throw new ApiError(404, "Driver not found");
+  }
+
+  if (currentDriver.approve === true) {
+    throw new ApiError(403, "Vehicle details cannot be changed after admin approval.");
+  }
+
   const {
     vehicleTypeId,
     vehicleNumber,
@@ -1171,5 +1182,108 @@ export const goOffline = async (req, res) => {
   res.json({
     success: true,
     data: driver,
+  });
+};
+
+export const createDriverRazorpayWalletTopupOrder = async (req, res) => {
+  const amount = Number(req.body?.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new ApiError(400, "amount must be a positive number");
+  }
+
+  const { keyId, keySecret } = await resolveRazorpayCredentials();
+
+  const amountPaise = Math.round(amount * 100);
+  const driverId = String(req.auth?.sub || "");
+  const receipt = `d_w_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+
+  const order = await razorpayRequest({
+    method: "POST",
+    path: "/orders",
+    body: {
+      amount: amountPaise,
+      currency: "INR",
+      receipt,
+      notes: { driverId },
+    },
+    keyId,
+    keySecret,
+  });
+
+  res.status(201).json({
+    success: true,
+    data: {
+      keyId,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency || "INR",
+    },
+  });
+};
+
+export const verifyDriverRazorpayWalletTopup = async (req, res) => {
+  const orderId = String(req.body?.razorpay_order_id || "");
+  const paymentId = String(req.body?.razorpay_payment_id || "");
+  const signature = String(req.body?.razorpay_signature || "");
+
+  if (!orderId || !paymentId || !signature) {
+    throw new ApiError(400, "Payment verification fields are required");
+  }
+
+  const { keyId, keySecret } = await resolveRazorpayCredentials();
+
+  const expectedSignature = crypto
+    .createHmac("sha256", keySecret)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+
+  if (expectedSignature !== signature) {
+    throw new ApiError(400, "Invalid payment signature");
+  }
+
+  const order = await razorpayRequest({
+    method: "GET",
+    path: `/orders/${encodeURIComponent(orderId)}`,
+    keyId,
+    keySecret,
+  });
+
+  const amountPaise = Number(order?.amount);
+  if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
+    throw new ApiError(400, "Invalid order amount");
+  }
+
+  const amount = Math.round(amountPaise) / 100;
+  const driverId = req.auth?.sub;
+
+  const alreadyCredited = await WalletTransaction.findOne({
+    driverId,
+    "metadata.providerPaymentId": paymentId,
+  }).select("_id").lean();
+
+  if (alreadyCredited) {
+    throw new ApiError(400, "Payment already processed");
+  }
+
+  const result = await topUpDriverWallet({
+    driverId,
+    amount,
+    metadata: {
+      source: "razorpay",
+      referenceId: orderId,
+      providerPaymentId: paymentId,
+    },
+  });
+
+  const payload = {
+    wallet: result.wallet,
+    transaction: result.transaction,
+  };
+
+  emitToDriver(driverId, "driver:wallet:updated", payload);
+
+  res.status(201).json({
+    success: true,
+    data: payload,
   });
 };

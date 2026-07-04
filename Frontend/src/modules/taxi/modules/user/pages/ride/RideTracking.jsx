@@ -43,10 +43,10 @@ const getTrackingVehicleIcon = (ride, driver) => {
   const serviceType = String(ride?.serviceType || ride?.type || '').toLowerCase();
   const iconType = String(ride?.vehicleIconType || driver?.vehicleIconType || driver?.vehicleType || '').toLowerCase();
 
-  if (serviceType === 'parcel') return deliveryIcon;
-  if (iconType.includes('bike')) return bikeIcon;
-  if (iconType.includes('auto')) return autoIcon;
-  return carIcon;
+  if (serviceType === 'parcel') return '/5_Parcel.png';
+  if (iconType.includes('bike')) return '/1_Bike.png';
+  if (iconType.includes('auto')) return '/2_AutoRickshaw.png';
+  return '/4_Taxi.png';
 };
 
 const getInitials = (name = '') =>
@@ -678,7 +678,7 @@ const RideTracking = () => {
                   {hasVehiclePhoto ? (
                     <img src={vehicleImage} className="w-full h-full object-contain rounded-[12px]" onError={() => setVehicleImageBroken(true)} />
                   ) : (
-                    <img src={vehicleIcon} className="w-7 h-7 object-contain" />
+                    <img src={vehicleIcon} className="w-10 h-10 object-contain drop-shadow-sm" />
                   )}
                </div>
                <div>

@@ -66,10 +66,10 @@ const normalizeWalletResponse = (payload) => {
 };
 
 const RuleCard = ({ label, value, help }) => (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
-        <p className="mt-2 text-[18px] font-black text-slate-950">{value}</p>
-        {help && <p className="mt-1 text-[11px] font-bold leading-relaxed text-slate-500">{help}</p>}
+    <div className="rounded-2xl border border-slate-100/60 bg-white p-4">
+        <p className="text-[12px] font-medium text-slate-500">{label}</p>
+        <p className="mt-1 text-[16px] font-semibold text-slate-900">{value}</p>
+        {help && <p className="mt-1 text-[11px] font-medium leading-relaxed text-slate-400">{help}</p>}
     </div>
 );
 
@@ -163,6 +163,20 @@ const DriverWallet = () => {
         return [minimum, minimum * 2, minimum * 5].map((amount) => String(Math.round(amount)));
     }, [walletRules.minimumTopUpAmount]);
 
+    const loadRazorpaySDK = () => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
     const handleTopUp = async () => {
         const amount = Number(topUpAmount);
         if (!walletRules.walletEnabled) {
@@ -182,25 +196,63 @@ const DriverWallet = () => {
         setWalletError('');
 
         try {
-            const response = await api.post('/drivers/wallet/top-up', {
-                amount,
-                source: 'driver-wallet-page',
+            const isSdkLoaded = await loadRazorpaySDK();
+            if (!isSdkLoaded) {
+                throw new Error('Could not load payment gateway. Please check your connection.');
+            }
+
+            const response = await api.post('/drivers/wallet/razorpay/order', { amount });
+            const { keyId, orderId, currency, amount: orderAmount } = response?.data || response;
+
+            if (!orderId || !keyId) {
+                throw new Error('Failed to initialize payment.');
+            }
+
+            const options = {
+                key: keyId,
+                amount: orderAmount,
+                currency: currency || 'INR',
+                name: 'Wallet Top-up',
+                description: 'Driver Wallet',
+                order_id: orderId,
+                handler: async (verifyResponse) => {
+                    try {
+                        const verifyRes = await api.post('/drivers/wallet/razorpay/verify', verifyResponse);
+                        const data = verifyRes?.data || verifyRes || {};
+                        if (data.wallet) setWallet(data.wallet);
+                        if (data.transaction) {
+                            setTransactions((prev) => [data.transaction, ...prev.filter((tx) => tx._id !== data.transaction._id)].slice(0, 50));
+                        }
+                        setIsSuccess(true);
+                        setTimeout(() => {
+                            setIsSuccess(false);
+                            setShowTopUp(false);
+                            setIsProcessing(false);
+                        }, 1400);
+                    } catch (verifyError) {
+                        setWalletError(verifyError?.message || 'Payment verification failed.');
+                        setIsProcessing(false);
+                    }
+                },
+                modal: {
+                    ondismiss: () => {
+                        setIsProcessing(false);
+                    }
+                },
+                theme: {
+                    color: '#059669' // emerald-600
+                }
+            };
+
+            const razorpayInstance = new window.Razorpay(options);
+            razorpayInstance.on('payment.failed', (res) => {
+                setWalletError(res?.error?.description || 'Payment failed.');
+                setIsProcessing(false);
             });
-            const data = response?.data || response || {};
-            if (data.wallet) {
-                setWallet(data.wallet);
-            }
-            if (data.transaction) {
-                setTransactions((prev) => [data.transaction, ...prev.filter((tx) => tx._id !== data.transaction._id)].slice(0, 50));
-            }
-            setIsSuccess(true);
-            setTimeout(() => {
-                setIsSuccess(false);
-                setShowTopUp(false);
-            }, 1400);
+            razorpayInstance.open();
+
         } catch (error) {
             setWalletError(error?.message || 'Top-up failed.');
-        } finally {
             setIsProcessing(false);
         }
     };
@@ -282,8 +334,8 @@ const DriverWallet = () => {
                     <ArrowLeft size={19} strokeWidth={2.5} />
                 </button>
                 <div className="text-center">
-                    <h1 className="text-base font-black uppercase tracking-[0.18em]">Wallet</h1>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Admin controlled</p>
+                    <h1 className="text-[17px] font-semibold tracking-tight text-slate-900">Wallet</h1>
+                    <p className="text-[11px] font-medium text-slate-400">Admin controlled</p>
                 </div>
                 <button onClick={() => loadWallet()} disabled={isRefreshing} className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-slate-900 shadow-sm">
                     <RefreshCw size={18} className={isRefreshing ? 'animate-spin text-emerald-600' : ''} />
@@ -291,28 +343,28 @@ const DriverWallet = () => {
             </header>
 
             <main className="space-y-4">
-                <section className="overflow-hidden rounded-[2rem] bg-slate-950 p-5 text-white shadow-xl">
+                <section className="overflow-hidden rounded-[2rem] bg-white p-5 text-slate-900 border border-slate-100/60">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">Current balance</p>
-                            <h2 className="mt-2 text-4xl font-black tracking-tight">{formatMoney(wallet.balance)}</h2>
-                            <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-black ${walletRules.canReceiveOrders ? 'bg-emerald-400/15 text-emerald-200' : 'bg-amber-400/15 text-amber-200'}`}>
+                            <p className="text-[12px] font-medium text-slate-500">Current balance</p>
+                            <h2 className="mt-1 text-[36px] font-semibold tracking-tight text-slate-900">{formatMoney(wallet.balance)}</h2>
+                            <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-medium ${walletRules.canReceiveOrders ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                                 {statusText}
                             </p>
                         </div>
-                        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/10">
-                            <Wallet size={26} />
+                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-50 text-slate-400">
+                            <Wallet size={24} strokeWidth={2} />
                         </div>
                     </div>
 
-                    <div className="mt-5 grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl bg-white/10 p-3">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-white/45">Need for orders</p>
-                            <p className="mt-1 text-lg font-black">{formatMoney(walletRules.minimumBalanceForOrders)}</p>
+                    <div className="mt-6 grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl bg-slate-50 p-3">
+                            <p className="text-[11px] font-medium text-slate-500">Need for orders</p>
+                            <p className="mt-0.5 text-base font-semibold text-slate-900">{formatMoney(walletRules.minimumBalanceForOrders)}</p>
                         </div>
-                        <div className="rounded-2xl bg-white/10 p-3">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-white/45">Above minimum</p>
-                            <p className={`mt-1 text-lg font-black ${walletRules.availableForOrders >= 0 ? 'text-emerald-200' : 'text-amber-200'}`}>
+                        <div className="rounded-2xl bg-slate-50 p-3">
+                            <p className="text-[11px] font-medium text-slate-500">Above minimum</p>
+                            <p className={`mt-0.5 text-base font-semibold ${walletRules.availableForOrders >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
                                 {formatMoney(walletRules.availableForOrders)}
                             </p>
                         </div>
@@ -329,13 +381,13 @@ const DriverWallet = () => {
                     <button
                         onClick={() => setShowTopUp(true)}
                         disabled={!walletRules.walletEnabled}
-                        className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-wider text-white shadow-sm disabled:bg-slate-200 disabled:text-slate-400"
+                        className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-[14px] font-semibold text-white disabled:bg-slate-200 disabled:text-slate-400"
                     >
-                        Top up <ArrowUpRight size={17} strokeWidth={3} />
+                        Top up <ArrowUpRight size={17} strokeWidth={2.5} />
                     </button>
                     <button
                         disabled
-                        className="flex h-14 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-black uppercase tracking-wider text-slate-400"
+                        className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-white border border-slate-100/60 text-[14px] font-semibold text-slate-400"
                     >
                         Transfer {walletRules.transferEnabled ? 'Soon' : 'Off'}
                     </button>
@@ -354,14 +406,14 @@ const DriverWallet = () => {
                     />
                 </section>
 
-                <section className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+                <section className="rounded-3xl border border-slate-100/60 bg-white p-4">
                     <div className="flex items-center gap-3">
-                        <div className={`grid h-11 w-11 place-items-center rounded-2xl ${walletRules.canReceiveOrders ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                            <ShieldAlert size={20} />
+                        <div className={`grid h-11 w-11 place-items-center rounded-2xl ${walletRules.canReceiveOrders ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}`}>
+                            <ShieldAlert size={20} strokeWidth={2} />
                         </div>
                         <div>
-                            <p className="text-sm font-black text-slate-950">How this wallet is controlled</p>
-                            <p className="mt-1 text-xs font-bold leading-relaxed text-slate-500">
+                            <p className="text-[14px] font-medium text-slate-900">How this wallet is controlled</p>
+                            <p className="mt-0.5 text-[12px] font-normal leading-relaxed text-slate-500">
                                 Admin settings decide wallet visibility, minimum balance for orders, top-up minimum, and transfer availability.
                             </p>
                         </div>
@@ -369,14 +421,14 @@ const DriverWallet = () => {
                 </section>
 
                 <section className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Transactions</h3>
-                        <div className="rounded-2xl bg-white p-1 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-[15px] font-semibold text-slate-900">Transactions</h3>
+                        <div className="rounded-xl bg-slate-100/50 p-1">
                             {['Weekly', 'Monthly'].map((nextPeriod) => (
                                 <button
                                     key={nextPeriod}
                                     onClick={() => setPeriod(nextPeriod)}
-                                    className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wider ${period === nextPeriod ? 'bg-slate-950 text-white' : 'text-slate-400'}`}
+                                    className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors ${period === nextPeriod ? 'bg-white text-slate-900 shadow-sm border border-slate-100/60' : 'text-slate-500'}`}
                                 >
                                     {nextPeriod}
                                 </button>
@@ -385,9 +437,9 @@ const DriverWallet = () => {
                     </div>
 
                     {filteredTransactions.length === 0 ? (
-                        <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-                            <History size={28} className="mx-auto text-slate-300" />
-                            <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-400">No wallet transactions yet</p>
+                        <div className="rounded-3xl border border-slate-100/60 bg-white p-8 text-center">
+                            <History size={24} className="mx-auto text-slate-300 mb-2" strokeWidth={1.5} />
+                            <p className="text-[12px] font-medium text-slate-400">No wallet transactions yet</p>
                         </div>
                     ) : (
                         filteredTransactions.map((tx, index) => {
@@ -398,20 +450,20 @@ const DriverWallet = () => {
                                     initial={{ opacity: 0, y: 8 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.03 }}
-                                    className="flex items-center justify-between gap-3 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm"
+                                    className="flex items-center justify-between gap-3 rounded-3xl border border-slate-100/60 bg-white p-4"
                                 >
                                     <div className="flex min-w-0 items-center gap-3">
-                                        <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${isDebit ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-600'}`}>
-                                            {isDebit ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                                        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${isDebit ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                                            {isDebit ? <ArrowDownLeft size={16} strokeWidth={2} /> : <ArrowUpRight size={16} strokeWidth={2} />}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="truncate text-sm font-black text-slate-950">{formatTransactionType(tx.type)}</p>
-                                            <p className="mt-1 text-[11px] font-bold text-slate-400">{formatDateTime(tx.createdAt)}</p>
+                                            <p className="truncate text-[14px] font-medium text-slate-900 capitalize">{formatTransactionType(tx.type).toLowerCase()}</p>
+                                            <p className="mt-0.5 text-[11px] text-slate-400">{formatDateTime(tx.createdAt)}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className={`text-sm font-black ${isDebit ? 'text-rose-500' : 'text-emerald-600'}`}>{formatMoney(tx.amount)}</p>
-                                        <p className="mt-1 text-[10px] font-bold uppercase text-slate-400">Bal {formatMoney(tx.balanceAfter)}</p>
+                                        <p className={`text-[14px] font-semibold ${isDebit ? 'text-slate-900' : 'text-emerald-600'}`}>{formatMoney(tx.amount)}</p>
+                                        <p className="mt-0.5 text-[11px] text-slate-400">Bal {formatMoney(tx.balanceAfter)}</p>
                                     </div>
                                 </motion.div>
                             );

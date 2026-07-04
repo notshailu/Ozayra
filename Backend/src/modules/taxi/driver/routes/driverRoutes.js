@@ -35,6 +35,8 @@ import {
   addOwnerVehicle,
   getOwnerFleetVehicles,
   deleteOwnerFleetVehicle,
+  createDriverRazorpayWalletTopupOrder,
+  verifyDriverRazorpayWalletTopup,
 } from "../controllers/driverController.js";
 
 export const driverRouter = Router();
@@ -95,6 +97,16 @@ driverRouter.post(
   "/wallet/top-up",
   authenticate(["driver"]),
   asyncHandler(topUpMyWallet),
+);
+driverRouter.post(
+  "/wallet/razorpay/order",
+  authenticate(["driver"]),
+  asyncHandler(createDriverRazorpayWalletTopupOrder),
+);
+driverRouter.post(
+  "/wallet/razorpay/verify",
+  authenticate(["driver"]),
+  asyncHandler(verifyDriverRazorpayWalletTopup),
 );
 driverRouter.patch(
   "/vehicle",

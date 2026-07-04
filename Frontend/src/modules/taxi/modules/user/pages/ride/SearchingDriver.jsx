@@ -423,6 +423,7 @@ const SearchingDriver = () => {
     navigate(routePrefix || '/taxi/user');
   };
   const isSearching = [STAGES.SEARCHING, STAGES.ASSIGNED, STAGES.ACCEPTED].includes(stage);
+  const isAssigned = stage === STAGES.ASSIGNED || stage === STAGES.ACCEPTED;
 
   return (
     <div className="min-h-screen bg-slate-50 max-w-lg mx-auto relative font-['Plus_Jakarta_Sans'] overflow-hidden">

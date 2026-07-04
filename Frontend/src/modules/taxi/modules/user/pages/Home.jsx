@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight, MapPin, Search, Navigation, Wallet } from 'lucide-react';
+import { toast } from 'sonner';
 import { GoogleMap } from '@react-google-maps/api';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../admin/utils/googleMaps';
 import ActionsSection from '../components/ActionsSection';
@@ -252,6 +253,7 @@ const Home = () => {
       },
       (error) => {
         setStatus('error');
+        toast.error("Unable to fetch location. Please ensure location/GPS permissions are enabled.");
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
@@ -453,7 +455,7 @@ const Home = () => {
 
           {/* Floating Overlay B: Center Marker */}
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none flex flex-col items-center transition-transform duration-300 ${isDragging ? '-translate-y-[60%]' : ''}`}>
-            <div className="bg-[#10B981] text-white text-[11px] font-black px-3.5 py-1.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-center tracking-wide leading-tight max-w-[180px] text-center truncate">
+            <div className="bg-[#10B981] text-white text-[11px] font-black px-3.5 py-1.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-center tracking-wide leading-tight max-w-[200px] text-center truncate whitespace-nowrap">
               {centerAddress}
             </div>
             <div className="w-[2px] h-3 bg-[#10B981] shadow-sm" />
@@ -468,23 +470,22 @@ const Home = () => {
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={requestLocation}
-            className="absolute bottom-4 right-4 z-10 w-10 h-10 bg-white rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-slate-100 flex items-center justify-center active:scale-95 transition-all"
+            className="absolute bottom-10 right-4 z-10 w-12 h-12 bg-white rounded-full shadow-[0_6px_16px_rgba(0,0,0,0.12)] border border-slate-100 flex items-center justify-center active:scale-95 transition-all"
           >
             <Navigation 
-              size={16} 
+              size={20} 
               strokeWidth={2.8} 
               className={`transition-colors rotate-45 ${status === 'loading' ? 'animate-pulse text-emerald-600' : 'text-slate-700'}`} 
             />
           </motion.button>
         </div>
 
-      {/* Scrollable Content overlaying the map */}
-      <div className="absolute inset-0 z-10 overflow-y-auto scroll-smooth pb-24 no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="absolute inset-0 z-10 overflow-y-auto scroll-smooth pb-24 no-scrollbar pointer-events-none" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Transparent spacer to expose the map */}
         <div className="h-[344px] w-full shrink-0" />
         
         {/* 2. Bottom Sheet Overlay */}
-        <div className="relative z-20 bg-white rounded-t-[30px] shadow-[0_-8px_30px_rgba(0,0,0,0.03)] pb-4 min-h-[calc(100vh-344px)]">
+        <div className="relative z-20 bg-white rounded-t-[30px] shadow-[0_-8px_30px_rgba(0,0,0,0.03)] pb-4 min-h-[calc(100vh-344px)] pointer-events-auto">
           {/* Sticky Header Wrapper */}
           <div className="sticky top-0 z-30 bg-white rounded-t-[30px] pt-6 pb-3">
             {/* Grab Handle */}

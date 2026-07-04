@@ -82,18 +82,18 @@ const toLatLng = (coordinates) => {
 const getMapIconForVehicle = (iconType = '') => {
     const value = String(iconType).toLowerCase();
 
-    if (value.includes('bike')) return BikeIcon;
-    if (value.includes('auto')) return AutoIcon;
-    if (value.includes('ehc')) return EhcvIcon;
-    if (value.includes('hcv')) return HcvIcon;
-    if (value.includes('lcv')) return LcvIcon;
-    if (value.includes('mcv')) return McvIcon;
-    if (value.includes('truck')) return TruckIcon;
-    if (value.includes('lux')) return LuxuryIcon;
-    if (value.includes('premium')) return PremiumIcon;
-    if (value.includes('suv')) return SuvIcon;
+    if (value.includes('bike')) return '/1_Bike.png';
+    if (value.includes('auto')) return '/2_AutoRickshaw.png';
+    if (value.includes('ehc')) return '/ehcv.png';
+    if (value.includes('hcv')) return '/hcv.png';
+    if (value.includes('lcv')) return '/LCV.png';
+    if (value.includes('mcv')) return '/mcv.png';
+    if (value.includes('truck')) return '/truck.png';
+    if (value.includes('lux')) return '/Luxury.png';
+    if (value.includes('premium')) return '/Premium.png';
+    if (value.includes('suv')) return '/SUV.png';
 
-    return CarIcon;
+    return '/4_Taxi.png';
 };
 
 const formatPoint = (point, fallback) => {

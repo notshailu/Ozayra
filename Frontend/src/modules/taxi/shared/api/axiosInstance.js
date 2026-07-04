@@ -203,7 +203,13 @@ api.interceptors.request.use(
         token = userToken;
       }
     } else if (isUserRoute) {
-      token = userToken;
+      if (pathRole === 'driver') {
+        token = driverToken;
+      } else if (pathRole === 'admin') {
+        token = adminToken;
+      } else {
+        token = userToken;
+      }
     } else if (isDriverRoute) {
       token = driverToken;
     } else {

@@ -166,105 +166,109 @@ const DriverReferral = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb] font-sans p-5 pt-8 pb-10">
-      <header className="mb-5 flex items-center gap-3">
+    <div className="min-h-screen bg-[#f8f9fb] font-sans p-5 pt-8 pb-10">
+      <header className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate('/taxi/driver/profile')}
-          className="w-9 h-9 rounded-xl border border-gray-200 bg-white flex items-center justify-center shadow-sm"
+          className="w-10 h-10 rounded-xl border border-slate-100 bg-white flex items-center justify-center shadow-sm"
         >
-          <ArrowLeft size={18} className="text-gray-900" strokeWidth={2.3} />
+          <ArrowLeft size={18} className="text-slate-900" />
         </button>
-        <h1 className="text-[19px] font-semibold text-gray-900">Referrals</h1>
+        <h1 className="text-[17px] font-semibold text-slate-900 tracking-tight">Referrals</h1>
       </header>
 
-      <div className="rounded-[28px] border border-gray-200 bg-white shadow-sm overflow-hidden max-w-md mx-auto">
-        <div className="bg-[#1830b8] px-5 py-5 text-white flex items-center justify-between">
+      <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden max-w-md mx-auto">
+        {/* Banner */}
+        <div className="bg-slate-900 px-5 py-5 text-white flex items-center justify-between">
           <div>
-            <p className="text-[26px] font-semibold leading-tight">{bannerText}</p>
-            <p className="text-[11px] text-indigo-100 mt-1">Language: {translation.language_code?.toUpperCase() || 'EN'}</p>
+            <p className="text-[20px] font-semibold leading-tight">{bannerText}</p>
+            <p className="text-[12px] text-white/50 mt-1 font-medium">Invite drivers and earn rewards</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center">
             <Gift size={20} />
           </div>
         </div>
 
+        {/* Code + Copy */}
         <div className="px-4 py-4">
-          <div className="grid grid-cols-[1fr_auto] gap-2">
-            <div className="rounded-xl border border-dashed border-gray-300 px-3 py-3 text-center">
-              <p className="text-[18px] font-semibold text-gray-900 tracking-wide">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 rounded-xl border border-dashed border-slate-200 px-3 py-3 text-center bg-slate-50/50">
+              <p className="text-[16px] font-semibold text-slate-900 tracking-wide">
                 {referralCode || 'Not available'}
               </p>
-              <p className="text-[10px] text-gray-400 mt-1">Your referral code</p>
+              <p className="text-[11px] text-slate-400 mt-0.5 font-medium">Your referral code</p>
             </div>
             <button
               type="button"
               onClick={handleCopy}
               disabled={!referralCode}
-              className="rounded-xl bg-[#1830b8] text-white px-4 text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+              className="rounded-xl bg-slate-900 text-white px-4 py-3 text-[13px] font-medium flex items-center gap-2 disabled:opacity-50 h-full"
             >
               {copied ? <CheckCircle2 size={15} /> : <Copy size={15} />}
-              Copy
+              {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-3">
+          {/* Tabs */}
+          <div className="flex gap-2 mt-3">
             <button
               type="button"
               onClick={() => setActiveTab('refer')}
-              className={`rounded-lg py-2 text-xs font-medium ${
-                activeTab === 'refer' ? 'bg-white border border-gray-200 text-gray-900' : 'bg-gray-100 text-gray-500'
+              className={`flex-1 rounded-xl py-2.5 text-[13px] font-medium transition-all ${
+                activeTab === 'refer' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500 border border-slate-100'
               }`}
             >
-              Refer and earn
+              How it works
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('history')}
-              className={`rounded-lg py-2 text-xs font-medium ${
-                activeTab === 'history' ? 'bg-white border border-gray-200 text-gray-900' : 'bg-gray-100 text-gray-500'
+              className={`flex-1 rounded-xl py-2.5 text-[13px] font-medium transition-all ${
+                activeTab === 'history' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500 border border-slate-100'
               }`}
             >
-              Referral history
+              History
             </button>
           </div>
         </div>
 
-        <div className="px-4 pb-4 min-h-[340px]">
+        {/* Content */}
+        <div className="px-4 pb-4 min-h-[280px]">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="animate-spin text-[#1830b8]" size={26} />
+              <Loader2 className="animate-spin text-slate-400" size={24} />
             </div>
           ) : activeTab === 'refer' ? (
-            <div className="space-y-4">
-              <h2 className="text-[18px] font-semibold text-gray-900">How it works?</h2>
+            <div className="space-y-3">
               {infoBlocks.length === 0 ? (
-                <p className="text-sm text-gray-400">Referral content will appear here after admin updates this language.</p>
+                <p className="text-[13px] font-medium text-slate-400">Referral content will appear here after admin updates this language.</p>
               ) : (
                 infoBlocks.map((block) => (
                   <div
                     key={block.key}
-                    className="text-[14px] leading-6 text-gray-800 prose prose-sm max-w-none"
+                    className="text-[14px] leading-6 text-slate-700 prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: block.html }}
                   />
                 ))
               )}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-5 py-8 text-center">
-              <p className="text-sm font-medium text-gray-900">Referral history</p>
-              <p className="text-xs text-gray-400 mt-2">Detailed driver referral history is not available on this screen yet.</p>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-5 py-8 text-center">
+              <p className="text-[14px] font-medium text-slate-700">No referral history</p>
+              <p className="text-[13px] font-medium text-slate-400 mt-1">Your referral activity will appear here.</p>
             </div>
           )}
         </div>
 
+        {/* Share Button */}
         <div className="px-4 pb-5">
           <button
             type="button"
             onClick={handleShare}
             disabled={!referralCode}
-            className="w-full rounded-xl bg-[#ef4444] text-white py-3.5 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full rounded-xl bg-slate-900 text-white py-3.5 text-[14px] font-medium flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-all"
           >
-            Refer now <Share2 size={16} />
+            Share referral <Share2 size={16} />
           </button>
         </div>
       </div>
@@ -275,7 +279,7 @@ const DriverReferral = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 rounded-2xl bg-gray-900 text-white px-4 py-3 text-xs font-semibold shadow-xl"
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 rounded-xl bg-slate-900 text-white px-4 py-3 text-[13px] font-medium shadow-xl"
           >
             Referral code copied
           </motion.div>

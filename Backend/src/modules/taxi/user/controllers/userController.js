@@ -61,7 +61,7 @@ const ensureUserWallet = async (userId) => {
   await UserWallet.updateOne({ userId }, { $setOnInsert: { userId } }, { upsert: true });
 };
 
-const resolveRazorpayCredentials = async () => {
+export const resolveRazorpayCredentials = async () => {
   const envKeyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
   const envKeySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
   const envEnabled = String(process.env.RAZORPAY_ENABLED || '').trim();
@@ -108,7 +108,7 @@ const resolveRazorpayCredentials = async () => {
   return { keyId, keySecret };
 };
 
-const razorpayRequest = async ({ method, path, body, keyId, keySecret }) => {
+export const razorpayRequest = async ({ method, path, body, keyId, keySecret }) => {
   const credentials = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
   const response = await fetch(`https://api.razorpay.com/v1${path}`, {
     method,

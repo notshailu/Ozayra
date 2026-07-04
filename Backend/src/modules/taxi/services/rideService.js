@@ -561,13 +561,14 @@ export const getActiveRideForIdentity = async ({ role, entityId }) => {
 };
 
 export const listRideHistoryForIdentity = async ({ role, entityId, limit = 50 }) => {
-  if (role !== 'user') {
-    throw new ApiError(403, 'Only riders can access ride history');
+  if (role !== 'user' && role !== 'driver') {
+    throw new ApiError(403, 'Only riders and drivers can access ride history');
   }
 
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+  const queryField = role === 'driver' ? 'driverId' : 'userId';
 
-  const rides = await Ride.find({ userId: entityId })
+  const rides = await Ride.find({ [queryField]: entityId })
     .sort({ createdAt: -1 })
     .limit(safeLimit)
     .populate('deliveryId')

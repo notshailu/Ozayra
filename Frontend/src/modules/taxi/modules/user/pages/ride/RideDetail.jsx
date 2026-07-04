@@ -45,7 +45,7 @@ const RideDetail = () => {
   const [geocodedPickup, setGeocodedPickup] = useState('');
   const [geocodedDrop, setGeocodedDrop] = useState('');
 
-  const routePrefix = location.pathname.startsWith('/taxi/user') ? '/taxi/user' : '';
+  const routePrefix = location.pathname.startsWith('/taxi/driver') ? '/taxi/driver' : location.pathname.startsWith('/taxi/user') ? '/taxi/user' : '';
 
   useEffect(() => {
     if (ride || !id) return undefined;
@@ -113,7 +113,9 @@ const RideDetail = () => {
   }, [ride, isLoaded]);
 
   const details = useMemo(() => {
+    const isDriverApp = location.pathname.startsWith('/taxi/driver');
     const driver = ride?.driver || ride?.driverId || {};
+    const user = ride?.user || ride?.userId || {};
     const timeSource = ride?.completedAt || ride?.startedAt || ride?.acceptedAt || ride?.createdAt || ride?.updatedAt;
     const fare = Number(ride?.fare || 0);
     const taxes = Math.max(Math.round(fare * 0.18), 0);
@@ -129,13 +131,13 @@ const RideDetail = () => {
       startTime: ride?.startedAt || ride?.acceptedAt || timeSource,
       endTime: ride?.completedAt || timeSource,
       statusLabel: status.charAt(0).toUpperCase() + status.slice(1),
-      driverName: driver.name || 'Captain',
-      rating: driver.rating || '4.9',
-      plate: driver.vehicleNumber || 'Assigned',
+      driverName: isDriverApp ? (user.name || 'Customer') : (driver.name || 'Captain'),
+      rating: isDriverApp ? (user.rating || '5.0') : (driver.rating || '4.9'),
+      plate: isDriverApp ? (user.phone || 'Verified') : (driver.vehicleNumber || 'Assigned'),
       vehicle: driver.vehicleType || ride?.vehicleIconType || 'Taxi',
       shortId: id ? id.substring(0, 8).toUpperCase() : 'TRIP',
     };
-  }, [ride, id, geocodedPickup, geocodedDrop]);
+  }, [ride, id, geocodedPickup, geocodedDrop, location.pathname]);
 
   const handleShare = () => {
     const text = `Trip #${details.shortId} - ${details.pickup} to ${details.drop} | Rs ${details.fare}.00`;
@@ -278,13 +280,15 @@ const RideDetail = () => {
         >
           Support
         </button>
-        <button
-          type="button"
-          onClick={() => navigate(`${routePrefix}/ride/select-location`)}
-          className="flex-[2] bg-[#F9C922] text-slate-900 py-4 rounded-xl text-[14px] font-semibold flex items-center justify-center active:scale-95 transition-all shadow-sm"
-        >
-          Rebook
-        </button>
+        {!location.pathname.startsWith('/taxi/driver') && (
+          <button
+            type="button"
+            onClick={() => navigate(`${routePrefix}/ride/select-location`)}
+            className="flex-[2] bg-[#F9C922] text-slate-900 py-4 rounded-xl text-[14px] font-semibold flex items-center justify-center active:scale-95 transition-all shadow-sm"
+          >
+            Rebook
+          </button>
+        )}
       </div>
     </div>
   );

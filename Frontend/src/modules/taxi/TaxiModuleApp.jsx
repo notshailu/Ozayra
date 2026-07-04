@@ -330,6 +330,7 @@ function App() {
               <Route path="wallet" element={<DriverWallet />} />
               <Route path="profile" element={<DriverProfile />} />
               <Route path="history" element={<RideRequests />} />
+              <Route path="ride/detail/:id" element={<RideDetail />} />
               <Route path="ride/chat" element={<Chat />} />
 
               <Route path="edit-profile" element={<EditProfile />} />
