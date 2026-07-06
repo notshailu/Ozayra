@@ -9,7 +9,7 @@ export const getQueuesController = async (req, res, next) => {
     try {
         const queues = await getQueueStats();
         return sendResponse(res, 200, 'Queue stats', { queues });
-    } catch (error) {
+    } catch (error) {   
         next(error);
     }
 };

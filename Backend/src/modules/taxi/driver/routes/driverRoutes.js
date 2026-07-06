@@ -37,6 +37,8 @@ import {
   deleteOwnerFleetVehicle,
   createDriverRazorpayWalletTopupOrder,
   verifyDriverRazorpayWalletTopup,
+  getMyWithdrawals,
+  requestMyWithdrawal,
 } from "../controllers/driverController.js";
 
 export const driverRouter = Router();
@@ -92,6 +94,21 @@ driverRouter.get(
   "/wallet",
   authenticate(["driver"]),
   asyncHandler(getMyWallet),
+);
+driverRouter.get(
+  "/wallet/withdrawals",
+  authenticate(["driver"]),
+  asyncHandler(getMyWithdrawals),
+);
+driverRouter.post(
+  "/wallet/withdraw",
+  authenticate(["driver"]),
+  asyncHandler(requestMyWithdrawal),
+);
+driverRouter.post(
+  "/wallet/withdrawal",
+  authenticate(["driver"]),
+  asyncHandler(requestMyWithdrawal),
 );
 driverRouter.post(
   "/wallet/top-up",

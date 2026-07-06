@@ -67,6 +67,7 @@ import {
   getNegativeBalanceDrivers,
   getDriverWithdrawalSummaries,
   getDriverWithdrawals,
+  updateWithdrawalStatus,
   getDeletedDrivers,
   getDriverDeletionRequests,
   getFirebaseSettings,
@@ -220,6 +221,7 @@ adminRouter.get('/admin/wallet/owners/:id/history', listOwnerWalletHistory);
 adminRouter.get('/admin/wallet/drivers/negative-balance', authenticate(['admin']), getNegativeBalanceDrivers);
 adminRouter.get('/admin/wallet/drivers/withdrawals', authenticate(['admin']), getDriverWithdrawalSummaries);
 adminRouter.get('/admin/wallet/drivers/:id/withdrawals', authenticate(['admin']), getDriverWithdrawals);
+adminRouter.patch('/admin/wallet/withdrawals/:id/status', authenticate(['admin']), updateWithdrawalStatus);
 adminRouter.get('/admin/driver-ratings', authenticate(['admin']), getDriverRatings);
 adminRouter.get('/admin/driver-ratings/:id', authenticate(['admin']), getDriverRatingDetail);
 

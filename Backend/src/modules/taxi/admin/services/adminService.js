@@ -39,6 +39,7 @@ import { OnboardingScreen } from '../models/OnboardingScreen.js';
 import { WithdrawalRequest } from '../models/WithdrawalRequest.js';
 import TaxiTransportType from '../models/TaxiTransportType.js';
 import { hashPassword } from '../../driver/services/authService.js';
+import { comparePassword } from '../../services/passwordService.js';
 import { RIDE_LIVE_STATUS, RIDE_STATUS, VEHICLE_TYPES } from '../../constants/index.js';
 import { cancelRideByAdmin, notifyUserAccountDeleted } from '../../services/dispatchService.js';
 
@@ -1234,7 +1235,8 @@ export const getAdminModuleInfo = async () => {
 export const loginAdmin = async ({ email, password }) => {
   const admin = await Admin.findOne({ email: email?.trim().toLowerCase() }).select('+password');
 
-  if (!admin || admin.password !== password) {
+  const isMatch = admin && await comparePassword(password, admin.password);
+  if (!isMatch) {
     throw new ApiError(401, 'Invalid admin credentials');
   }
 
@@ -1995,15 +1997,20 @@ export const listNegativeBalanceDrivers = async ({ page = 1, limit = 50, search 
   };
 };
 
-export const listDriverWithdrawalSummaries = async ({ page = 1, limit = 50, search = '' }) => {
+export const listDriverWithdrawalSummaries = async ({ page = 1, limit = 50, search = '', status = 'all' }) => {
   const safePage = Number(page) || 1;
   const safeLimit = Number(limit) || 50;
   const start = (safePage - 1) * safeLimit;
   const term = String(search || '').trim();
 
-  const match = { status: 'pending' };
-  let matchedDriverIds = null;
+  const match = {};
+  if (status === 'history') {
+    match.status = { $nin: ['pending', 'requested'] };
+  } else if (status && status !== 'all') {
+    match.status = status;
+  }
 
+  let matchedDriverIds = null;
   if (term) {
     const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     const drivers = await Driver.find({ deletedAt: null, $or: [{ name: regex }, { phone: regex }, { email: regex }] })
@@ -2019,51 +2026,36 @@ export const listDriverWithdrawalSummaries = async ({ page = 1, limit = 50, sear
     match.driver_id = { $in: matchedDriverIds };
   }
 
-  const groupPipeline = [
-    { $match: match },
-    {
-      $group: {
-        _id: '$driver_id',
-        pending_count: { $sum: 1 },
-        pending_amount: { $sum: '$amount' },
-        last_request_at: { $max: '$createdAt' },
-      },
-    },
-  ];
-
-  const [groups, countRows] = await Promise.all([
-    WithdrawalRequest.aggregate([
-      ...groupPipeline,
-      { $sort: { last_request_at: -1 } },
-      { $skip: start },
-      { $limit: safeLimit },
-    ]),
-    WithdrawalRequest.aggregate([...groupPipeline, { $count: 'total' }]),
+  const [items, total] = await Promise.all([
+    WithdrawalRequest.find(match)
+      .populate('driver_id')
+      .sort({ createdAt: -1 })
+      .skip(start)
+      .limit(safeLimit)
+      .lean(),
+    WithdrawalRequest.countDocuments(match),
   ]);
 
-  const total = Number(countRows?.[0]?.total || 0);
-  const driverIds = groups.map((g) => g._id).filter(Boolean);
-  const drivers = await Driver.find({ _id: { $in: driverIds } }).lean();
-  const byId = new Map(drivers.map((d) => [String(d._id), d]));
-
   return {
-    results: groups.map((row) => {
-      const driver = byId.get(String(row._id));
-      return {
-        driver_id: row._id,
-        last_request_at: row.last_request_at,
-        pending_count: Number(row.pending_count || 0),
-        pending_amount: Number(row.pending_amount || 0),
-        driver: driver
-          ? {
-            _id: driver._id,
-            name: driver.name || '',
-            mobile: driver.phone || '',
-            email: driver.email || '',
+    results: items.map((item) => ({
+      _id: item._id,
+      driver_id: item.driver_id?._id,
+      last_request_at: item.createdAt,
+      pending_count: item.status === 'pending' ? 1 : 0,
+      pending_amount: item.amount,
+      status: item.status,
+      payment_method: item.payment_method,
+      metadata: item.metadata || {},
+      driver: item.driver_id
+        ? {
+            _id: item.driver_id._id,
+            name: item.driver_id.name || '',
+            mobile: item.driver_id.phone || '',
+            email: item.driver_id.email || '',
+            walletBalance: Number(item.driver_id.wallet?.balance || 0),
           }
-          : null,
-      };
-    }),
+        : null,
+    })),
     paginator: {
       current_page: safePage,
       per_page: safeLimit,
@@ -2094,6 +2086,7 @@ export const listDriverWithdrawals = async ({ driverId, page = 1, limit = 50 }) 
       name: driver.name || '',
       mobile: driver.phone || '',
       email: driver.email || '',
+      walletBalance: Number(driver.wallet?.balance || 0),
     },
     results: items.map((item) => ({
       _id: item._id,
@@ -2102,6 +2095,7 @@ export const listDriverWithdrawals = async ({ driverId, page = 1, limit = 50 }) 
       status: item.status || 'pending',
       payment_method: item.payment_method || '',
       createdAt: item.createdAt,
+      metadata: item.metadata || {},
     })),
     paginator: {
       current_page: safePage,
@@ -2110,6 +2104,43 @@ export const listDriverWithdrawals = async ({ driverId, page = 1, limit = 50 }) 
       last_page: Math.max(1, Math.ceil(total / safeLimit)),
     },
   };
+};
+
+export const updateWithdrawalStatus = async (id, payload = {}) => {
+  const status = String(payload.status || '').toLowerCase();
+  if (!['completed', 'rejected', 'cancelled', 'pending'].includes(status)) {
+    throw new ApiError(400, 'Invalid status');
+  }
+
+  const req = await WithdrawalRequest.findById(id);
+  if (!req) {
+    throw new ApiError(404, 'Withdrawal request not found');
+  }
+
+  const oldStatus = req.status;
+  if (oldStatus === status) {
+    return req;
+  }
+
+  req.status = status;
+  if (payload.notes) {
+    req.metadata = { ...(req.metadata || {}), adminNotes: payload.notes };
+  }
+  await req.save();
+
+  if (oldStatus === 'pending' && ['rejected', 'cancelled'].includes(status) && req.driver_id) {
+    try {
+      await adjustDriverWallet(req.driver_id, {
+        amount: Number(req.amount || 0),
+        operation: 'credit',
+        description: `Refund for ${status} withdrawal request #${req._id}`,
+      });
+    } catch (err) {
+      console.error('Error refunding wallet for rejected withdrawal:', err);
+    }
+  }
+
+  return req;
 };
 
 export const adjustDriverWallet = async (id, payload = {}) => {

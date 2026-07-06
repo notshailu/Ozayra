@@ -5,7 +5,7 @@ import { RIDE_LIVE_STATUS, RIDE_STATUS } from '../constants/index.js';
 import { SetPrice } from '../admin/models/SetPrice.js';
 import { Vehicle } from '../admin/models/Vehicle.js';
 import { Driver } from '../driver/models/Driver.js';
-import { ensureDriverWalletCanAcceptRide, settleCompletedRideWallet } from '../driver/services/walletService.js';
+import { ensureDriverWalletCanAcceptRide, settleCompletedRideWallet, extractAdminCommission } from '../driver/services/walletService.js';
 import { Delivery } from '../user/models/Delivery.js';
 import { Ride } from '../user/models/Ride.js';
 import { User } from '../user/models/User.js';
@@ -304,14 +304,20 @@ export const createRideRecord = async ({
     transportType: normalizedTransportType,
     vehicleTypeId: primaryVehicleTypeId,
   });
+  const resolvedServiceType = normalizeServiceType(serviceType);
+  const isParcelRide = resolvedServiceType === 'parcel' || normalizedTransportType === 'delivery';
+  const weightLabel = parcel?.weight || 'Under 5kg';
+  const extractedComm = extractAdminCommission(pricingRule, {
+    isParcel: isParcelRide,
+    weightLabel,
+    fallbackPercent: Number(process.env.DRIVER_COMMISSION_PERCENT || 20),
+  });
   const pricingSnapshot = {
     setPriceId: pricingRule?._id || null,
-    admin_commission_type_from_driver: Number(pricingRule?.admin_commission_type_from_driver ?? 1),
-    admin_commission_from_driver: Number(pricingRule?.admin_commission_from_driver ?? 0),
+    admin_commission_type_from_driver: extractedComm.type,
+    admin_commission_from_driver: extractedComm.value,
     resolvedAt: pricingRule ? new Date() : null,
   };
-
-  const resolvedServiceType = normalizeServiceType(serviceType);
 
   let finalDistanceMeters = safeEstimatedDistanceMeters;
   if (finalDistanceMeters <= 0 && pickupCoords && dropCoords) {
@@ -485,6 +491,7 @@ export const serializeRideRealtime = (ride) => ({
   estimatedDistanceMeters: ride.estimatedDistanceMeters || 0,
   estimatedDurationMinutes: ride.estimatedDurationMinutes || 0,
   paymentMethod: ride.paymentMethod,
+  paymentStatus: ride.paymentStatus || 'pending',
   parcel: ride.deliveryId?.parcel || ride.parcel || null,
   intercity: ride.intercity || null,
   commissionAmount: ride.commissionAmount,

@@ -6,6 +6,7 @@ import { Driver } from '../models/Driver.js';
 import { WalletTransaction } from '../models/WalletTransaction.js';
 import { Ride } from '../../user/models/Ride.js';
 import { getWalletSettings } from '../../services/appSettingsService.js';
+import { WithdrawalRequest } from '../../admin/models/WithdrawalRequest.js';
 
 const normalizeAmount = (value, fieldName = 'amount') => {
   const amount = Number(value);
@@ -37,8 +38,54 @@ const computeCommissionAmount = ({ fare, type, value }) => {
   return Math.min(safeValue, safeFare);
 };
 
+export const extractAdminCommission = (setPrice, { isParcel = false, weightLabel = 'Under 5kg', fallbackPercent = 20 } = {}) => {
+  const defaultVal = Number(fallbackPercent || 0);
+
+  if (!setPrice) {
+    return { type: 1, value: defaultVal };
+  }
+
+  if (isParcel && Array.isArray(setPrice.parcel_weight_ranges) && setPrice.parcel_weight_ranges.length > 0) {
+    const normWeight = String(weightLabel || 'Under 5kg').trim().toLowerCase();
+    const weightRule = setPrice.parcel_weight_ranges.find(
+      r => String(r.weight_range || '').trim().toLowerCase() === normWeight
+    ) || setPrice.parcel_weight_ranges[0];
+
+    if (weightRule) {
+      const commVal = Number(weightRule.admin_commission ?? weightRule.admin_commision ?? weightRule.driver_commission ?? 0);
+      if (Number.isFinite(commVal) && commVal > 0) {
+        const commType = Number(weightRule.admin_commission_type ?? weightRule.admin_commision_type ?? 1);
+        return { type: commType, value: commVal };
+      }
+    }
+  }
+
+  const candidates = [
+    { type: setPrice.admin_commission_type_from_driver, value: setPrice.admin_commission_from_driver },
+    { type: setPrice.admin_commision_type, value: setPrice.admin_commision },
+    { type: setPrice.admin_commission_type, value: setPrice.admin_commission },
+    { type: setPrice.driver_commission_type, value: setPrice.driver_commission },
+    { type: setPrice.customer_commission_type, value: setPrice.customer_commission },
+    { type: setPrice.admin_commission_type_for_owner, value: setPrice.admin_commission_for_owner },
+  ];
+
+  for (const cand of candidates) {
+    const val = Number(cand.value);
+    if (Number.isFinite(val) && val > 0) {
+      const tVal = cand.type === 'percentage' ? 1 : (cand.type === 'fixed' || cand.type === 0 || cand.type === '0' ? 0 : Number(cand.type ?? 1));
+      return { type: tVal, value: val };
+    }
+  }
+
+  return { type: 1, value: defaultVal };
+};
+
 const resolveCommissionConfigForRide = async (ride, session) => {
-  if (ride?.pricingSnapshot?.admin_commission_from_driver !== undefined) {
+  const isParcelRide = (ride?.serviceType || 'ride') === 'parcel' || String(ride?.transport_type || '').toLowerCase() === 'delivery';
+  const weightLabel = ride?.parcel?.weight || 'Under 5kg';
+  const fallbackPercent = Number(env.driverWallet?.commissionPercent || 20);
+
+  if (ride?.pricingSnapshot?.admin_commission_from_driver !== undefined && Number(ride.pricingSnapshot.admin_commission_from_driver) > 0) {
     return {
       source: ride.pricingSnapshot?.setPriceId ? 'ride_snapshot' : 'ride_snapshot_fallback',
       type: Number(ride.pricingSnapshot?.admin_commission_type_from_driver ?? 1),
@@ -80,10 +127,11 @@ const resolveCommissionConfigForRide = async (ride, session) => {
     for (const filter of filters) {
       const setPrice = await SetPrice.findOne(filter).sort({ updatedAt: -1, createdAt: -1 }).session(session).lean();
       if (setPrice) {
+        const extracted = extractAdminCommission(setPrice, { isParcel: isParcelRide, weightLabel, fallbackPercent });
         return {
           source: 'set_price_lookup',
-          type: Number(setPrice.admin_commission_type_from_driver ?? 1),
-          value: Number(setPrice.admin_commission_from_driver ?? 0),
+          type: extracted.type,
+          value: extracted.value,
           setPriceId: setPrice._id,
         };
       }
@@ -93,7 +141,7 @@ const resolveCommissionConfigForRide = async (ride, session) => {
   return {
     source: 'env_fallback',
     type: 1,
-    value: Number(env.driverWallet.commissionPercent || 0),
+    value: fallbackPercent,
   };
 };
 
@@ -369,3 +417,104 @@ export const settleCompletedRideWallet = async ({ rideId }) => {
     session.endSession();
   }
 };
+
+export const listMyWithdrawalRequests = async ({ driverId, limit = 50 }) => {
+  const withdrawals = await WithdrawalRequest.find({ driver_id: driverId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+  return withdrawals;
+};
+
+export const requestDriverWalletWithdrawal = async ({
+  driverId,
+  amount,
+  paymentMethod = 'UPI',
+  upiId = '',
+  accountNumber = '',
+  ifscCode = '',
+  bankName = '',
+  accountHolderName = '',
+  notes = '',
+}) => {
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const walletSettings = await getWalletSettings();
+    const minimumTransferAmount = Number(walletSettings?.minimum_wallet_amount_for_transfer || 100);
+    const normalizedAmount = Math.abs(normalizeAmount(amount));
+
+    if (normalizedAmount < minimumTransferAmount) {
+      throw new ApiError(400, `Minimum withdrawal amount is Rs ${minimumTransferAmount}`);
+    }
+
+    const driver = await Driver.findById(driverId).session(session);
+    if (!driver) {
+      throw new ApiError(404, 'Driver not found');
+    }
+
+    const currentBalance = Number(driver.wallet?.balance || 0);
+
+    if (normalizedAmount > currentBalance) {
+      throw new ApiError(400, `Insufficient wallet balance. Current balance is Rs ${currentBalance}`);
+    }
+
+    const paymentMethodLabel = paymentMethod === 'UPI' && upiId
+      ? `UPI (${upiId})`
+      : paymentMethod === 'Bank Transfer' && accountNumber
+        ? `Bank Transfer (${accountNumber})`
+        : paymentMethod || 'UPI/Bank';
+
+    const [withdrawal] = await WithdrawalRequest.create(
+      [
+        {
+          transactionId: `WD${Date.now()}`,
+          driver_id: driverId,
+          amount: normalizedAmount,
+          payment_method: paymentMethodLabel,
+          status: 'pending',
+          metadata: {
+            paymentMethod,
+            upiId,
+            accountNumber,
+            ifscCode,
+            bankName,
+            accountHolderName,
+            notes,
+          },
+        },
+      ],
+      { session },
+    );
+
+    const result = await applyDriverWalletAdjustment({
+      driverId,
+      amount: -normalizedAmount,
+      type: 'withdrawal_request',
+      description: `Withdrawal request (${paymentMethodLabel})`,
+      metadata: {
+        withdrawalId: String(withdrawal._id),
+        transactionId: withdrawal.transactionId,
+        paymentMethod: paymentMethodLabel,
+        upiId,
+        accountNumber,
+      },
+      session,
+    });
+
+    await session.commitTransaction();
+
+    return {
+      ...result,
+      withdrawal,
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+

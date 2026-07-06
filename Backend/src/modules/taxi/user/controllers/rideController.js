@@ -1,7 +1,31 @@
 import mongoose from 'mongoose';
+import crypto from 'node:crypto';
 import { ApiError } from '../../../../utils/ApiError.js';
 import { normalizePoint } from '../../../../utils/geo.js';
 import { Driver } from '../../driver/models/Driver.js';
+import { Vehicle } from '../../admin/models/Vehicle.js';
+import { Ride } from '../../user/models/Ride.js';
+import { settleCompletedRideWallet } from '../../driver/services/walletService.js';
+import { getIO } from '../../../../config/socket.js';
+import { SOCKET_EVENTS } from '../../socket/events.js';
+import { resolveRazorpayCredentials, razorpayRequest } from './userController.js';
+
+const getMockVehicleDetails = (typeName = '') => {
+  const lower = typeName.toLowerCase();
+  if (lower.includes('bike') || lower.includes('motorcycle')) {
+    return { make: 'Honda', model: 'Activa', color: 'Black' };
+  }
+  if (lower.includes('auto') || lower.includes('rickshaw')) {
+    return { make: 'Bajaj', model: 'RE', color: 'Yellow-Green' };
+  }
+  if (lower.includes('suv')) {
+    return { make: 'Toyota', model: 'Innova', color: 'White' };
+  }
+  if (lower.includes('sedan')) {
+    return { make: 'Suzuki', model: 'Dzire', color: 'Silver' };
+  }
+  return { make: 'Toyota', model: 'Etios', color: 'White' };
+};
 import { RIDE_LIVE_STATUS } from '../../constants/index.js';
 import {
   createRideRecord,
@@ -250,7 +274,7 @@ export const listAvailableDrivers = async (req, res) => {
     .select('name phone vehicleTypeId vehicleType vehicleIconType vehicleNumber vehicleColor vehicleMake vehicleModel rating location')
     .lean();
 
-  const enrichedDrivers = drivers.map((driver) => {
+  let enrichedDrivers = drivers.map((driver) => {
     const distanceMeters = calculateDistanceMeters([longitude, latitude], driver.location?.coordinates || []);
     const etaMinutes = estimateEtaMinutes(distanceMeters);
 
@@ -271,6 +295,49 @@ export const listAvailableDrivers = async (req, res) => {
     };
   });
 
+  if (enrichedDrivers.length === 0) {
+    try {
+      const vehicleTypeObj = await Vehicle.findById(vehicleTypeId).lean();
+      const typeName = vehicleTypeObj?.name || 'Vehicle';
+      const iconType = vehicleTypeObj?.icon_types || 'car';
+      const mockVehicle = getMockVehicleDetails(typeName);
+
+      const mockConfigs = [
+        { name: 'Rahul Sharma', num: 'MP09AB1234', latOffset: 0.0008, lngOffset: 0.0009, rating: 4.8 },
+        { name: 'Amit Patel', num: 'MP09CD5678', latOffset: -0.0012, lngOffset: 0.0005, rating: 4.9 },
+        { name: 'Vikram Singh', num: 'MP09EF9012', latOffset: 0.0006, lngOffset: -0.0011, rating: 4.7 }
+      ];
+
+      enrichedDrivers = mockConfigs.map((config, index) => {
+        const mockLat = latitude + config.latOffset;
+        const mockLng = longitude + config.lngOffset;
+        const distanceMeters = calculateDistanceMeters([longitude, latitude], [mockLng, mockLat]);
+        const etaMinutes = estimateEtaMinutes(distanceMeters);
+
+        return {
+          id: `mock-driver-${index}-${vehicleTypeId}`,
+          name: config.name,
+          vehicleTypeId,
+          vehicleType: typeName,
+          vehicleIconType: iconType,
+          vehicleNumber: config.num,
+          vehicleColor: mockVehicle.color,
+          vehicleMake: mockVehicle.make,
+          vehicleModel: mockVehicle.model,
+          rating: config.rating,
+          location: {
+            type: 'Point',
+            coordinates: [mockLng, mockLat]
+          },
+          distanceMeters,
+          etaMinutes,
+        };
+      });
+    } catch (err) {
+      console.warn('Failed to generate mock drivers:', err);
+    }
+  }
+
   const closestDriver = enrichedDrivers[0] || null;
 
   res.json({
@@ -281,5 +348,145 @@ export const listAvailableDrivers = async (req, res) => {
       closestDriverEtaMinutes: closestDriver?.etaMinutes ?? null,
       drivers: enrichedDrivers,
     },
+  });
+};
+
+export const createRazorpayRideOrder = async (req, res) => {
+  const { rideId } = req.params;
+  const tipAmount = Number(req.body?.tipAmount || 0);
+
+  const ride = await Ride.findById(rideId);
+  if (!ride) {
+    throw new ApiError(404, 'Ride not found');
+  }
+
+  // Calculate total amount
+  const totalAmount = ride.fare + tipAmount;
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+    throw new ApiError(400, 'Total amount must be a positive number');
+  }
+
+  const { keyId, keySecret } = await resolveRazorpayCredentials();
+  const amountPaise = Math.round(totalAmount * 100);
+  const receipt = `ride_${rideId}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+
+  const order = await razorpayRequest({
+    method: 'POST',
+    path: '/orders',
+    body: {
+      amount: amountPaise,
+      currency: 'INR',
+      receipt,
+      notes: { rideId: String(rideId), tipAmount: String(tipAmount) },
+    },
+    keyId,
+    keySecret,
+  });
+
+  res.status(201).json({
+    success: true,
+    data: {
+      keyId,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency || 'INR',
+    },
+  });
+};
+
+export const verifyRazorpayRidePayment = async (req, res) => {
+  const { rideId } = req.params;
+  const orderId = String(req.body?.razorpay_order_id || '');
+  const paymentId = String(req.body?.razorpay_payment_id || '');
+  const signature = String(req.body?.razorpay_signature || '');
+  const tipAmount = Number(req.body?.tipAmount || 0);
+
+  if (!orderId || !paymentId || !signature) {
+    throw new ApiError(400, 'Payment verification fields are required');
+  }
+
+  const ride = await Ride.findById(rideId);
+  if (!ride) {
+    throw new ApiError(404, 'Ride not found');
+  }
+
+  const { keyId, keySecret } = await resolveRazorpayCredentials();
+
+  const expectedSignature = crypto
+    .createHmac('sha256', keySecret)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+
+  if (expectedSignature !== signature) {
+    throw new ApiError(400, 'Invalid payment signature');
+  }
+
+  // Fetch the order from Razorpay to verify details
+  const order = await razorpayRequest({
+    method: 'GET',
+    path: `/orders/${encodeURIComponent(orderId)}`,
+    keyId,
+    keySecret,
+  });
+
+  const amountPaise = Number(order?.amount);
+  if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
+    throw new ApiError(400, 'Invalid order amount');
+  }
+
+  const verifiedAmount = Math.round(amountPaise) / 100;
+  // Ensure the amount matches ride.fare + tipAmount (allow slight rounding issues)
+  const expectedAmount = ride.fare + tipAmount;
+  if (Math.abs(verifiedAmount - expectedAmount) > 0.05) {
+    throw new ApiError(400, 'Payment amount mismatch');
+  }
+
+  // Update ride payment status
+  ride.paymentStatus = 'paid';
+  if (tipAmount > 0) {
+    ride.feedback = ride.feedback || {};
+    ride.feedback.tipAmount = tipAmount;
+  }
+  await ride.save();
+
+  // Try settling wallet for the driver
+  let walletUpdate = null;
+  if (!ride.walletSettledAt && ride.status === 'completed') {
+    walletUpdate = await settleCompletedRideWallet({ rideId: ride._id });
+  }
+
+  // Emit status update and ride state via Socket.io
+  const io = getIO();
+  if (io) {
+    const room = getRideRoom(ride._id);
+    const updatedRide = await getRideDetails(ride._id);
+    const realtimePayload = serializeRideRealtime(updatedRide);
+
+    const statusPayload = {
+      rideId: String(ride._id),
+      status: ride.status,
+      liveStatus: ride.liveStatus,
+      paymentStatus: ride.paymentStatus,
+      acceptedAt: ride.acceptedAt,
+      startedAt: ride.startedAt,
+      completedAt: ride.completedAt,
+    };
+
+    io.to(room).emit(SOCKET_EVENTS.RIDE_STATUS_UPDATED, statusPayload);
+    io.to(room).emit(SOCKET_EVENTS.RIDE_STATE, realtimePayload);
+
+    // Notify driver about wallet update if they are connected
+    if (walletUpdate && ride.driverId) {
+      const { getDriverRoom } = await import('../../services/dispatchService.js');
+      io.to(getDriverRoom(ride.driverId)).emit('driver:wallet:updated', {
+        wallet: walletUpdate.wallet,
+        transaction: walletUpdate.transaction,
+      });
+    }
+  }
+
+  res.json({
+    success: true,
+    data: serializeRideRealtime(ride),
   });
 };

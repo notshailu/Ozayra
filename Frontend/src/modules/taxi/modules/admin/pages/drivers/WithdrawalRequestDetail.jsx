@@ -53,7 +53,9 @@ const WithdrawalRequestDetail = () => {
             name: data.data?.driver?.name || 'Unknown',
             phone: data.data?.driver?.mobile || 'N/A',
             amount: `${r.requested_currency || 'INR'} ${r.amount}`,
-            status: r.status
+            status: r.status,
+            metadata: r.metadata || {},
+            payment_method: r.payment_method || 'Bank Transfer'
           }));
           setHistory(mapped);
         }
@@ -65,6 +67,35 @@ const WithdrawalRequestDetail = () => {
     };
     fetchData();
   }, [id, itemsPerPage]);
+
+  const handleUpdateStatus = async (reqId, newStatus) => {
+    try {
+      setActiveMenu(null);
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${globalThis.__LEGACY_BACKEND_ORIGIN__}/api/v1/admin/wallet/withdrawals/${reqId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setHistory(prev => prev.map(item => item.id === reqId ? { ...item, status: newStatus } : item));
+        window.location.reload();
+      } else {
+        alert(data.message || 'Failed to update withdrawal status');
+      }
+    } catch (err) {
+      console.error('Update status error:', err);
+      alert('An error occurred while updating status.');
+    }
+  };
+
+  const latestReq = history.find(h => h.status === 'pending' || h.status === 'requested') || history[0] || {};
+  const meta = latestReq.metadata || {};
+  const method = latestReq.metadata?.paymentMethod || (latestReq.payment_method?.includes('UPI') ? 'UPI' : 'Bank Transfer');
 
   useEffect(() => {
     const handleClose = () => setActiveMenu(null);
@@ -103,7 +134,7 @@ const WithdrawalRequestDetail = () => {
                <div className="absolute top-0 right-0 p-10 opacity-10 scale-[2] -rotate-12 translate-x-4"><IndianRupee size={100} strokeWidth={1} /></div>
                <div className="relative z-10">
                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-2 italic">Total Balance Amount</p>
-                  <p className="text-6xl font-black tracking-tighter leading-none mb-6">6600.00</p>
+                  <p className="text-5xl font-black tracking-tighter leading-none mb-6">Rs {Number(driver?.walletBalance || 0).toFixed(2)}</p>
                   <div className="flex items-center gap-3 px-4 py-2 bg-white/10 rounded-2xl border border-white/5 backdrop-blur-sm">
                      <ShieldCheck size={18} className="text-indigo-400" />
                      <span className="text-[12px] font-bold uppercase tracking-widest">Verified Wallet</span>
@@ -114,23 +145,38 @@ const WithdrawalRequestDetail = () => {
             <div className="bg-white rounded-[40px] border border-gray-100 p-8 shadow-sm">
                <div className="flex items-center gap-3 mb-8">
                   <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><Building size={20} /></div>
-                  <h4 className="text-[14px] font-black text-gray-900 uppercase tracking-widest leading-none">account_transfer</h4>
+                  <h4 className="text-[14px] font-black text-gray-900 uppercase tracking-widest leading-none">
+                    {method === 'UPI' ? 'UPI Transfer Details' : 'Bank Transfer Details'}
+                  </h4>
                </div>
                
-               <div className="space-y-6">
-                  <div className="border-b border-gray-50 pb-4">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">Account Holder Name</label>
-                    <p className="text-[14px] font-black text-gray-950 uppercase tracking-tight leading-none">SACHIN</p>
-                  </div>
-                  <div className="border-b border-gray-50 pb-4">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">Account Number</label>
-                    <p className="text-[18px] font-black text-gray-950 tracking-widest leading-none">716210510000871</p>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">IFSC Code</label>
-                    <p className="text-[15px] font-black text-indigo-600 uppercase tracking-widest leading-none">BKID0007162</p>
-                  </div>
-               </div>
+               {method === 'UPI' ? (
+                 <div className="space-y-6">
+                    <div className="border-b border-gray-50 pb-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">UPI ID / VPA</label>
+                      <p className="text-[16px] font-black text-indigo-600 tracking-wider leading-none">{meta.upiId || 'N/A'}</p>
+                    </div>
+                 </div>
+               ) : (
+                 <div className="space-y-6">
+                    <div className="border-b border-gray-50 pb-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">Account Holder Name</label>
+                      <p className="text-[14px] font-black text-gray-950 uppercase tracking-tight leading-none">{meta.accountHolderName || driver?.name || 'N/A'}</p>
+                    </div>
+                    <div className="border-b border-gray-50 pb-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">Account Number</label>
+                      <p className="text-[18px] font-black text-gray-950 tracking-widest leading-none">{meta.accountNumber || 'N/A'}</p>
+                    </div>
+                    <div className="border-b border-gray-50 pb-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">IFSC Code</label>
+                      <p className="text-[15px] font-black text-indigo-600 uppercase tracking-widest leading-none">{meta.ifscCode || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block leading-none">Bank Name</label>
+                      <p className="text-[14px] font-black text-gray-800 uppercase tracking-tight leading-none">{meta.bankName || 'N/A'}</p>
+                    </div>
+                 </div>
+               )}
             </div>
          </div>
 
@@ -192,8 +238,8 @@ const WithdrawalRequestDetail = () => {
                               </td>
                               <td className="px-5 py-6 text-center">
                                  <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-current shadow-sm ${
-                                   req.status === 'requested' ? 'bg-amber-50 text-amber-600' :
-                                   req.status === 'Declined' ? 'bg-rose-50 text-rose-600 opacity-80' : 'bg-emerald-50 text-emerald-600'
+                                   req.status === 'pending' || req.status === 'requested' ? 'bg-amber-50 text-amber-600' :
+                                   req.status === 'rejected' || req.status === 'Declined' || req.status === 'cancelled' ? 'bg-rose-50 text-rose-600 opacity-80' : 'bg-emerald-50 text-emerald-600'
                                  }`}>
                                     {req.status}
                                  </span>
@@ -207,12 +253,18 @@ const WithdrawalRequestDetail = () => {
                                        <MoreHorizontal size={18} />
                                     </button>
                                     
-                                    {activeMenu === idx && req.status === 'requested' && (
+                                    {activeMenu === idx && (req.status === 'pending' || req.status === 'requested') && (
                                        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                          <button className="w-full text-left px-4 py-2.5 text-[12px] font-black text-emerald-600 hover:bg-emerald-50 flex items-center gap-3 transition-colors uppercase tracking-widest">
+                                          <button 
+                                            onClick={() => handleUpdateStatus(req.id, 'completed')}
+                                            className="w-full text-left px-4 py-2.5 text-[12px] font-black text-emerald-600 hover:bg-emerald-50 flex items-center gap-3 transition-colors uppercase tracking-widest"
+                                          >
                                              <CheckCircle2 size={16} /> Approve
                                           </button>
-                                          <button className="w-full text-left px-4 py-2.5 text-[12px] font-black text-rose-600 hover:bg-rose-50 flex items-center gap-3 transition-colors uppercase tracking-widest">
+                                          <button 
+                                            onClick={() => handleUpdateStatus(req.id, 'rejected')}
+                                            className="w-full text-left px-4 py-2.5 text-[12px] font-black text-rose-600 hover:bg-rose-50 flex items-center gap-3 transition-colors uppercase tracking-widest"
+                                          >
                                              <XCircle size={16} /> Decline
                                           </button>
                                        </div>

@@ -49,6 +49,7 @@ const RideComplete = () => {
     enable_tips: '1',
     min_tip_amount: '10',
   });
+  const [paymentStatus, setPaymentStatus] = useState(() => state.paymentStatus || 'pending');
 
   const routeHome = location.pathname.startsWith('/taxi/user') ? '/taxi/user' : '/';
   const rideId = state.rideId || '';
@@ -71,6 +72,8 @@ const RideComplete = () => {
   const hasVehiclePhoto = isLikelyVehiclePhoto(driver.vehicleImage) && !vehicleImageBroken;
   const vehicleVisual = hasVehiclePhoto ? driver.vehicleImage : getVehicleIcon(serviceType, driver);
   const totalBill = fare + Number(selectedTip || 0);
+  const isOnlinePayment = String(paymentMethod).toLowerCase() === 'online' || String(paymentMethod).toLowerCase() === 'online payment';
+  const showPayButton = isOnlinePayment && paymentStatus !== 'paid';
   const tipsEnabled = String(tipSettings.enable_tips || '1') === '1';
   const minimumTipAmount = Number(tipSettings.min_tip_amount || 0);
   const availableTipOptions = useMemo(() => {
@@ -106,6 +109,141 @@ const RideComplete = () => {
 
     fetchTipSettings();
   }, []);
+
+  useEffect(() => {
+    if (!rideId) return;
+    const fetchRideDetails = async () => {
+      try {
+        const response = await api.get(`/rides/${rideId}`);
+        const ride = response?.data?.data || response?.data || response;
+        if (ride) {
+          setPaymentStatus(ride.paymentStatus || 'pending');
+        }
+      } catch (err) {
+        console.error('Failed to fetch ride details:', err);
+      }
+    };
+    fetchRideDetails();
+  }, [rideId]);
+
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
+  const submitFeedbackAfterPayment = async () => {
+    try {
+      setError('');
+      const response = await api.patch(`/rides/${rideId}/feedback`, {
+        rating,
+        comment,
+        tipAmount: selectedTip || 0,
+      });
+
+      const payload = response?.data?.data || response?.data || response;
+      if (payload?.feedback) {
+        setComment(payload.feedback.comment || comment);
+      }
+      setIsSubmitted(true);
+      window.setTimeout(() => {
+        navigate(routeHome, { replace: true });
+      }, 1200);
+    } catch (submitError) {
+      setError(submitError?.message || 'Could not save feedback after payment.');
+    }
+  };
+
+  const handlePayment = async () => {
+    if (rating < 1) {
+      setError('Please rate your driver before finishing.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Razorpay SDK failed to load');
+      }
+
+      const orderResponse = await api.post(`/rides/${rideId}/razorpay/order`, {
+        tipAmount: selectedTip || 0,
+      });
+
+      const order = orderResponse?.data?.data || orderResponse?.data || orderResponse;
+      if (!order.keyId || !order.orderId) {
+        throw new Error('Unable to start payment');
+      }
+
+      let userInfo = {};
+      try {
+        userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      } catch {
+        userInfo = {};
+      }
+
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'Rydon24',
+        description: `Ride Payment (Ride ID: ${rideId})`,
+        order_id: order.orderId,
+        prefill: {
+          name: userInfo?.name || '',
+          email: userInfo?.email || '',
+          contact: userInfo?.phone ? `+91${userInfo.phone}` : '',
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmitting(false);
+          },
+        },
+        handler: async (response) => {
+          try {
+            await api.post(`/rides/${rideId}/razorpay/verify`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              tipAmount: selectedTip || 0,
+            });
+
+            setPaymentStatus('paid');
+            await submitFeedbackAfterPayment();
+          } catch (err) {
+            setError(err?.message || 'Payment verification failed');
+            setIsSubmitting(false);
+          }
+        },
+        theme: {
+          color: '#E85D04',
+        },
+      });
+
+      rzp.on('payment.failed', (event) => {
+        const message = event?.error?.description || event?.error?.reason || 'Payment failed';
+        setError(message);
+        setIsSubmitting(false);
+      });
+
+      rzp.open();
+    } catch (err) {
+      setError(err?.message || 'Payment failed');
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     setVehicleImageBroken(false);
@@ -341,11 +479,13 @@ const RideComplete = () => {
         <div className="space-y-3 pt-2">
           <button
             type="button"
-            onClick={submitFeedback}
+            onClick={showPayButton ? handlePayment : submitFeedback}
             disabled={isSubmitting || isSubmitted}
             className="w-full rounded-xl bg-slate-900 py-3.5 text-base font-bold text-white transition-opacity active:scale-[0.98] disabled:opacity-50"
           >
-            {isSubmitting ? 'Saving...' : 'Submit'}
+            {isSubmitting
+              ? (showPayButton ? 'Processing Payment...' : 'Saving...')
+              : (showPayButton ? `Pay Rs ${totalBill.toFixed(2)} & Finish` : 'Submit')}
           </button>
           
           <div className="flex gap-3">

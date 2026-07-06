@@ -180,6 +180,13 @@ const rideSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed'],
+      default: 'pending',
+      lowercase: true,
+      trim: true,
+    },
     service_location_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'TaxiServiceLocation',

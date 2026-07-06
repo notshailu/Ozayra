@@ -21,6 +21,8 @@ import { listDriverServiceLocations } from "../services/serviceLocationService.j
 import {
   serializeDriverWallet,
   topUpDriverWallet,
+  listMyWithdrawalRequests,
+  requestDriverWalletWithdrawal,
 } from "../services/walletService.js";
 import {
   startDriverLoginOtp,
@@ -573,6 +575,7 @@ export const getMyWallet = async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(50)
     .lean();
+  const withdrawals = await listMyWithdrawalRequests({ driverId: req.auth.sub, limit: 20 });
   const walletSettings = await getWalletSettings();
 
   res.json({
@@ -580,6 +583,7 @@ export const getMyWallet = async (req, res) => {
     data: {
       wallet: await serializeDriverWallet(driver),
       transactions,
+      withdrawals,
       settings: walletSettings,
     },
   });
@@ -611,6 +615,48 @@ export const topUpMyWallet = async (req, res) => {
   res.json({
     success: true,
     data: payload,
+  });
+};
+
+export const getMyWithdrawals = async (req, res) => {
+  const withdrawals = await listMyWithdrawalRequests({
+    driverId: req.auth.sub,
+    limit: Number(req.query.limit || 50),
+  });
+
+  res.json({
+    success: true,
+    data: { withdrawals },
+  });
+};
+
+export const requestMyWithdrawal = async (req, res) => {
+  const { amount, paymentMethod, upiId, accountNumber, ifscCode, bankName, accountHolderName, notes } = req.body;
+
+  const result = await requestDriverWalletWithdrawal({
+    driverId: req.auth.sub,
+    amount,
+    paymentMethod,
+    upiId,
+    accountNumber,
+    ifscCode,
+    bankName,
+    accountHolderName,
+    notes,
+  });
+
+  const payload = {
+    wallet: result.wallet,
+    transaction: result.transaction,
+    withdrawal: result.withdrawal,
+  };
+
+  emitToDriver(req.auth.sub, "driver:wallet:updated", payload);
+
+  res.status(201).json({
+    success: true,
+    data: payload,
+    message: "Withdrawal request submitted successfully",
   });
 };
 

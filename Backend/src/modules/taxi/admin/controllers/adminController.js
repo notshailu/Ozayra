@@ -162,6 +162,13 @@ export const getDriverWithdrawals = asyncHandler(async (req, res) =>
   ),
 );
 
+export const updateWithdrawalStatus = asyncHandler(async (req, res) =>
+  ok(
+    res,
+    await adminService.updateWithdrawalStatus(req.params.id, req.body),
+  ),
+);
+
 
 export const getDeletedDrivers = asyncHandler(async (req, res) =>
   ok(res, await adminService.listDeletedDrivers(req.query)),

@@ -6,7 +6,8 @@ const withdrawalRequestSchema = new mongoose.Schema({
   owner_id: { type: mongoose.Schema.Types.ObjectId, ref: 'TaxiOwner' },
   amount: Number,
   payment_method: String,
-  status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' }
+  status: { type: String, enum: ['pending', 'completed', 'cancelled', 'rejected'], default: 'pending' },
+  metadata: { type: Object, default: {} }
 }, { timestamps: true });
 
 export const WithdrawalRequest = mongoose.models.TaxiWithdrawalRequest || mongoose.model('TaxiWithdrawalRequest', withdrawalRequestSchema, 'taxi_withdrawalrequests');

@@ -12,10 +12,11 @@ import {
   LoaderCircle,
   Navigation,
   X,
+  Package,
 } from 'lucide-react';
 import { GoogleMap } from '@react-google-maps/api';
 import api from '../../../../shared/api/axiosInstance';
-import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, UBER_MAP_STYLE } from '../../../admin/utils/googleMaps';
+import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, RAPIDO_MAP_STYLE } from '../../../admin/utils/googleMaps';
 import { userAuthService } from '../../services/authService';
 
 const Motion = motion;
@@ -271,49 +272,59 @@ const MapPickerSheet = ({ open, title, confirmLabel, value, initialCoords, onClo
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-[2px] px-0 py-0 sm:px-4 sm:py-6"
+        className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
       >
         <Motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
-          className="mx-auto flex h-full max-w-lg flex-col overflow-hidden bg-white shadow-2xl sm:rounded-[30px]"
+          className="w-full max-w-lg h-full sm:h-[620px] sm:max-h-[90vh] sm:rounded-2xl flex flex-col overflow-hidden bg-white shadow-2xl"
         >
-          <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4">
-            <div className="min-w-0 pr-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Map Picker</p>
-              <h3 className="mt-1 text-[20px] font-black tracking-tight text-gray-900">{title}</h3>
-              <p className="mt-1 line-clamp-1 text-[11px] font-bold text-gray-500">{value || 'Move the map and confirm the exact point.'}</p>
+          {/* Minimalist Header */}
+          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5 bg-white z-10 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 shrink-0">
+                <MapPin size={16} strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-gray-900 tracking-tight leading-none">{title}</h3>
+                <p className="mt-1 text-[11px] font-normal text-gray-500 truncate">Pan map to set exact location</p>
+              </div>
             </div>
-            <button type="button" onClick={onClose} className="rounded-2xl bg-gray-50 p-2.5 text-slate-700 active:scale-95">
-              <X size={18} strokeWidth={2.8} />
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200/80 active:scale-95 flex items-center justify-center text-gray-600 transition-all shrink-0 ml-3"
+            >
+              <X size={16} strokeWidth={2} />
             </button>
           </div>
 
-          <div className="relative flex-1 bg-slate-100">
+          {/* Map Section */}
+          <div className="relative flex-1 bg-gray-50 min-h-0">
             {!HAS_VALID_GOOGLE_MAPS_KEY && (
               <div className="flex h-full items-center justify-center px-6 text-center">
-                <div className="rounded-[20px] bg-white/95 px-5 py-4 shadow-sm">
-                  <p className="text-[12px] font-black text-slate-900">Google Maps key missing</p>
-                  <p className="mt-1 text-[11px] font-bold text-slate-500">Set `VITE_GOOGLE_MAPS_API_KEY` in `frontend/.env`.</p>
+                <div className="rounded-xl bg-white px-5 py-4 shadow-sm border border-gray-100">
+                  <p className="text-xs font-semibold text-gray-900">Google Maps key missing</p>
+                  <p className="mt-1 text-[11px] text-gray-500">Set `VITE_GOOGLE_MAPS_API_KEY` in `frontend/.env`.</p>
                 </div>
               </div>
             )}
 
             {HAS_VALID_GOOGLE_MAPS_KEY && loadError && (
               <div className="flex h-full items-center justify-center px-6 text-center">
-                <div className="rounded-[20px] bg-white/95 px-5 py-4 shadow-sm">
-                  <p className="text-[12px] font-black text-slate-900">Map failed to load</p>
-                  <p className="mt-1 text-[11px] font-bold text-slate-500">Check Google Maps browser key restrictions.</p>
+                <div className="rounded-xl bg-white px-5 py-4 shadow-sm border border-gray-100">
+                  <p className="text-xs font-semibold text-gray-900">Map failed to load</p>
+                  <p className="mt-1 text-[11px] text-gray-500">Check Google Maps browser key restrictions.</p>
                 </div>
               </div>
             )}
 
             {HAS_VALID_GOOGLE_MAPS_KEY && !loadError && !isLoaded && (
               <div className="flex h-full items-center justify-center">
-                <div className="flex items-center gap-2 rounded-[18px] bg-white/95 px-4 py-3 shadow-sm">
-                  <LoaderCircle size={18} className="animate-spin text-slate-500" />
-                  <span className="text-[12px] font-black text-slate-700">Loading map</span>
+                <div className="flex items-center gap-2.5 rounded-xl bg-white px-4 py-3 shadow-sm border border-gray-100">
+                  <LoaderCircle size={16} className="animate-spin text-gray-500" />
+                  <span className="text-xs font-medium text-gray-700">Loading map...</span>
                 </div>
               </div>
             )}
@@ -347,73 +358,74 @@ const MapPickerSheet = ({ open, title, confirmLabel, value, initialCoords, onClo
                 }}
                 options={{
                   disableDefaultUI: true,
-                  zoomControl: true,
+                  zoomControl: false,
                   clickableIcons: false,
                   streetViewControl: false,
                   fullscreenControl: false,
                   mapTypeControl: false,
                   gestureHandling: 'greedy',
-                  styles: UBER_MAP_STYLE,
+                  styles: RAPIDO_MAP_STYLE,
                 }}
               />
             )}
 
+            {/* Clean Custom Map Pin */}
             <Motion.div
               aria-hidden="true"
               className="pointer-events-none absolute left-1/2 top-1/2 z-20"
-              animate={{ y: isDragging ? -12 : 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
+              animate={{ y: isDragging ? -14 : 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
             >
-              <div className="relative -translate-x-1/2 -translate-y-full">
-                <div className="absolute left-1/2 top-full h-4 w-5 -translate-x-1/2 rounded-full bg-slate-950/30 blur-[3px]" />
-                <div className="relative flex h-[46px] w-9 justify-center">
-                  <div className="absolute top-0 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 shadow-[0_12px_24px_rgba(15,23,42,0.28)] ring-4 ring-white">
-                    <div className="h-2.5 w-2.5 rounded-full bg-white" />
-                  </div>
-                  <div className="absolute top-[27px] h-0 w-0 border-l-[8px] border-r-[8px] border-t-[15px] border-l-transparent border-r-transparent border-t-slate-950" />
+              <div className="relative -translate-x-1/2 -translate-y-full flex flex-col items-center">
+                <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gray-900 text-white shadow-lg ring-[3px] ring-white">
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                 </div>
+                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-gray-900 -mt-0.5" />
+                <div className="w-2.5 h-1 rounded-full bg-black/25 blur-[1px] mt-1" />
               </div>
             </Motion.div>
 
-            <div className="pointer-events-none absolute left-4 right-4 top-4 z-20 rounded-[20px] border border-white/80 bg-white/95 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.12)]">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] bg-orange-50 text-primary">
-                  <MapPin size={17} strokeWidth={2.7} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                    {isResolvingAddress ? 'Finding Address' : 'Selected Point'}
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-[12px] font-black leading-snug text-slate-900">
-                    {isResolvingAddress ? 'Reading the map pin...' : selectedAddress}
-                  </p>
-                  <p className="mt-1 text-[10px] font-bold text-slate-400">{formatLatLngLabel(center)}</p>
-                </div>
-              </div>
-            </div>
-
+            {/* Minimalist Floating Locate Button */}
             <button
               type="button"
               onClick={useCurrentLocation}
               disabled={isLocating}
-              className="absolute bottom-4 left-4 z-20 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/95 px-3.5 py-2 text-[11px] font-black text-slate-700 shadow-sm active:scale-[0.99] disabled:opacity-70"
+              className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-medium text-gray-700 shadow-md border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-70"
             >
-              <Navigation size={14} className={isLocating ? 'animate-pulse' : ''} strokeWidth={2.5} />
-              {isLocating ? 'Locating...' : 'Use My Location'}
+              <Navigation size={14} className={isLocating ? 'animate-spin text-yellow-500' : 'text-gray-700'} strokeWidth={2.2} />
+              <span>{isLocating ? 'Locating...' : 'Locate me'}</span>
             </button>
           </div>
 
-          <div className="border-t border-gray-100 px-5 py-4">
-            <div className="mb-3 rounded-2xl bg-slate-50 px-4 py-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Confirming</p>
-              <p className="mt-1 line-clamp-2 text-[12px] font-black leading-snug text-slate-900">{selectedAddress}</p>
+          {/* Minimalist Bottom Drawer */}
+          <div className="bg-white px-5 pt-4 pb-5 border-t border-gray-100 shadow-lg z-10 shrink-0">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="mt-0.5 w-8 h-8 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center shrink-0">
+                {isResolvingAddress ? (
+                  <LoaderCircle size={16} className="animate-spin text-gray-700" />
+                ) : (
+                  <MapPin size={16} strokeWidth={2.2} />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-medium text-gray-400">Selected location</span>
+                  {isResolvingAddress && <span className="text-[10px] font-medium text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">Updating...</span>}
+                </div>
+                <p className="mt-0.5 text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
+                  {isResolvingAddress ? 'Resolving address...' : selectedAddress}
+                </p>
+              </div>
             </div>
+
             <button
               type="button"
               onClick={() => onConfirm(latLngToCoordPair(center), selectedAddress)}
-              className="flex h-14 w-full items-center justify-center rounded-[18px] bg-slate-900 text-[14px] font-black uppercase tracking-wide text-white shadow-lg"
+              disabled={isResolvingAddress}
+              className="w-full bg-gray-900 hover:bg-black active:scale-[0.99] disabled:opacity-70 text-white py-3.5 rounded-xl text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2"
             >
-              {confirmLabel}
+              <span>{confirmLabel}</span>
+              <ChevronRight size={16} className="opacity-70" strokeWidth={2.5} />
             </button>
           </div>
         </Motion.div>
@@ -855,6 +867,10 @@ const SenderReceiverDetails = () => {
     const nextErrors = {};
     if (!pickup.trim()) nextErrors.pickup = 'Pickup location is required';
     if (!drop.trim()) nextErrors.drop = 'Drop location is required';
+    if (!senderName.trim()) nextErrors.senderName = 'Sender name is required';
+    if (!senderMobile.trim() || senderMobile.trim().length < 10) nextErrors.senderMobile = 'Valid 10-digit sender phone required';
+    if (!receiverName.trim()) nextErrors.receiverName = 'Receiver name is required';
+    if (!receiverMobile.trim() || receiverMobile.trim().length < 10) nextErrors.receiverMobile = 'Valid 10-digit receiver phone required';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -1037,198 +1053,324 @@ const SenderReceiverDetails = () => {
         }}
       />
 
-      <header className="bg-white px-5 py-6 flex items-center gap-6 border-b border-gray-50 shadow-sm sticky top-0 z-20">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 active:scale-90 transition-all">
-          <ArrowLeft size={24} className="text-gray-900" strokeWidth={3} />
-        </button>
-        <div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
-            {parcelState.parcelType || 'Parcel'} - {parcelState.weight || 'Under 5kg'} - {parcelState.deliveryScope === 'outstation' ? 'Outstation' : 'In City'}
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="bg-white px-5 py-4 flex items-center gap-3.5 border-b border-gray-200/80 sticky top-0 z-20"
+      >
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate(-1)}
+          className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-all shrink-0"
+        >
+          <ArrowLeft size={20} className="text-gray-800" strokeWidth={2} />
+        </motion.button>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-medium uppercase tracking-widest text-gray-400">
+            {parcelState.parcelType || 'Parcel'} • {parcelState.weight || 'Under 5kg'}
           </p>
-          <h1 className="text-[20px] font-extrabold text-gray-900 tracking-tight leading-none">Select Route</h1>
+          <h1 className="text-lg font-semibold tracking-tight text-gray-800 leading-tight">Sender & Receiver</h1>
         </div>
-      </header>
+        <div className="rounded-full border border-gray-200/80 bg-gray-100/80 px-3 py-1 text-[11px] font-medium text-gray-600 shrink-0 flex items-center gap-1.5">
+          <Package size={13} className="text-gray-400" />
+          <span>Step 3 of 3</span>
+        </div>
+      </motion.header>
 
-      <div className="flex-1 p-5 space-y-8 overflow-y-auto no-scrollbar pb-4">
+      {/* Content Area */}
+      <div className="flex-1 px-5 pt-5 pb-44 space-y-5 overflow-y-auto no-scrollbar">
+        
+        {/* Step Progress Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.05, ease: 'easeOut' }}
+          className="bg-white border border-gray-100 rounded-xl p-4 shadow-2xs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Step 3 of 3</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-yellow-600">Pickup & Delivery</span>
+          </div>
+          
+          {/* Progress Bar Segments */}
+          <div className="flex items-center gap-1.5 mt-2.5">
+            <div className="h-1 flex-1 rounded-full bg-yellow-400" />
+            <div className="h-1 flex-1 rounded-full bg-yellow-400" />
+            <div className="h-1 flex-1 rounded-full bg-yellow-400" />
+          </div>
+          
+          <h2 className="mt-3.5 text-[15px] font-semibold tracking-tight text-gray-800">Contact & Address Details</h2>
+          <p className="mt-0.5 text-xs font-normal text-gray-500">Enter pickup point, sender details, delivery address, and receiver phone.</p>
+        </motion.div>
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 ml-1">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-              <MapPin size={18} strokeWidth={3} />
+        {/* Sender Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.1, ease: 'easeOut' }}
+          className="bg-white rounded-xl p-4 border border-gray-200/80 shadow-2xs space-y-3.5"
+        >
+          <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              </div>
+              <span className="text-sm font-semibold text-gray-800">Pickup Details (Sender)</span>
             </div>
-            <h3 className="text-[16px] font-black text-gray-900 tracking-tight leading-none">Pickup & Drop</h3>
+            <span className="text-[11px] font-normal text-emerald-600 bg-emerald-50/60 px-2 py-0.5 rounded-md">From</span>
           </div>
 
-          <div className="bg-white rounded-[32px] p-5 shadow-lg border border-slate-100 space-y-4">
-            <div className="relative flex flex-col gap-5">
-              
-              {/* Vertical dotted connector line */}
-              <div className="absolute left-[9px] top-[26px] bottom-[26px] w-[1.5px] border-l-[1.5px] border-dotted border-slate-300 pointer-events-none" />
-
-              {/* Pickup Input Row */}
-              <div className="flex items-start gap-3 relative">
-                <div className="mt-[13px] w-5 h-5 rounded-full border-2 border-emerald-500 bg-white flex items-center justify-center shrink-0 z-10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Pickup Location</label>
-                  <div className={`flex items-center bg-slate-50 border rounded-xl px-3 py-2.5 transition-all ${errors.pickup ? 'border-red-200 bg-red-50/20' : 'border-slate-100 focus-within:border-slate-300'}`}>
-                    <input
-                      type="text"
-                      value={pickup}
-                      onChange={(e) => {
-                        setPickup(e.target.value);
-                        clearError('pickup');
-                      }}
-                      placeholder="Enter pickup area or landmark"
-                      className="w-full bg-transparent border-none text-[14px] font-bold text-slate-900 focus:outline-none placeholder:text-slate-300"
-                    />
-                    {pickup.length > 0 && (
-                      <button onClick={() => setPickup('')} className="ml-1 text-slate-300 hover:text-slate-500 shrink-0">
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                  {errors.pickup && <p className="text-[10px] font-black text-red-500 mt-1">{errors.pickup}</p>}
-                  
-                  {/* Pickup Suggestions */}
-                  {pickupSuggestions.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {pickupSuggestions.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => handleSelectPickup(item)}
-                          className="rounded-full border border-slate-100 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-colors"
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <p className="mt-1.5 text-[9px] font-semibold text-slate-400">Pin: {formatCoordLabel(pickupCoords)}</p>
-                </div>
-                
-                {/* Actions for Pickup */}
-                <div className="flex flex-col gap-1.5 mt-[15px] shrink-0">
-                  <button
-                    type="button"
-                    onClick={useCurrentPickupLocation}
-                    disabled={isLocatingPickup}
-                    className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 active:scale-95 transition-colors border border-slate-100 flex items-center justify-center"
-                    title="Use Current Location"
-                  >
-                    <Navigation size={13} className={isLocatingPickup ? 'animate-pulse' : ''} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveMapPicker('pickup')}
-                    className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 active:scale-95 transition-colors border border-slate-100 flex items-center justify-center"
-                    title="Choose on Map"
-                  >
-                    <MapPin size={13} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Drop Input Row */}
-              <div className="flex items-start gap-3 relative">
-                <div className="mt-[13px] w-5 h-5 rounded-full border-2 border-orange-500 bg-white flex items-center justify-center shrink-0 z-10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Drop Location</label>
-                  <div className={`flex items-center bg-slate-50 border rounded-xl px-3 py-2.5 transition-all ${errors.drop ? 'border-red-200 bg-red-50/20' : 'border-slate-100 focus-within:border-slate-300'}`}>
-                    <input
-                      type="text"
-                      value={drop}
-                      onChange={(e) => {
-                        setDrop(e.target.value);
-                        clearError('drop');
-                      }}
-                      placeholder="Enter delivery area or landmark"
-                      className="w-full bg-transparent border-none text-[14px] font-bold text-slate-900 focus:outline-none placeholder:text-slate-300"
-                    />
-                    {drop.length > 0 && (
-                      <button onClick={() => setDrop('')} className="ml-1 text-slate-300 hover:text-slate-500 shrink-0">
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                  {errors.drop && <p className="text-[10px] font-black text-red-500 mt-1">{errors.drop}</p>}
-
-                  {/* Drop Suggestions */}
-                  {dropSuggestions.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {dropSuggestions.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => handleSelectDrop(item)}
-                          className="rounded-full border border-slate-100 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 transition-colors"
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <p className="mt-1.5 text-[9px] font-semibold text-slate-400">Pin: {formatCoordLabel(dropCoords)}</p>
-                </div>
-
-                {/* Actions for Drop */}
-                <div className="flex flex-col gap-1.5 mt-[15px] shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setActiveMapPicker('drop')}
-                    className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 active:scale-95 transition-colors border border-slate-100 flex items-center justify-center"
-                    title="Choose on Map"
-                  >
-                    <MapPin size={13} />
-                  </button>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4 pb-24">
-          <div className="bg-white rounded-[32px] p-5 shadow-lg shadow-gray-100 border border-gray-50">
-            <div className="bg-slate-50/80 rounded-2xl p-4 border border-gray-100/60 flex flex-col gap-1">
-              <div className="flex justify-between items-center">
-                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Est. Distance</span>
-                <span className="text-[14px] font-black text-gray-900">
-                  {(distanceMeters / 1000).toFixed(1)} km
-                </span>
-              </div>
-              <div className="h-px bg-gray-100 my-1" />
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase tracking-widest">Est. Delivery Fare</span>
-                <span className="text-[18px] font-black text-emerald-600">
-                  ₹{calculatedFare}
-                </span>
+          {/* Pickup Address Input */}
+          <div>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-gray-400 block mb-1">Pickup Location <span className="text-red-500">*</span></label>
+            <div className={`flex items-center bg-gray-50 border rounded-xl px-3 py-2 transition-all ${errors.pickup ? 'border-red-300 bg-red-50/20' : 'border-gray-200/80 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 focus-within:bg-white'}`}>
+              <MapPin size={16} className="text-emerald-600 mr-2 shrink-0" strokeWidth={2} />
+              <input
+                type="text"
+                value={pickup}
+                onChange={(e) => {
+                  setPickup(e.target.value);
+                  clearError('pickup');
+                }}
+                placeholder="Enter pickup area, building, or landmark"
+                className="w-full bg-transparent border-none text-sm font-normal text-gray-800 focus:outline-none placeholder:text-gray-400"
+              />
+              {pickup.length > 0 && (
+                <button type="button" onClick={() => setPickup('')} className="ml-1 text-gray-300 hover:text-gray-500 shrink-0">
+                  <X size={14} />
+                </button>
+              )}
+              <div className="flex items-center gap-1 ml-2 border-l border-gray-200 pl-2">
+                <button
+                  type="button"
+                  onClick={useCurrentPickupLocation}
+                  disabled={isLocatingPickup}
+                  className="p-1 rounded-md hover:bg-gray-200/60 text-gray-500 transition-colors"
+                  title="Use Current Location"
+                >
+                  <Navigation size={14} className={isLocatingPickup ? 'animate-pulse text-yellow-600' : ''} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveMapPicker('pickup')}
+                  className="p-1 rounded-md hover:bg-gray-200/60 text-gray-500 transition-colors"
+                  title="Choose on Map"
+                >
+                  <MapPin size={14} />
+                </button>
               </div>
             </div>
+            {errors.pickup && <p className="text-xs font-normal text-red-500 mt-1">{errors.pickup}</p>}
+
+            {/* Suggestions */}
+            {pickupSuggestions.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {pickupSuggestions.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => handleSelectPickup(item)}
+                    className="rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 px-2 py-1 text-[11px] font-normal text-gray-600 transition-colors"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+
+          <div className="h-px bg-gray-100 my-1" />
+
+          {/* Sender Contact Inputs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="text-[11px] font-medium uppercase tracking-wider text-gray-400 block mb-1">Sender Name <span className="text-red-500">*</span></label>
+              <div className={`flex items-center bg-gray-50 border rounded-xl px-3 py-2 transition-all ${errors.senderName ? 'border-red-300 bg-red-50/20' : 'border-gray-200/80 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 focus-within:bg-white'}`}>
+                <User size={15} className="text-gray-400 mr-2 shrink-0" strokeWidth={1.8} />
+                <input
+                  type="text"
+                  value={senderName}
+                  onChange={(e) => {
+                    setSenderName(e.target.value);
+                    clearError('senderName');
+                  }}
+                  placeholder="Sender name"
+                  className="w-full bg-transparent border-none text-sm font-normal text-gray-800 focus:outline-none placeholder:text-gray-400"
+                />
+              </div>
+              {errors.senderName && <p className="text-xs font-normal text-red-500 mt-1">{errors.senderName}</p>}
+            </div>
+
+            <div>
+              <label className="text-[11px] font-medium uppercase tracking-wider text-gray-400 block mb-1">Sender Phone <span className="text-red-500">*</span></label>
+              <div className={`flex items-center bg-gray-50 border rounded-xl px-3 py-2 transition-all ${errors.senderMobile ? 'border-red-300 bg-red-50/20' : 'border-gray-200/80 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 focus-within:bg-white'}`}>
+                <Phone size={15} className="text-gray-400 mr-2 shrink-0" strokeWidth={1.8} />
+                <input
+                  type="tel"
+                  maxLength={10}
+                  value={senderMobile}
+                  onChange={(e) => {
+                    setSenderMobile(e.target.value.replace(/\D/g, ''));
+                    clearError('senderMobile');
+                  }}
+                  placeholder="10-digit mobile number"
+                  className="w-full bg-transparent border-none text-sm font-normal text-gray-800 focus:outline-none placeholder:text-gray-400"
+                />
+              </div>
+              {errors.senderMobile && <p className="text-xs font-normal text-red-500 mt-1">{errors.senderMobile}</p>}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Receiver Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.15, ease: 'easeOut' }}
+          className="bg-white rounded-xl p-4 border border-gray-200/80 shadow-2xs space-y-3.5"
+        >
+          <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-orange-500" />
+              </div>
+              <span className="text-sm font-semibold text-gray-800">Delivery Details (Receiver)</span>
+            </div>
+            <span className="text-[11px] font-normal text-orange-600 bg-orange-50/60 px-2 py-0.5 rounded-md">To</span>
+          </div>
+
+          {/* Drop Address Input */}
+          <div>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-gray-400 block mb-1">Delivery Location <span className="text-red-500">*</span></label>
+            <div className={`flex items-center bg-gray-50 border rounded-xl px-3 py-2 transition-all ${errors.drop ? 'border-red-300 bg-red-50/20' : 'border-gray-200/80 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 focus-within:bg-white'}`}>
+              <MapPin size={16} className="text-orange-600 mr-2 shrink-0" strokeWidth={2} />
+              <input
+                type="text"
+                value={drop}
+                onChange={(e) => {
+                  setDrop(e.target.value);
+                  clearError('drop');
+                }}
+                placeholder="Enter delivery area, building, or landmark"
+                className="w-full bg-transparent border-none text-sm font-normal text-gray-800 focus:outline-none placeholder:text-gray-400"
+              />
+              {drop.length > 0 && (
+                <button type="button" onClick={() => setDrop('')} className="ml-1 text-gray-300 hover:text-gray-500 shrink-0">
+                  <X size={14} />
+                </button>
+              )}
+              <div className="flex items-center gap-1 ml-2 border-l border-gray-200 pl-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveMapPicker('drop')}
+                  className="p-1 rounded-md hover:bg-gray-200/60 text-gray-500 transition-colors"
+                  title="Choose on Map"
+                >
+                  <MapPin size={14} />
+                </button>
+              </div>
+            </div>
+            {errors.drop && <p className="text-xs font-normal text-red-500 mt-1">{errors.drop}</p>}
+
+            {/* Suggestions */}
+            {dropSuggestions.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {dropSuggestions.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => handleSelectDrop(item)}
+                    className="rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 px-2 py-1 text-[11px] font-normal text-gray-600 transition-colors"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="h-px bg-gray-100 my-1" />
+
+          {/* Receiver Contact Inputs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="text-[11px] font-medium uppercase tracking-wider text-gray-400 block mb-1">Receiver Name <span className="text-red-500">*</span></label>
+              <div className={`flex items-center bg-gray-50 border rounded-xl px-3 py-2 transition-all ${errors.receiverName ? 'border-red-300 bg-red-50/20' : 'border-gray-200/80 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 focus-within:bg-white'}`}>
+                <User size={15} className="text-gray-400 mr-2 shrink-0" strokeWidth={1.8} />
+                <input
+                  type="text"
+                  value={receiverName}
+                  onChange={(e) => {
+                    setReceiverName(e.target.value);
+                    clearError('receiverName');
+                  }}
+                  placeholder="Receiver name"
+                  className="w-full bg-transparent border-none text-sm font-normal text-gray-800 focus:outline-none placeholder:text-gray-400"
+                />
+              </div>
+              {errors.receiverName && <p className="text-xs font-normal text-red-500 mt-1">{errors.receiverName}</p>}
+            </div>
+
+            <div>
+              <label className="text-[11px] font-medium uppercase tracking-wider text-gray-400 block mb-1">Receiver Phone <span className="text-red-500">*</span></label>
+              <div className={`flex items-center bg-gray-50 border rounded-xl px-3 py-2 transition-all ${errors.receiverMobile ? 'border-red-300 bg-red-50/20' : 'border-gray-200/80 focus-within:border-yellow-400 focus-within:ring-1 focus-within:ring-yellow-400 focus-within:bg-white'}`}>
+                <Phone size={15} className="text-gray-400 mr-2 shrink-0" strokeWidth={1.8} />
+                <input
+                  type="tel"
+                  maxLength={10}
+                  value={receiverMobile}
+                  onChange={(e) => {
+                    setReceiverMobile(e.target.value.replace(/\D/g, ''));
+                    clearError('receiverMobile');
+                  }}
+                  placeholder="10-digit mobile number"
+                  className="w-full bg-transparent border-none text-sm font-normal text-gray-800 focus:outline-none placeholder:text-gray-400"
+                />
+              </div>
+              {errors.receiverMobile && <p className="text-xs font-normal text-red-500 mt-1">{errors.receiverMobile}</p>}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Distance & Fare Summary */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.2, ease: 'easeOut' }}
+          className="bg-white rounded-xl p-4 border border-gray-200/80 shadow-2xs space-y-2"
+        >
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-medium text-gray-400">Est. Route Distance</span>
+            <span className="font-semibold text-gray-800">{(distanceMeters / 1000).toFixed(1)} km</span>
+          </div>
+          <div className="h-px bg-gray-100" />
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-medium text-gray-500">Est. Delivery Fare</span>
+            <span className="text-base font-semibold text-emerald-600">₹{calculatedFare}</span>
+          </div>
+        </motion.div>
       </div>
 
-      <div className="p-6 bg-white border-t border-gray-50 pb-10 sticky bottom-0 z-30">
+      {/* Sticky Bottom CTA */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg px-5 pb-6 pt-4 bg-gradient-to-t from-gray-50 via-gray-50/95 to-transparent pointer-events-none z-30">
         <Motion.button
+          type="button"
           whileTap={{ scale: 0.98 }}
           onClick={handleProceed}
           disabled={isProceeding}
-          className="w-full bg-[#1C2833] py-5 rounded-[28px] text-[18px] font-black text-white shadow-xl shadow-gray-200 active:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+          className="pointer-events-auto w-full bg-yellow-400 hover:bg-yellow-500 disabled:opacity-70 disabled:cursor-not-allowed text-gray-900 py-3.5 rounded-xl text-[15px] font-semibold shadow-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2"
         >
           {isProceeding ? (
             <>
-              <LoaderCircle size={18} className="animate-spin text-white" />
+              <LoaderCircle size={18} className="animate-spin text-gray-900" />
               <span>Resolving Locations...</span>
             </>
           ) : (
             <>
               <span>Choose Delivery Vehicle</span>
-              <ChevronRight size={20} className="opacity-40" />
+              <ChevronRight size={18} className="opacity-70" strokeWidth={2.5} />
             </>
           )}
         </Motion.button>

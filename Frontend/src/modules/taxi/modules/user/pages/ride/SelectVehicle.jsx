@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Users, X, Banknote, CreditCard, ChevronDown, ChevronRight, LoaderCircle } from 'lucide-react';
+import { ArrowLeft, Users, X, Banknote, CreditCard, ChevronDown, ChevronRight, LoaderCircle, Package, ShieldCheck, Clock, Truck, MapPin, Sparkles, AlertCircle } from 'lucide-react';
 import { GoogleMap, MarkerF, PolylineF } from '@react-google-maps/api';
 import api from '../../../../shared/api/axiosInstance';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, RAPIDO_MAP_STYLE } from '../../../admin/utils/googleMaps';
@@ -290,6 +290,53 @@ const getCapacity = (type) => {
   return 4;
 };
 
+const getParcelCapacity = (type) => {
+  const value = getIconValue(type);
+  const label = getTypeLabel(type).toLowerCase();
+
+  if (value.includes('bike') || label.includes('bike') || label.includes('two wheeler') || label.includes('scooter')) {
+    return 20;
+  }
+  if (value.includes('auto') || label.includes('auto') || label.includes('three wheeler') || label.includes('rickshaw')) {
+    return 50;
+  }
+  if (value.includes('lcv') || label.includes('lcv') || label.includes('ace') || label.includes('mini truck') || label.includes('chota hathi')) {
+    return 750;
+  }
+  if (value.includes('mcv') || label.includes('mcv') || label.includes('truck')) {
+    return 1500;
+  }
+  if (value.includes('hcv') || value.includes('ehc') || label.includes('heavy')) {
+    return 3000;
+  }
+  if (value.includes('suv') || label.includes('suv')) {
+    return 150;
+  }
+  return 50;
+};
+
+const getParcelSublabel = (type) => {
+  const value = getIconValue(type);
+  const label = getTypeLabel(type).toLowerCase();
+  const desc = type?.short_description || type?.description;
+  if (desc && desc.trim().length > 3 && !desc.toLowerCase().includes('ride') && !desc.toLowerCase().includes('passenger')) {
+    return desc;
+  }
+  if (value.includes('bike') || label.includes('bike') || label.includes('scooter')) {
+    return 'Small parcels, documents, keys & food';
+  }
+  if (value.includes('auto') || label.includes('auto') || label.includes('rickshaw')) {
+    return 'Medium packages, boxes & fragile goods';
+  }
+  if (value.includes('lcv') || label.includes('lcv') || label.includes('ace') || label.includes('mini truck')) {
+    return 'Heavy goods, furniture & appliances';
+  }
+  if (value.includes('truck') || value.includes('mcv') || value.includes('hcv')) {
+    return 'Large commercial & industrial cargo';
+  }
+  return 'Fast & secure door-to-door courier delivery';
+};
+
 const AVERAGE_CITY_SPEED_KMPH = 24;
 
 const calculateDistanceMeters = (fromCoords = [], toCoords = []) => {
@@ -499,6 +546,8 @@ const normalizeVehicleType = (type, index) => {
     icon: getVehicleIcon(type),
     name: getTypeLabel(type),
     capacity: getCapacity(type),
+    parcelCapacity: getParcelCapacity(type),
+    parcelSublabel: getParcelSublabel(type),
     badge: null,
     badgeColor: 'bg-orange-50 text-orange-500 border-orange-100',
     sublabel: type?.short_description || type?.description || 'Available ride',
@@ -538,6 +587,7 @@ const SelectVehicle = () => {
   const [pricingRules, setPricingRules] = useState([]);
   const [tripMetrics, setTripMetrics] = useState({ distanceMeters: 0, durationMinutes: 0 });
   const [showScrollArrow, setShowScrollArrow] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const scrollRef = React.useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -583,17 +633,29 @@ const SelectVehicle = () => {
           return;
         }
 
-        const nextVehicles = getVehicleTypes(response)
-          .filter((type) => {
-            const isActive = type.active !== false && Number(type.status ?? 1) !== 0;
-            const tType = String(type.transport_type || 'taxi').toLowerCase();
-            if (isParcel) {
-              return isActive && (tType === 'delivery' || tType === 'both' || tType === 'all');
-            } else {
-              return isActive && (tType === 'taxi' || tType === 'both' || tType === 'all');
-            }
-          })
-          .map(normalizeVehicleType);
+        const rawTypes = getVehicleTypes(response);
+
+        const activeTypes = rawTypes.filter((type) => type.active !== false && Number(type.status ?? 1) !== 0);
+
+        let filteredTypes = activeTypes.filter((type) => {
+          const tType = String(type.transport_type || 'taxi').toLowerCase();
+          if (isParcel) {
+            const nameStr = `${type.name || ''} ${type.vehicle_type || ''} ${type.icon_types || ''} ${type.short_description || ''}`.toLowerCase();
+            const isDeliveryType = tType === 'delivery' || tType === 'both' || tType === 'all' || tType === 'parcel' || tType === 'courier';
+            const isCargoVehicle = nameStr.includes('bike') || nameStr.includes('auto') || nameStr.includes('scooter') || nameStr.includes('truck') || nameStr.includes('lcv') || nameStr.includes('ace') || nameStr.includes('delivery') || nameStr.includes('parcel') || nameStr.includes('courier') || nameStr.includes('van') || nameStr.includes('carrier') || nameStr.includes('goods') || nameStr.includes('tata');
+            return isDeliveryType || isCargoVehicle;
+          }
+          return tType === 'taxi' || tType === 'both' || tType === 'all';
+        });
+
+        if (isParcel && filteredTypes.length === 0) {
+          console.log('No explicit delivery vehicles found, falling back to all active vehicle types for parcel service.');
+          filteredTypes = activeTypes;
+        } else if (!isParcel && filteredTypes.length === 0) {
+          filteredTypes = activeTypes;
+        }
+
+        const nextVehicles = filteredTypes.map(normalizeVehicleType);
 
         setVehicles(nextVehicles);
         setSelected((current) => current || nextVehicles[0]?.id || '');
@@ -613,7 +675,7 @@ const SelectVehicle = () => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isParcel]);
 
   useEffect(() => {
     let active = true;
@@ -700,6 +762,8 @@ const SelectVehicle = () => {
     };
   }, [dropCoords, dropPosition, isMapLoaded, pickupCoords, pickupPosition]);
 
+  // Debug state logging removed to prevent console spam
+
   const pricedVehicles = useMemo(
     () =>
       vehicles.map((vehicle) => {
@@ -710,17 +774,19 @@ const SelectVehicle = () => {
           isParcel,
         });
 
+        const estimatedPrice = calculateEstimatedFare({
+          vehicle,
+          pricingRule,
+          distanceMeters: tripMetrics.distanceMeters,
+          durationMinutes: tripMetrics.durationMinutes,
+          isParcel,
+          weightLabel,
+        });
+
         return {
           ...vehicle,
           pricingRule,
-          price: calculateEstimatedFare({
-            vehicle,
-            pricingRule,
-            distanceMeters: tripMetrics.distanceMeters,
-            durationMinutes: tripMetrics.durationMinutes,
-            isParcel,
-            weightLabel,
-          }),
+          price: estimatedPrice,
         };
       }),
     [pricingRules, serviceLocationId, tripMetrics.distanceMeters, tripMetrics.durationMinutes, vehicles, isParcel, weightLabel],
@@ -786,34 +852,16 @@ const SelectVehicle = () => {
       const preferredVehicle =
         candidates.find((vehicle) => vehicle.id === selected) ||
         candidates[0];
-      const remainingVehicles = candidates.filter((vehicle) => vehicle.id !== preferredVehicle.id);
 
       try {
-        const [firstId, firstAvailability] = await fetchAvailability(preferredVehicle);
-
-        if (!active) {
-          return;
-        }
-
-        setAvailabilityByVehicleId((current) => ({
-          ...current,
-          [firstId]: firstAvailability,
-        }));
-        setIsLoadingDrivers(false);
-
-        if (!remainingVehicles.length) {
-          return;
-        }
-
-        const remainingResponses = await Promise.all(
-          remainingVehicles.map(fetchAvailability),
-        );
+        const responses = await Promise.all(candidates.map(fetchAvailability));
 
         if (active) {
           setAvailabilityByVehicleId((current) => ({
             ...current,
-            ...Object.fromEntries(remainingResponses),
+            ...Object.fromEntries(responses),
           }));
+          setIsLoadingDrivers(false);
         }
       } catch (error) {
         if (active) {
@@ -829,7 +877,7 @@ const SelectVehicle = () => {
     return () => {
       active = false;
     };
-  }, [pickupCoords, selected, vehicles]);
+  }, [pickupCoords[0], pickupCoords[1], vehicles]);
 
   useEffect(() => {
     const firstAvailableVehicle = sortedPricedVehicles.find((vehicle) => {
@@ -888,34 +936,71 @@ const SelectVehicle = () => {
           loadError={mapLoadError}
         />
 
-        <div className="absolute top-10 left-4 right-4 z-20 flex items-center gap-2.5">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 bg-white/95 rounded-[14px] shadow-[0_4px_14px_rgba(15,23,42,0.12)] flex items-center justify-center shrink-0"
-          >
-            <ArrowLeft size={18} className="text-slate-900" strokeWidth={2.5} />
-          </motion.button>
-          <div className="flex-1 min-w-0 bg-white/95 rounded-[14px] px-4 py-2.5 shadow-[0_4px_14px_rgba(15,23,42,0.10)] flex items-center gap-2">
-            <span className="text-[14px] font-bold text-slate-800 truncate flex-1">{drop}</span>
-            <button
-              type="button"
-              onClick={() =>
-                navigate(`${routePrefix}/ride/select-location`, {
-                  state: {
-                    pickup,
-                    drop,
-                    pickupCoords,
-                    dropCoords,
-                    stops,
-                  },
-                })
-              }
-              className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-              aria-label="Change destination"
+        <div className="absolute top-10 left-4 right-4 z-20 flex flex-col gap-2">
+          <div className="flex items-center gap-2.5">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 bg-white/95 rounded-[14px] shadow-[0_4px_14px_rgba(15,23,42,0.12)] flex items-center justify-center shrink-0"
             >
-              <X size={15} className="shrink-0" />
-            </button>
+              <ArrowLeft size={18} className="text-slate-900" strokeWidth={2.5} />
+            </motion.button>
+            
+            {isParcel ? (
+              <div className="flex-1 min-w-0 bg-white/95 backdrop-blur-md rounded-[16px] px-3.5 py-2.5 shadow-[0_6px_20px_rgba(15,23,42,0.12)] border border-yellow-200 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-xl bg-yellow-100 text-yellow-700 flex items-center justify-center shrink-0">
+                    <Package size={17} strokeWidth={2.2} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-yellow-800 bg-yellow-100/80 px-1.5 py-0.5 rounded">
+                        {routeState.parcel?.category || routeState.parcelType || 'Parcel Delivery'}
+                      </span>
+                      <span className="text-[10px] font-normal text-slate-400">•</span>
+                      <span className="text-[11px] font-medium text-slate-700">{weightLabel}</span>
+                    </div>
+                    <p className="text-[12px] font-semibold text-slate-800 truncate mt-0.5">
+                      To: {drop}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`${routePrefix}/parcel/sender-receiver-details`, {
+                      state: routeState,
+                    })
+                  }
+                  className="shrink-0 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                  title="Edit Parcel Details"
+                >
+                  <X size={15} className="shrink-0" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex-1 min-w-0 bg-white/95 rounded-[14px] px-4 py-2.5 shadow-[0_4px_14px_rgba(15,23,42,0.10)] flex items-center gap-2">
+                <span className="text-[14px] font-bold text-slate-800 truncate flex-1">{drop}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`${routePrefix}/ride/select-location`, {
+                      state: {
+                        pickup,
+                        drop,
+                        pickupCoords,
+                        dropCoords,
+                        stops,
+                      },
+                    })
+                  }
+                  className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                  aria-label="Change destination"
+                >
+                  <X size={15} className="shrink-0" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -925,14 +1010,31 @@ const SelectVehicle = () => {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
-              className="absolute bottom-20 left-4 right-4 bg-white/95 backdrop-blur-md border border-white/80 rounded-[18px] flex items-center overflow-hidden z-30 shadow-[0_8px_24px_rgba(15,23,42,0.10)] pr-3"
+              className={`absolute bottom-20 left-4 right-4 bg-white/95 backdrop-blur-md border rounded-[18px] flex items-center overflow-hidden z-30 shadow-[0_8px_24px_rgba(15,23,42,0.10)] pr-3 ${
+                isParcel ? 'border-yellow-200/80' : 'border-white/80'
+              }`}
             >
               <div className="flex-1 px-4 py-3">
-                <p className="text-[12px] font-bold text-slate-900 leading-tight">Going a few kms away?</p>
-                <p className="text-[10px] font-semibold text-orange-500 mt-0.5 uppercase tracking-wider">Use GOFREE on 1st cab ride</p>
+                {isParcel ? (
+                  <>
+                    <p className="text-[12px] font-semibold text-slate-900 leading-tight">Need fast door-to-door courier?</p>
+                    <p className="text-[10px] font-semibold text-yellow-600 mt-0.5 uppercase tracking-wider">Use PARCEL20 for 20% OFF delivery</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[12px] font-bold text-slate-900 leading-tight">Going a few kms away?</p>
+                    <p className="text-[10px] font-semibold text-orange-500 mt-0.5 uppercase tracking-wider">Use GOFREE on 1st cab ride</p>
+                  </>
+                )}
               </div>
-              <img src="/ride_now_banner.png" className="h-12 w-16 object-cover rounded-[10px] shrink-0" alt="Promo" />
-              <button onClick={() => setShowPromo(false)} className="ml-2.5 pl-2.5 border-l border-slate-100">
+              {isParcel ? (
+                <div className="h-12 w-14 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-[12px] shrink-0 flex items-center justify-center text-gray-900 shadow-sm mr-1">
+                  <Package size={24} strokeWidth={2.2} />
+                </div>
+              ) : (
+                <img src="/ride_now_banner.png" className="h-12 w-16 object-cover rounded-[10px] shrink-0" alt="Promo" />
+              )}
+              <button onClick={() => setShowPromo(false)} className="ml-2 pl-2 border-l border-slate-100">
                 <X size={13} className="text-slate-400" />
               </button>
             </motion.div>
@@ -940,10 +1042,12 @@ const SelectVehicle = () => {
         </AnimatePresence>
 
         <div className="absolute left-4 right-4 bottom-4 z-20 flex items-center justify-between gap-3">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)] border border-white/80">
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Drivers Nearby</p>
-            <p className="text-[16px] font-extrabold text-slate-900 leading-none mt-1">
-              {isLoadingDrivers ? '...' : `${selectedAvailability.totalDrivers || 0} online`}
+          <div className={`bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)] border ${isParcel ? 'border-yellow-200' : 'border-white/80'}`}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">
+              {isParcel ? 'Delivery Fleet Nearby' : 'Drivers Nearby'}
+            </p>
+            <p className={`text-[16px] font-semibold leading-none mt-1 ${isParcel ? 'text-yellow-700' : 'text-slate-900'}`}>
+              {isLoadingDrivers ? '...' : `${selectedAvailability.totalDrivers || 0} ${isParcel ? 'active partners' : 'online'}`}
             </p>
           </div>
           {driverLoadError && (
@@ -954,14 +1058,30 @@ const SelectVehicle = () => {
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-40 flex max-h-[66dvh] min-h-[260px] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-12px_44px_rgba(15,23,42,0.15)]">
-        <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
+      <div
+        style={{
+          height: isExpanded ? '92dvh' : '54dvh',
+          transition: 'height 0.38s cubic-bezier(0.32, 0.72, 0, 1)',
+        }}
+        className="absolute bottom-0 left-0 right-0 z-40 flex flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-12px_44px_rgba(15,23,42,0.15)]"
+      >
+        {/* Drag pill — tap to expand, tap again to collapse */}
+        <div
+          className="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0 cursor-pointer active:bg-slate-400 transition-colors"
+          onClick={() => {
+            setIsExpanded((prev) => !prev);
+            if (isExpanded && scrollRef.current) {
+              scrollRef.current.scrollTop = 0;
+            }
+          }}
+        />
 
         <div className="relative flex-1 overflow-hidden">
-          <div 
+          <div
             ref={scrollRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto no-scrollbar px-4 pt-2 pb-2 space-y-2 max-h-[230px]"
+            style={{ maxHeight: isExpanded ? 'calc(92dvh - 120px)' : 'calc(54dvh - 120px)' }}
+            className="h-full overflow-y-auto no-scrollbar px-4 pt-2 pb-2 space-y-2"
           >
             {isLoadingVehicles && (
               <div className="min-h-[180px] flex flex-col items-center justify-center gap-3 text-slate-400">
@@ -981,7 +1101,9 @@ const SelectVehicle = () => {
 
             {!isLoadingVehicles && !vehicleLoadError && sortedPricedVehicles.length === 0 && (
               <div className="bg-white border border-slate-50 rounded-[18px] px-4 py-5 text-center">
-                <p className="text-[13px] font-bold text-slate-900">No vehicles available</p>
+                <p className="text-[13px] font-bold text-slate-900">
+                  {isParcel ? 'No Delivery Vehicles Available' : 'No vehicles available'}
+                </p>
                 <p className="text-[11px] font-bold text-slate-400 mt-1">Try changing your location or method.</p>
               </div>
             )}
@@ -990,9 +1112,7 @@ const SelectVehicle = () => {
             const isSelected = selected === v.id;
             const availability = availabilityByVehicleId[v.id] || DEFAULT_AVAILABILITY;
             const badge = getAvailabilityBadge(availability) || v.badge;
-            const isUnavailable = !availability.totalDrivers;
-
-            return (
+            const isUnavailable = !availability.totalDrivers;            return (
               <motion.button
                 key={v.id}
                 type="button"
@@ -1007,7 +1127,9 @@ const SelectVehicle = () => {
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[24px] border-2 transition-all text-left relative overflow-hidden ${
                   isSelected
-                    ? 'bg-orange-50/50 border-orange-500 shadow-[0_12px_24px_-8px_rgba(249,115,22,0.22)]'
+                    ? isParcel
+                      ? 'bg-yellow-50/70 border-yellow-400 shadow-[0_12px_24px_-8px_rgba(250,204,21,0.25)]'
+                      : 'bg-orange-50/50 border-orange-500 shadow-[0_12px_24px_-8px_rgba(249,115,22,0.22)]'
                     : isUnavailable
                       ? 'bg-slate-100/60 border-transparent opacity-60'
                       : 'bg-white border-slate-50 shadow-[0_2px_8px_rgba(15,23,42,0.02)] hover:border-slate-200'
@@ -1016,45 +1138,54 @@ const SelectVehicle = () => {
                 {isSelected && (
                   <motion.div
                     layoutId="selection-glow"
-                    className="absolute inset-0 bg-gradient-to-r from-orange-50/0 via-orange-50/20 to-orange-50/0 pointer-events-none"
+                    className={`absolute inset-0 bg-gradient-to-r ${isParcel ? 'from-yellow-50/0 via-yellow-50/30 to-yellow-50/0' : 'from-orange-50/0 via-orange-50/20 to-orange-50/0'} pointer-events-none`}
                   />
                 )}
 
                 <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 transition-all duration-300 ${
-                  isSelected ? 'bg-white shadow-sm scale-110' : isUnavailable ? 'bg-slate-200' : 'bg-slate-50'
+                  isSelected ? (isParcel ? 'bg-yellow-400 text-gray-900 shadow-md scale-110' : 'bg-white shadow-sm scale-110') : isUnavailable ? 'bg-slate-200' : 'bg-slate-50'
                 }`}>
                   <img src={v.icon} alt={v.name} className="w-9 h-9 object-contain drop-shadow-sm" />
                 </div>
 
                 <div className="flex-1 min-w-0 z-10">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={`text-[13px] font-extrabold leading-tight ${isUnavailable ? 'text-slate-500' : 'text-slate-900'}`}>
+                    <span className={`text-[13px] font-semibold leading-tight ${isUnavailable ? 'text-slate-500' : 'text-slate-900'}`}>
                       {v.name}
                     </span>
-                    <div className="flex items-center gap-1 text-slate-400 bg-slate-50 px-1 py-0.5 rounded-md">
-                      <Users size={10} strokeWidth={3} />
-                      <span className="text-[9px] font-bold">{v.capacity}</span>
-                    </div>
+                    {isParcel ? (
+                      <div className="flex items-center gap-1 text-yellow-800 bg-yellow-100 px-1.5 py-0.5 rounded-md">
+                        <Package size={11} strokeWidth={2.2} />
+                        <span className="text-[9px] font-semibold">Max {v.parcelCapacity || 50} kg</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-slate-400 bg-slate-50 px-1 py-0.5 rounded-md">
+                        <Users size={10} strokeWidth={3} />
+                        <span className="text-[9px] font-bold">{v.capacity}</span>
+                      </div>
+                    )}
                     {badge && (
-                      <span className={`text-[7px] font-black px-1 py-0.5 rounded-md border uppercase tracking-tighter ${
+                      <span className={`text-[7px] font-bold px-1 py-0.5 rounded-md border uppercase tracking-tighter ${
                         isUnavailable 
                           ? 'bg-white text-slate-300 border-slate-100' 
                           : badge === 'FASTEST' 
-                            ? 'bg-orange-500 text-white border-orange-400' 
-                            : 'bg-orange-50 text-orange-600 border-orange-100'
+                            ? isParcel ? 'bg-yellow-400 text-gray-900 border-yellow-500' : 'bg-orange-500 text-white border-orange-400' 
+                            : isParcel ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-orange-50 text-orange-600 border-orange-100'
                       }`}>
                         {badge}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 leading-tight truncate max-w-[140px]">{v.sublabel}</p>
+                  <p className="text-[10px] font-normal text-slate-400 leading-tight truncate max-w-[160px]">
+                    {isParcel ? (v.parcelSublabel || 'Fast & secure parcel courier') : v.sublabel}
+                  </p>
                   <div className="flex items-center gap-1.5 mt-1 border-t border-slate-50 pt-0.5">
-                    <div className={`w-1 h-1 rounded-full ${isUnavailable ? 'bg-slate-300' : 'bg-emerald-500 animate-pulse'}`} />
-                    <p className={`text-[9px] font-bold truncate flex-1 ${isUnavailable ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {isUnavailable ? 'Unavailable' : formatAvailabilityLine(availability)}
+                    <div className={`w-1.5 h-1.5 rounded-full ${isUnavailable ? 'bg-slate-300' : isParcel ? 'bg-yellow-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
+                    <p className={`text-[9px] font-medium truncate flex-1 ${isUnavailable ? 'text-slate-400' : isParcel ? 'text-yellow-700 font-semibold' : 'text-slate-600'}`}>
+                      {isUnavailable ? 'Currently Offline' : isParcel ? `Partner arrives in ${availability.closestDriverEtaMinutes || 2} mins • Doorstep Pickup` : formatAvailabilityLine(availability)}
                     </p>
                     {!isUnavailable && tripMetrics.distanceMeters > 0 && (
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter shrink-0 bg-slate-100 px-1 py-0.5 rounded">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter shrink-0 bg-slate-100 px-1 py-0.5 rounded">
                         {tripMetrics.durationMinutes || 1}m
                       </span>
                     )}
@@ -1063,20 +1194,20 @@ const SelectVehicle = () => {
 
                 <div className="flex flex-col items-end gap-1 shrink-0 z-10">
                   <div className="text-right">
-                    <span className={`text-[15px] font-black tracking-tight block ${isUnavailable ? 'text-slate-300' : 'text-slate-900'}`}>
+                    <span className={`text-[15px] font-semibold tracking-tight block ${isUnavailable ? 'text-slate-300' : 'text-slate-900'}`}>
                       {isUnavailable ? 'N/A' : formatCurrency(v.price)}
                     </span>
-                    {!isUnavailable && <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter opacity-70">est.</span>}
+                    {!isUnavailable && <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">est.</span>}
                   </div>
                   {isSelected && (
                     <motion.div
                       layoutId="check-icon"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center"
+                      className={`w-5 h-5 rounded-full flex items-center justify-center shadow-sm ${isParcel ? 'bg-yellow-400' : 'bg-orange-500'}`}
                     >
                       <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M1 4L3.5 6.5L9 1" stroke={isParcel ? '#111827' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </motion.div>
                   )}
@@ -1088,35 +1219,27 @@ const SelectVehicle = () => {
           <ScrollIndicator show={showScrollArrow} />
         </div>
 
-        <div className="shrink-0 border-t border-slate-100 bg-white/80 backdrop-blur-xl px-5 pb-6 pt-3.5 space-y-3.5 shadow-[0_-12px_40px_rgba(15,23,42,0.08)]">
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowPaymentModal(true)}
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-xl bg-white flex items-center justify-center shadow-sm border border-slate-50">
-                {paymentMethod === 'Cash' ? <Banknote size={15} className="text-emerald-600" /> : <CreditCard size={15} className="text-blue-600" />}
+        <div className="shrink-0 border-t border-slate-100 bg-white/90 backdrop-blur-xl px-5 pb-6 pt-3.5 space-y-3 shadow-[0_-12px_40px_rgba(15,23,42,0.08)]">
+          {isParcel && selectedVehicle && (
+            <div className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-yellow-50/80 border border-yellow-200 text-gray-900">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={16} className="text-yellow-600 shrink-0" strokeWidth={2.2} />
+                <span className="text-[11px] font-semibold">Verified Delivery Partner & Safe Handling</span>
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-0.5">Method</p>
-                <span className="text-[13px] font-bold text-slate-800">{paymentMethod}</span>
-              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-wider bg-yellow-400 px-2 py-0.5 rounded-md text-gray-900 shadow-2xs">Insured</span>
             </div>
-            <div className="flex items-center gap-1 text-slate-400">
-              <span className="text-[10px] font-bold uppercase">Change</span>
-              <ChevronRight size={12} strokeWidth={3} />
-            </div>
-          </motion.button>
+          )}
 
           <motion.button
             whileHover={selectedVehicle && selectedAvailability.totalDrivers ? { scale: 1.01, translateY: -2 } : {}}
             whileTap={selectedVehicle && selectedAvailability.totalDrivers ? { scale: 0.98 } : undefined}
             disabled={!selectedVehicle || !selectedAvailability.totalDrivers}
             onClick={handleBook}
-            className={`w-full py-4 rounded-[20px] text-[15px] font-extrabold shadow-xl transition-all duration-300 uppercase tracking-tight flex items-center justify-center gap-3 ${
+            className={`w-full py-4 rounded-[20px] text-[15px] font-semibold shadow-xl transition-all duration-300 uppercase tracking-tight flex items-center justify-center gap-3 ${
               selectedVehicle && selectedAvailability.totalDrivers
-                ? 'bg-[#f8e001] text-slate-900 shadow-[0_12px_28px_-4px_rgba(248,224,1,0.4)] active:shadow-none'
+                ? isParcel
+                  ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900 shadow-[0_12px_28px_-4px_rgba(250,204,21,0.4)] active:scale-[0.99]'
+                  : 'bg-[#f8e001] text-slate-900 shadow-[0_12px_28px_-4px_rgba(248,224,1,0.4)] active:shadow-none'
                 : 'bg-slate-200 text-slate-400 shadow-none cursor-not-allowed'
             }`}
           >
@@ -1124,74 +1247,17 @@ const SelectVehicle = () => {
               ? selectedAvailability.totalDrivers
                 ? (
                   <>
-                    <span>{isParcel ? 'Confirm Delivery' : `Book ${selectedVehicle.name}`}</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-900/20" />
+                    <span>{isParcel ? `Confirm ${selectedVehicle.name} Delivery` : `Book ${selectedVehicle.name}`}</span>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isParcel ? 'bg-gray-900/30' : 'bg-slate-900/20'}`} />
                     <span>{formatCurrency(selectedVehicle.price)}</span>
                   </>
                 )
-                : `${selectedVehicle.name} Unavailable`
-              : 'Select Vehicle'}
+                : `${selectedVehicle.name} Offline`
+              : isParcel ? 'Select Delivery Partner' : 'Select Vehicle'}
           </motion.button>
         </div>
       </div>
 
-      <AnimatePresence>
-        {showPaymentModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPaymentModal(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] max-w-lg mx-auto"
-            />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-              className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white rounded-t-[28px] px-5 pt-4 pb-10 z-[101]"
-            >
-              <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Payment</p>
-              <h3 className="text-[18px] font-bold text-slate-900 mb-5">Select Method</h3>
-              <div className="space-y-2.5">
-                {[
-                  { id: 'Cash', label: 'Cash', sub: 'Pay after ride', Icon: Banknote, bg: 'bg-green-50', color: 'text-green-600' },
-                  { id: 'Online Payment', label: 'Online Payment', sub: 'UPI, Cards or Wallets', Icon: CreditCard, bg: 'bg-blue-50', color: 'text-blue-600' },
-                ].map(({ id, label, sub, Icon, bg, color }) => (
-                  <motion.button
-                    key={id}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setPaymentMethod(id);
-                      setShowPaymentModal(false);
-                    }}
-                    className={`w-full flex items-center gap-3.5 p-4 rounded-[18px] border-2 transition-all ${
-                      paymentMethod === id ? 'border-orange-200 bg-orange-50/40' : 'border-slate-100 bg-slate-50/50'
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-[12px] ${bg} flex items-center justify-center shrink-0`}>
-                      <Icon size={18} className={color} strokeWidth={2} />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="text-[14px] font-bold text-slate-900">{label}</p>
-                      <p className="text-[11px] font-bold text-slate-400">{sub}</p>
-                    </div>
-                    {paymentMethod === id && (
-                      <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
-                        <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                          <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                    )}
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

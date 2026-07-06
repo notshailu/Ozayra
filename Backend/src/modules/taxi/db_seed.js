@@ -84,6 +84,26 @@ async function run() {
       vehicle_preference: [],
       createdAt: new Date(),
       updatedAt: new Date()
+    },
+    {
+      name: 'xuv 700',
+      short_description: 'comfortable suv',
+      description: 'Comfortable 6-seater SUV rides',
+      transport_type: 'taxi',
+      dispatch_type: 'normal',
+      icon_types: 'suv',
+      capacity: 6,
+      size: 'Large',
+      is_taxi: 'taxi',
+      is_accept_share_ride: 0,
+      image: '',
+      icon: '',
+      status: 1,
+      active: true,
+      supported_other_vehicle_types: [],
+      vehicle_preference: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
   ];
 
@@ -170,6 +190,14 @@ async function run() {
       base_price: 60,
       base_distance: 2,
       price_per_distance: 16,
+      parcel_weight_ranges: []
+    },
+    {
+      vehicleName: 'xuv 700',
+      transport_type: 'taxi',
+      base_price: 90,
+      base_distance: 2,
+      price_per_distance: 22,
       parcel_weight_ranges: []
     }
   ];
