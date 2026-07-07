@@ -17,11 +17,10 @@ import {
     MapPin,
     User
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 
 import DriverBottomNav from '../../shared/components/DriverBottomNav';
-import IncomingRideRequest from './IncomingRideRequest';
 import api from '../../../shared/api/axiosInstance';
 import { useSettings } from '../../../shared/context/SettingsContext';
 
@@ -164,20 +163,24 @@ const DriverHome = () => {
     const { settings } = useSettings();
     const appName = settings.general?.app_name || 'App';
     const appLogo = settings.general?.logo || settings.customization?.logo;
-    const [isOnline, setIsOnline] = useState(false);
-    const [showRequest, setShowRequest] = useState(false);
-    const [currentRequest, setCurrentRequest] = useState(null);
+    
+    // Consume shared driver layout context
+    const {
+        isOnline,
+        goOnline,
+        goOffline,
+        driverCoords,
+        statusMessage,
+        setStatusMessage,
+        walletSummary,
+        vehicleIconType
+    } = useOutletContext();
+
     const [completedRides, setCompletedRides] = useState(0);
     const [dutySeconds, setDutySeconds] = useState(0);
     const [map, setMap] = useState(null);
-    const [driverCoords, setDriverCoords] = useState(null);
-    const [statusMessage, setStatusMessage] = useState('');
-    const [acceptingRideId, setAcceptingRideId] = useState('');
-    const [isHydratingDriver, setIsHydratingDriver] = useState(true);
-    const [vehicleIconType, setVehicleIconType] = useState('car');
-    const [walletSummary, setWalletSummary] = useState({ balance: 0, cashLimit: 500, isBlocked: false });
-    const driverCoordsRef = useRef(null);
-    const acceptingRideIdRef = useRef('');
+    const [isHydratingDriver, setIsHydratingDriver] = useState(false);
+    
     const driverPosition = useMemo(() => toLatLng(driverCoords || DEFAULT_MAP_COORDS), [driverCoords]);
     const mapVehicleIcon = useMemo(
         () => getMapIconForVehicle(vehicleIconType),
@@ -185,17 +188,6 @@ const DriverHome = () => {
     );
 
     const { isLoaded } = useAppGoogleMapsLoader();
-
-    const fetchActiveJob = useCallback(async (type = 'ride') => {
-        const normalizedType = String(type || 'ride').toLowerCase();
-        const endpoint = normalizedType === 'parcel' ? '/deliveries/active/me' : '/rides/active/me';
-        const driverToken = getLocalDriverToken();
-        const response = await api.get(endpoint, {
-            ...withDriverAuthorization(driverToken),
-            params: { t: Date.now(), type: normalizedType },
-        });
-        return unwrapApiPayload(response);
-    }, []);
 
     const onLoad = useCallback(function callback(map) {
         setMap(map);
@@ -215,12 +207,7 @@ const DriverHome = () => {
     const updateDriverLocation = useCallback(async ({ quiet = false } = {}) => {
         try {
             const coordinates = await getCurrentCoords();
-            driverCoordsRef.current = coordinates;
-            setDriverCoords(coordinates);
             map?.panTo(toLatLng(coordinates));
-            if (!quiet) {
-                setStatusMessage('Current location updated.');
-            }
             return coordinates;
         } catch (error) {
             if (!quiet) {
@@ -228,100 +215,7 @@ const DriverHome = () => {
             }
             throw error;
         }
-    }, [map]);
-
-    useEffect(() => {
-        updateDriverLocation({ quiet: true }).catch(() => {});
-    }, [updateDriverLocation]);
-
-    const hydrateDriverState = useCallback(async () => {
-        const response = await getCurrentDriver();
-        const driver = response?.data?.data || response?.data || response;
-        const savedCoords = driver?.location?.coordinates;
-
-        setVehicleIconType(driver?.vehicleIconType || driver?.vehicleType || 'car');
-        setIsOnline(Boolean(driver?.isOnline));
-        if (driver?.wallet) {
-            setWalletSummary(driver.wallet);
-        }
-
-        if (Array.isArray(savedCoords) && savedCoords.length === 2) {
-            driverCoordsRef.current = savedCoords;
-            setDriverCoords(savedCoords);
-        }
-
-        return driver;
-    }, []);
-
-    useEffect(() => {
-        let active = true;
-
-        setIsHydratingDriver(true);
-
-        (async () => {
-            try {
-                await hydrateDriverState();
-
-                const [activeDelivery, activeRide] = await Promise.allSettled([
-                    fetchActiveJob('parcel'),
-                    fetchActiveJob('ride'),
-                ]);
-
-                if (!active) {
-                    return;
-                }
-
-                const deliveryPayload =
-                    activeDelivery.status === 'fulfilled' ? activeDelivery.value : null;
-                const ridePayload =
-                    activeRide.status === 'fulfilled' ? activeRide.value : null;
-
-                const currentJob = deliveryPayload?.rideId
-                    ? deliveryPayload
-                    : ridePayload?.rideId
-                        ? ridePayload
-                        : null;
-
-                if (currentJob?.rideId) {
-                    const currentType = normalizeJobType(currentJob);
-
-                    navigate('/taxi/driver/active-trip', {
-                        replace: true,
-                        state: {
-                            type: currentType,
-                            rideId: currentJob.rideId,
-                            request: {
-                                type: currentType,
-                                title: getJobTitle(currentType),
-                                fare: `Rs ${currentJob.fare || 0}`,
-                                payment: currentJob.paymentMethod || 'Cash',
-                                pickup: currentJob.pickupAddress || formatPoint(currentJob.pickupLocation, 'Pickup Location'),
-                                drop: currentJob.dropAddress || formatPoint(currentJob.dropLocation, 'Drop Location'),
-                                distance: formatTripDistance(currentJob),
-                                requestId: currentJob.rideId,
-                                rideId: currentJob.rideId,
-                                raw: currentJob,
-                            },
-                            currentDriverCoords: driverCoordsRef.current || currentJob.lastDriverLocation?.coordinates || null,
-                        },
-                    });
-                    return;
-                }
-            } catch {
-                if (active) {
-                    setStatusMessage('Could not restore driver status.');
-                }
-            } finally {
-                if (active) {
-                    setIsHydratingDriver(false);
-                }
-            }
-        })();
-
-        return () => {
-            active = false;
-        };
-    }, [fetchActiveJob, hydrateDriverState, navigate]);
+    }, [map, setStatusMessage]);
 
     useEffect(() => {
         if (map && driverCoords) {
@@ -423,111 +317,6 @@ const DriverHome = () => {
                 console.info('[driver-home] rideRequestClosed received', { rideId, reason, message });
                 if (acceptingRideIdRef.current && acceptingRideIdRef.current === rideId) {
                     return;
-                }
-                if (!currentRequest?.rideId || currentRequest.rideId === rideId) {
-                    setShowRequest(false);
-                    setCurrentRequest(null);
-                    if (reason === 'user-cancelled') {
-                        setStatusMessage(message || 'User cancelled the ride.');
-                    } else if (reason === 'deleted-by-admin') {
-                        setStatusMessage('Ride was cancelled by admin.');
-                    } else if (reason === 'unmatched') {
-                        setStatusMessage('Ride request expired without a match.');
-                    }
-                }
-            };
-
-            const onSocketError = ({ message }) => {
-                console.error('[driver-home] socket errorMessage received', message);
-                setStatusMessage(message || 'Socket error.');
-                if (String(message || '').toLowerCase().includes('no longer available')) {
-                    setShowRequest(false);
-                    setCurrentRequest(null);
-                }
-                acceptingRideIdRef.current = '';
-                setAcceptingRideId('');
-            };
-
-            const openAcceptedRide = async (payload) => {
-                if (!payload?.rideId || payload.rideId !== acceptingRideIdRef.current) {
-                    return;
-                }
-
-                const nextType = currentRequest?.type || 'ride';
-                let currentJob = null;
-
-                try {
-                    currentJob = await fetchActiveJob(nextType);
-                } catch {
-                    currentJob = null;
-                }
-
-                setShowRequest(false);
-                acceptingRideIdRef.current = '';
-                setAcceptingRideId('');
-                setCompletedRides(prev => prev + 1);
-                navigate('/taxi/driver/active-trip', {
-                    state: {
-                        type: nextType,
-                        rideId: currentJob?.rideId || payload.rideId,
-                        request: {
-                            ...currentRequest,
-                            rideId: currentJob?.rideId || payload.rideId,
-                            raw: currentJob || {
-                                ...(currentRequest?.raw || {}),
-                                status: payload.status,
-                                liveStatus: payload.liveStatus,
-                                acceptedAt: payload.acceptedAt,
-                            },
-                        },
-                        currentDriverCoords: driverCoordsRef.current || driverCoords || null,
-                    },
-                });
-            };
-
-            const onWalletUpdated = (payload) => {
-                if (payload?.wallet) {
-                    setWalletSummary(payload.wallet);
-                }
-            };
-
-            socketService.on('rideRequest', onRideRequest);
-            socketService.on('rideRequestClosed', onRideRequestClosed);
-            socketService.on('errorMessage', onSocketError);
-            socketService.on('rideAccepted', openAcceptedRide);
-            socketService.on('driver:wallet:updated', onWalletUpdated);
-            console.info('[driver-home] socket listeners registered');
-
-            const locationInterval = setInterval(() => {
-                getCurrentCoords()
-                    .then((coordinates) => {
-                        driverCoordsRef.current = coordinates;
-                        setDriverCoords(coordinates);
-                        socketService.emit('locationUpdate', { coordinates });
-                        console.info('[driver-home] periodic locationUpdate emitted', coordinates);
-                    })
-                    .catch((error) => {
-                        console.error('[driver-home] periodic location update failed', error);
-                        setStatusMessage(error.message || 'Could not update live location.');
-                    });
-            }, 10000);
-
-            return () => {
-                console.info('[driver-home] cleaning up socket listeners');
-                socketService.off('rideRequest', onRideRequest);
-                socketService.off('rideRequestClosed', onRideRequestClosed);
-                socketService.off('errorMessage', onSocketError);
-                socketService.off('rideAccepted', openAcceptedRide);
-                socketService.off('driver:wallet:updated', onWalletUpdated);
-                clearInterval(locationInterval);
-            };
-        } else {
-            console.info('[driver-home] driver offline, disconnecting socket');
-            socketService.disconnect();
-        }
-        return undefined;
-    }, [currentRequest, driverCoords, fetchActiveJob, isOnline, navigate]);
-    
     useEffect(() => {
         let interval;
         if (isOnline) {
@@ -541,34 +330,8 @@ const DriverHome = () => {
     const dutyHours = Math.floor(dutySeconds / 3600);
     const dutyMins = Math.floor((dutySeconds % 3600) / 60);
 
-    const handleAccept = () => {
-        if (!currentRequest?.rideId || acceptingRideId) {
-            return;
-        }
-
-        acceptingRideIdRef.current = currentRequest.rideId;
-        setAcceptingRideId(currentRequest.rideId);
-        setStatusMessage('Accepting ride...');
-        socketService.emit('acceptRide', { rideId: currentRequest.rideId });
-    };
-
-    const handleDecline = () => {
-        if (currentRequest?.rideId) {
-            socketService.emit('rejectRide', { rideId: currentRequest.rideId });
-        }
-        setShowRequest(false);
-    };
-
     return (
         <div className="min-h-screen bg-[#F8F9FA] font-sans select-none overflow-hidden relative pb-20 text-slate-900 outline-none focus:outline-none [&_*]:outline-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
-            <IncomingRideRequest 
-                visible={showRequest && Boolean(currentRequest)}
-                requestData={currentRequest}
-                isAccepting={Boolean(acceptingRideId)}
-                onAccept={handleAccept} 
-                onDecline={handleDecline}
-            />
-
             <header className="fixed top-0 left-0 right-0 px-6 pt-6 pb-2.5 flex items-center justify-between z-50 bg-white/20 backdrop-blur-md border-b border-white/10 shadow-sm">
                 <div className="flex items-center gap-3 pt-2">
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm transition-all shadow-sm ${
