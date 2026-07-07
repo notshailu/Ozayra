@@ -33,9 +33,9 @@ const RideRequests = () => {
                 const formatted = results.map(r => {
                     const fare = Number(r.fare || 0);
                     const commissionAmount = Number(r.commissionAmount || 0);
-                    // Use backend-settled driverEarnings when available (wallet already settled)
-                    // Fall back to fare - commission for unsettled rides
-                    const driverEarnings = r.driverEarnings != null
+                    // Use backend-settled driverEarnings when available and greater than 0
+                    // Fall back to fare - commission for unsettled/defaulted rides
+                    const driverEarnings = (r.driverEarnings != null && Number(r.driverEarnings) > 0)
                         ? Number(r.driverEarnings)
                         : Math.max(fare - commissionAmount, 0);
                     return {
