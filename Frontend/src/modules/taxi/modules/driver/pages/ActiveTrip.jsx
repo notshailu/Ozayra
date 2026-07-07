@@ -1112,11 +1112,10 @@ const ActiveTrip = () => {
                             </div>
                             
                             {driverPaymentStatus === 'pending' && (
-                                <div className="grid grid-cols-3 gap-4 mb-8">
+                                <div className="grid grid-cols-2 gap-4 mb-8">
                                     {[
                                         { id: 'cash', label: 'Cash', icon: Banknote },
                                         { id: 'online', label: 'Online', icon: Scan },
-                                        { id: 'wallet', label: 'Wallet', icon: Wallet }
                                     ].map((mode) => (
                                         <button
                                             key={mode.id}

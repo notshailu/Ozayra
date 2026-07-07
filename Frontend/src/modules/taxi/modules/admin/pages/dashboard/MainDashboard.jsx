@@ -1,138 +1,142 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Car, 
-  CheckCircle2, 
-  Clock, 
-  Wallet, 
-  IndianRupee, 
-  TrendingUp, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  History, 
+import {
+  Users,
+  Car,
+  CheckCircle2,
+  Clock,
+  Wallet,
+  IndianRupee,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  History,
   CircleAlert,
   ChevronRight,
-  TrendingDown,
   Zap,
-  MoreHorizontal,
-  Bell,
-  Search,
   ShieldCheck,
   CreditCard,
   UserCheck,
   UserPlus,
-  SearchIcon,
-  ShieldAlert
+  BarChart3,
+  Activity,
+  XCircle,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { BACKEND_LABEL } from '../../../../shared/api/runtimeConfig';
 
-const TopStatCard = ({ label, value, trend, icon: Icon, color, isLoading }) => (
-  <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm relative overflow-hidden group min-h-[140px]">
+/* ─── Stat Card ─────────────────────────────────────────────── */
+const StatCard = ({ label, value, delta, icon: Icon, accent, isLoading }) => (
+  <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4 hover:shadow-md transition-shadow duration-200">
     {isLoading ? (
-      <div className="animate-pulse space-y-4">
-        <div className="h-4 bg-gray-100 rounded w-1/2"></div>
-        <div className="h-8 bg-gray-100 rounded w-3/4"></div>
+      <div className="animate-pulse space-y-3">
+        <div className="h-3 bg-gray-100 rounded w-1/2" />
+        <div className="h-7 bg-gray-100 rounded w-1/3" />
       </div>
     ) : (
       <>
-        <div className="flex justify-between items-start mb-3">
-           <div>
-             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-1.5">{label}</p>
-             <h4 className="text-2xl font-semibold text-gray-950 tracking-tight leading-none">{value}</h4>
-           </div>
-           {trend !== undefined && (
-             <div className={`flex items-center gap-1 text-[10px] font-semibold ${trend > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {trend > 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />} {Math.abs(trend)}%
-             </div>
-           )}
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest leading-none">{label}</p>
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: `${accent}18`, color: accent }}
+          >
+            <Icon size={15} strokeWidth={2.2} />
+          </div>
         </div>
-        <div className="flex justify-end">
-           <div className={`w-10 h-10 rounded-xl bg-${color}-50 text-${color}-500 border border-${color}-100 flex items-center justify-center shadow-sm`}>
-              <Icon size={18} strokeWidth={2.5} />
-           </div>
-        </div>
-      </>
-    )}
-  </div>
-);
-
-const MiniStat = ({ label, value, icon: Icon, color, isLoading }) => (
-  <div className="bg-gray-50/50 p-4 rounded-[20px] border border-gray-100 flex items-center justify-between group hover:bg-white transition-all cursor-default min-h-[64px]">
-    {isLoading ? (
-      <div className="animate-pulse flex-1 h-4 bg-gray-100 rounded w-full"></div>
-    ) : (
-      <>
-        <div>
-          <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1 leading-none">{label}</p>
-          <p className="text-[15px] font-semibold text-gray-950 tracking-tight leading-none">₹ {value}</p>
-        </div>
-        <div className={`w-8 h-8 rounded-lg bg-${color}-200/20 text-${color}-600 border border-${color}-200/50 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
-           <Icon size={14} strokeWidth={2.5} />
+        <div className="flex items-end justify-between">
+          <span className="text-3xl font-bold text-gray-900 leading-none tracking-tight">{value}</span>
+          {delta !== undefined && (
+            <span className={`flex items-center gap-0.5 text-[11px] font-semibold ${delta >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+              {delta >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+              {Math.abs(delta)}%
+            </span>
+          )}
         </div>
       </>
     )}
   </div>
 );
 
-const SimpleDonut = ({ data, colors }) => {
-  const total = data.reduce((a, b) => a + b, 0);
-  let cumulative = 0;
-  
+/* ─── Donut Chart ────────────────────────────────────────────── */
+const Donut = ({ segments, total }) => {
+  let offset = 0;
+  const r = 15.9155;
+  const circ = 2 * Math.PI * r;
+
   return (
-    <div className="relative w-48 h-48 flex items-center justify-center mx-auto">
-      <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-        {data.map((val, i) => {
-          const percent = (val / total) * 100;
-          const offset = (cumulative / total) * 100;
-          cumulative += val;
-          return (
+    <div className="relative w-40 h-40 shrink-0">
+      <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+        <circle cx="18" cy="18" r={r} fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
+        {segments.map((s, i) => {
+          const pct = total > 0 ? (s.value / total) * 100 : 0;
+          const dash = (pct / 100) * circ;
+          const gap = circ - dash;
+          const seg = (
             <circle
               key={i}
-              cx="18" cy="18" r="15.915"
-              fill="transparent"
-              stroke={colors[i]}
-              strokeWidth="4"
-              strokeDasharray={`${percent} ${100 - percent}`}
-              strokeDashoffset={-offset}
-              className="transition-all duration-1000 ease-out"
+              cx="18" cy="18" r={r}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="3.5"
+              strokeDasharray={`${dash} ${gap}`}
+              strokeDashoffset={-offset * circ / 100}
+              strokeLinecap="round"
             />
           );
+          offset += pct;
+          return seg;
         })}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-1">Total</p>
-        <p className="text-xl font-bold text-gray-950 tracking-tight leading-none">{total}</p>
+        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">Total</span>
+        <span className="text-2xl font-bold text-gray-900 leading-tight">{total}</span>
       </div>
     </div>
   );
 };
 
-const SimpleBarChart = ({ data, colors }) => (
-  <div className="flex items-end gap-3 h-48 px-4 justify-between w-full">
-     {data.map((val, i) => (
-       <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-          <div className="relative w-full overflow-hidden rounded-lg bg-gray-50 h-full flex items-end">
-            <div 
-              style={{ height: `${(val / Math.max(...data)) * 100}%` }}
-              className={`w-full bg-${colors[i]}-500/80 group-hover:bg-${colors[i]}-500 transition-all duration-500 rounded-t-sm`}
-            />
-          </div>
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-            {['Jan','Feb','Mar','Apr'][i]}
-          </span>
-       </div>
-     ))}
+/* ─── Mini Earnings Card ─────────────────────────────────────── */
+const EarningRow = ({ label, value, icon: Icon, color }) => (
+  <div className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+    <div className="flex items-center gap-3">
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}18`, color }}>
+        <Icon size={13} strokeWidth={2.2} />
+      </div>
+      <span className="text-[12px] font-medium text-gray-500">{label}</span>
+    </div>
+    <span className="text-[13px] font-semibold text-gray-900">₹ {value}</span>
   </div>
 );
 
+/* ─── Section Header ─────────────────────────────────────────── */
+const SectionTitle = ({ children }) => (
+  <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-5">{children}</h2>
+);
+
+/* ─── Cancellation Pill ──────────────────────────────────────── */
+const CancelPill = ({ label, value, color }) => (
+  <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+    <div className="flex items-center gap-2">
+      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+      <span className="text-[12px] font-medium text-gray-600">{label}</span>
+    </div>
+    <span className="text-[14px] font-bold text-gray-900">{value}</span>
+  </div>
+);
+
+/* ─── Main Dashboard ─────────────────────────────────────────── */
 const MainDashboard = () => {
   const [stats, setStats] = useState({
     total_users: 0,
     total_drivers: 0,
     approved_drivers: 0,
     pending_drivers: 0,
-    isLoading: true
+    todayTrips: { completed: 0, cancelled: 0, scheduled: 0 },
+    overallTrips: { completed: 0, cancelled: 0, scheduled: 0 },
+    todayEarnings: { total: 0, by_cash: 0, by_wallet: 0, by_card: 0, admin_commission: 0, driver_earnings: 0 },
+    overallEarnings: { total: 0, by_cash: 0, by_wallet: 0, by_card: 0, admin_commission: 0, driver_earnings: 0 },
+    cancelChart: { total: 0, byUser: 0, byDriver: 0, noDriver: 0, byDispatch: 0 },
+    isLoading: true,
   });
   const [dashboardError, setDashboardError] = useState('');
 
@@ -142,265 +146,211 @@ const MainDashboard = () => {
         const dashboardData = await adminService.getDashboardData();
         const data = dashboardData?.data || dashboardData;
         setDashboardError('');
-
         setStats({
           total_users: data?.totalUsers || 0,
           total_drivers: data?.totalDrivers?.total || 0,
-          approved_drivers: data?.totalDrivers?.approved || 0, 
+          approved_drivers: data?.totalDrivers?.approved || 0,
           pending_drivers: data?.totalDrivers?.declined || 0,
-          isLoading: false
+          todayTrips: data?.todayTrips || { completed: 0, cancelled: 0, scheduled: 0 },
+          overallTrips: data?.overallTrips || { completed: 0, cancelled: 0, scheduled: 0 },
+          todayEarnings: data?.todayEarnings || { total: 0, by_cash: 0, by_wallet: 0, by_card: 0, admin_commission: 0, driver_earnings: 0 },
+          overallEarnings: data?.overallEarnings || { total: 0, by_cash: 0, by_wallet: 0, by_card: 0, admin_commission: 0, driver_earnings: 0 },
+          cancelChart: data?.cancelChart || { total: 0, byUser: 0, byDriver: 0, noDriver: 0, byDispatch: 0 },
+          isLoading: false,
         });
       } catch (err) {
-        console.error('Dashboard Fetch Error:', err);
-        setDashboardError(`Dashboard data is unavailable right now. Start the backend on ${BACKEND_LABEL} to load live metrics.`);
+        setDashboardError(`Dashboard data unavailable. Start the backend on ${BACKEND_LABEL} to load live metrics.`);
         setStats(prev => ({ ...prev, isLoading: false }));
       }
     };
-
     fetchDashboardData();
   }, []);
 
   const { isLoading } = stats;
 
+
+  const todaySegments = [
+    { label: 'Completed', value: stats.todayTrips.completed, color: '#6366f1' },
+    { label: 'Cancelled', value: stats.todayTrips.cancelled, color: '#f43f5e' },
+    { label: 'Scheduled', value: stats.todayTrips.scheduled, color: '#3b82f6' },
+  ];
+  const overallSegments = [
+    { label: 'Completed', value: stats.overallTrips.completed, color: '#10b981' },
+    { label: 'Cancelled', value: stats.overallTrips.cancelled, color: '#f43f5e' },
+    { label: 'Scheduled', value: stats.overallTrips.scheduled, color: '#f59e0b' },
+  ];
+  const todayTotal = todaySegments.reduce((a, b) => a + b.value, 0);
+  const overallTotal = overallSegments.reduce((a, b) => a + b.value, 0);
+  const fmt = (v) => Number(v || 0).toFixed(2);
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 font-sans text-gray-950 bg-[#f8fbff] -m-8 p-8 min-h-screen">
-      
-      {/* ── HEADER (Compact) ── */}
-      <div className="flex items-center justify-between">
-         <div>
-            <h1 className="text-xl font-semibold tracking-tight text-gray-900 leading-none uppercase">Dashboard</h1>
-         </div>
-         <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-            Dashboard <ChevronRight size={12} className="mt-0.5" /> Dashboard
-         </div>
+    <div className="min-h-screen bg-[#f9fafb] font-sans text-gray-900 -m-8 p-8">
+
+      {/* ── Page Header ── */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-[22px] font-bold text-gray-900 leading-none tracking-tight">Dashboard</h1>
+          <p className="text-[12px] text-gray-400 mt-1">Welcome back, Super Admin</p>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-400 font-medium">
+          <span>Dashboard</span>
+          <ChevronRight size={12} />
+          <span className="text-gray-700 font-semibold">Overview</span>
+        </div>
       </div>
-      {dashboardError ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-[24px] p-5 flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-            <CircleAlert size={18} />
+
+      {/* ── Error Banner ── */}
+      {dashboardError && (
+        <div className="mb-6 bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center gap-3">
+          <CircleAlert size={16} className="text-amber-500 shrink-0" />
+          <p className="text-[12px] font-medium text-amber-700">{dashboardError}</p>
+        </div>
+      )}
+
+      {/* ── Top Stat Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Drivers Registered" value={stats.total_drivers} delta={100} icon={UserPlus} accent="#6366f1" isLoading={isLoading} />
+        <StatCard label="Approved Drivers"   value={stats.approved_drivers} delta={100} icon={ShieldCheck} accent="#10b981" isLoading={isLoading} />
+        <StatCard label="Waiting Approval"   value={stats.pending_drivers} delta={-4}  icon={Clock}       accent="#f59e0b" isLoading={isLoading} />
+        <StatCard label="Users Registered"   value={stats.total_users}    delta={100} icon={Users}       accent="#3b82f6" isLoading={isLoading} />
+      </div>
+
+      {/* ── SOS Alerts ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-8">
+        <SectionTitle>SOS Alerts</SectionTitle>
+        <div className="flex flex-col items-center py-8 text-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center">
+            <ShieldCheck size={22} className="text-gray-300" strokeWidth={1.5} />
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Backend Offline</p>
-            <p className="text-sm font-semibold text-amber-900 mt-1">{dashboardError}</p>
+          <p className="text-[13px] font-semibold text-gray-900">All Clear</p>
+          <p className="text-[11px] text-gray-400">No active SOS alerts at this time</p>
+        </div>
+      </div>
+
+      {/* ── Today Trips + Today Earnings ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+
+        {/* Today Trips */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <SectionTitle>Today's Trips</SectionTitle>
+          <div className="flex items-center gap-8">
+            <Donut segments={todaySegments} total={todayTotal} />
+            <div className="flex-1 space-y-3">
+              {todaySegments.map((s, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                    <span className="text-[12px] font-medium text-gray-500">{s.label}</span>
+                  </div>
+                  <span className="text-[13px] font-bold text-gray-900">{s.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      ) : null}
 
-      {/* ── TOP STATS ROW ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         <TopStatCard 
-            label="DRIVERS REGISTERED" 
-            value={stats?.total_drivers || "0"} 
-            trend={100} 
-            icon={UserPlus} 
-            color="emerald" 
-            isLoading={isLoading}
-         />
-         <TopStatCard 
-            label="APPROVED DRIVERS" 
-            value={stats?.approved_drivers || "0"} 
-            trend={100} 
-            icon={ShieldCheck} 
-            color="blue" 
-            isLoading={isLoading}
-         />
-         <TopStatCard 
-            label="WAITING APPROVAL" 
-            value={stats?.pending_drivers || "0"} 
-            trend={0} 
-            icon={Clock} 
-            color="amber" 
-            isLoading={isLoading}
-         />
-         <TopStatCard 
-            label="USERS REGISTERED" 
-            value={stats?.total_users || "0"} 
-            trend={100} 
-            icon={Users} 
-            color="indigo" 
-            isLoading={isLoading}
-         />
+        {/* Today Earnings */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <SectionTitle>Today's Earnings</SectionTitle>
+          <EarningRow label="Total Earnings"    value={fmt(stats.todayEarnings.total)}            icon={IndianRupee} color="#6366f1" />
+          <EarningRow label="By Cash"           value={fmt(stats.todayEarnings.by_cash)}           icon={Wallet}      color="#10b981" />
+          <EarningRow label="By Wallet"         value={fmt(stats.todayEarnings.by_wallet)}         icon={Wallet}      color="#f59e0b" />
+          <EarningRow label="By Card / Online"  value={fmt(stats.todayEarnings.by_card)}           icon={CreditCard}  color="#3b82f6" />
+          <EarningRow label="Admin Commission"  value={fmt(stats.todayEarnings.admin_commission)}  icon={ShieldCheck} color="#8b5cf6" />
+          <EarningRow label="Driver Earnings"   value={fmt(stats.todayEarnings.driver_earnings)}   icon={UserCheck}   color="#10b981" />
+        </div>
       </div>
 
-      {/* ── SOS SECTION ── */}
-      <div className="bg-white border border-gray-100 rounded-[28px] overflow-hidden shadow-sm p-8 text-center space-y-4">
-         <h3 className="text-left text-[14px] font-semibold text-gray-400 uppercase tracking-wider mb-4">Notified SOS</h3>
-         <div className="py-10 flex flex-col items-center">
-            <div className="w-24 h-24 bg-blue-50/50 rounded-full flex items-center justify-center relative mb-4">
-               <div className="absolute inset-0 border-2 border-dashed border-blue-200 rounded-full animate-[spin_10s_linear_infinite]"></div>
-               <div className="bg-white p-4 rounded-2xl shadow-xl border border-blue-50 relative z-10">
-                  <div className="relative">
-                     <History size={32} className="text-blue-500" />
-                     <Search size={16} className="absolute -bottom-1 -right-1 text-gray-950 font-semibold p-0.5 bg-white rounded-full border border-gray-100" />
+      {/* ── Overall Trips + Overall Earnings ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+
+        {/* Overall Trips */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <SectionTitle>Overall Trips</SectionTitle>
+          <div className="flex items-center gap-8">
+            <Donut segments={overallSegments} total={overallTotal} />
+            <div className="flex-1 space-y-3">
+              {overallSegments.map((s, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                    <span className="text-[12px] font-medium text-gray-500">{s.label}</span>
                   </div>
-               </div>
+                  <span className="text-[13px] font-bold text-gray-900">{s.value}</span>
+                </div>
+              ))}
             </div>
-            <p className="text-[16px] font-semibold text-gray-950 uppercase tracking-tight">No Data Found</p>
-         </div>
-      </div>
-
-      {/* ── TODAY PROGRESS GRID ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ring-0">
-         
-         {/* Today Trips Chart Section */}
-         <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm flex flex-col">
-            <h3 className="text-[14px] font-semibold text-gray-400 uppercase tracking-wider mb-10">Today Trips</h3>
-            <div className="flex-1 flex flex-col md:flex-row items-center gap-10">
-               <div className="flex-1">
-                  <SimpleDonut data={[1, 0, 0]} colors={['#3B4687', '#EB5757', '#2D9CDB']} />
-               </div>
-               <div className="space-y-4 min-w-[160px]">
-                  {[
-                    { l: 'Completed Rides', c: '#3B4687' },
-                    { l: 'Cancelled Rides', c: '#EB5757' },
-                    { l: 'Scheduled Rides', c: '#2D9CDB' }
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                       <div className="w-3 h-3 rounded-sm" style={{backgroundColor: item.c}} />
-                       <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-tight leading-none">{item.l}</span>
-                    </div>
-                  ))}
-               </div>
-            </div>
-         </div>
-
-         {/* Today Stats Section */}
-         <div className="grid grid-cols-2 gap-4 h-full">
-            <MiniStat label="Today Earnings" value="145.00" icon={IndianRupee} color="blue" />
-            <MiniStat label="By Cash" value="145.00" icon={Wallet} color="emerald" />
-            <MiniStat label="By Wallet" value="0.00" icon={Wallet} color="amber" />
-            <MiniStat label="By Card/Online" value="0.00" icon={CreditCard} color="rose" />
-            <MiniStat label="Admin Commission" value="19.45" icon={ShieldCheck} color="indigo" />
-            <MiniStat label="Drivers Earnings" value="125.55" icon={UserCheck} color="gray" />
-         </div>
-
-      </div>
-
-      {/* ── OVERALL PROGRESS GRID ── */}
-      <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm w-full">
-          <h3 className="text-[14px] font-semibold text-gray-400 uppercase tracking-wider mb-10">Overall Trips</h3>
-          <div className="flex flex-col md:flex-row items-center gap-10">
-             <div className="flex justify-center w-full md:w-auto md:flex-1">
-                <SimpleDonut data={[1, 0, 0]} colors={['#2D9CDB', '#EB5757', '#27AE60']} />
-             </div>
-             <div className="space-y-4 min-w-[160px] md:pr-10">
-                {[
-                  { l: 'Completed Rides', c: '#2D9CDB' },
-                  { l: 'Cancelled Rides', c: '#EB5757' },
-                  { l: 'Scheduled Rides', c: '#27AE60' }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                     <div className="w-3 h-3 rounded-sm" style={{backgroundColor: item.c}} />
-                     <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-tight leading-none">{item.l}</span>
-                  </div>
-                ))}
-             </div>
           </div>
+        </div>
+
+        {/* Overall Earnings */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <SectionTitle>Overall Earnings</SectionTitle>
+          <EarningRow label="Total Earnings"    value={fmt(stats.overallEarnings.total)}            icon={IndianRupee} color="#f43f5e" />
+          <EarningRow label="By Cash"           value={fmt(stats.overallEarnings.by_cash)}           icon={Wallet}      color="#f59e0b" />
+          <EarningRow label="By Wallet"         value={fmt(stats.overallEarnings.by_wallet)}         icon={Wallet}      color="#10b981" />
+          <EarningRow label="By Card / Online"  value={fmt(stats.overallEarnings.by_card)}           icon={CreditCard}  color="#3b82f6" />
+          <EarningRow label="Admin Commission"  value={fmt(stats.overallEarnings.admin_commission)}  icon={ShieldCheck} color="#8b5cf6" />
+          <EarningRow label="Driver Earnings"   value={fmt(stats.overallEarnings.driver_earnings)}   icon={UserCheck}   color="#10b981" />
+        </div>
       </div>
 
-      {/* ── OVERALL EARNINGS GRID ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         {/* Overall Earnings chart */}
-         <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm flex flex-col">
-            <h3 className="text-[14px] font-semibold text-gray-400 uppercase tracking-wider mb-10">Overall Earnings</h3>
-            <div className="relative h-48 w-full mt-auto">
-               <svg viewBox="0 0 400 100" className="w-full h-full">
-                  <path 
-                    d="M 0 90 L 100 88 L 200 89 L 300 85 L 400 60" 
-                    fill="transparent" 
-                    stroke="#27AE60" 
-                    strokeWidth="3" 
-                    className="animate-[draw_2s_ease-out_forwards]"
-                  />
-                  <linearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
-                     <stop offset="0%" stopColor="#27AE60" stopOpacity="0.2"/>
-                     <stop offset="100%" stopColor="#27AE60" stopOpacity="0"/>
-                  </linearGradient>
-                  <path 
-                    d="M 0 90 L 100 88 L 200 89 L 300 85 L 400 60 L 400 100 L 0 100 Z" 
-                    fill="url(#lineFill)"
-                  />
-               </svg>
-               <div className="flex justify-between items-center px-2 mt-4">
-                  {['Jan','Feb','Mar','Apr'].map((m,i) => (
-                     <span key={i} className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{m}</span>
-                  ))}
-               </div>
-            </div>
-         </div>
-         
-         {/* Overall Stats grid */}
-         <div className="grid grid-cols-2 gap-4 h-full">
-            <MiniStat label="Overall Earnings" value="145.00" icon={IndianRupee} color="rose" />
-            <MiniStat label="By Cash" value="145.00" icon={Wallet} color="amber" />
-            <MiniStat label="By Wallet" value="0.00" icon={Wallet} color="emerald" />
-            <MiniStat label="By Card/Online" value="0.00" icon={CreditCard} color="blue" />
-            <MiniStat label="Admin Commission" value="19.45" icon={ShieldCheck} color="indigo" />
-            <MiniStat label="Drivers Earnings" value="125.55" icon={UserCheck} color="gray" />
-         </div>
-      </div>
+      {/* ── Cancellations ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-      {/* ── CANCELLATION SUMMARY GRID ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         {/* Cancellation Bar Chart */}
-         <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm flex flex-col">
-            <h3 className="text-[14px] font-semibold text-gray-400 uppercase tracking-wider mb-10">Cancellation Chart</h3>
-            <div className="h-48 w-full mt-auto">
-               <SimpleBarChart data={[0, 0, 0, 1]} colors={['emerald', 'amber', 'rose', 'emerald']} />
-            </div>
-            <div className="flex justify-center flex-wrap gap-4 mt-8">
-                {[
-                  { l: 'Cancelled Due to No Drivers', c: '#3F51B5' },
-                  { l: 'Cancelled By Users', c: '#FFB300' },
-                  { l: 'Cancelled By Drivers', c: '#009688' }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                     <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: item.c}} />
-                     <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-tight">{item.l}</span>
+        {/* Bar Chart */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <SectionTitle>Cancellation Chart</SectionTitle>
+          <div className="flex items-end gap-2 h-36 mb-4">
+            {[
+              { val: stats.cancelChart.noDriver,  color: '#3f51b5', label: 'No Drivers' },
+              { val: stats.cancelChart.byUser,    color: '#ffb300', label: 'By Users'   },
+              { val: stats.cancelChart.byDriver,  color: '#009688', label: 'By Drivers' },
+              { val: stats.cancelChart.byDispatch,color: '#f43f5e', label: 'Dispatch'   },
+            ].map(({ val, color, label }, i) => {
+              const maxVal = Math.max(stats.cancelChart.noDriver, stats.cancelChart.byUser, stats.cancelChart.byDriver, stats.cancelChart.byDispatch, 1);
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                  <div className="w-full bg-gray-50 rounded-lg flex items-end" style={{ height: '100%' }}>
+                    <div
+                      className="w-full rounded-lg transition-all duration-700"
+                      style={{
+                        height: `${Math.max((val / maxVal) * 100, val > 0 ? 8 : 2)}%`,
+                        minHeight: '3px',
+                        backgroundColor: color,
+                        opacity: 0.85,
+                      }}
+                    />
                   </div>
-                ))}
-            </div>
-         </div>
-         
-         {/* Cancel Stats grid */}
-         <div className="grid grid-cols-2 gap-4 h-full">
-            <div className="bg-white p-6 rounded-[28px] border border-gray-50 shadow-sm flex items-center justify-between">
-               <div>
-                  <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1 leading-none">Total Request Cancelled</p>
-                  <p className="text-2xl font-semibold text-gray-950 tracking-tight leading-none">1</p>
-               </div>
-               <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center">
-                  <UserPlus size={18} />
-               </div>
-            </div>
-            <div className="bg-white p-6 rounded-[28px] border border-gray-50 shadow-sm flex items-center justify-between">
-               <div>
-                  <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1 leading-none">Cancelled By Users</p>
-                  <p className="text-2xl font-semibold text-gray-950 tracking-tight leading-none">0</p>
-               </div>
-               <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center">
-                  <CircleAlert size={18} />
-               </div>
-            </div>
-            <div className="bg-white p-6 rounded-[28px] border border-gray-50 shadow-sm flex items-center justify-between">
-               <div>
-                  <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1 leading-none">Cancelled By Drivers</p>
-                  <p className="text-2xl font-semibold text-gray-950 tracking-tight leading-none">1</p>
-               </div>
-               <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
-                  <Car size={18} />
-               </div>
-            </div>
-            <div className="bg-white p-6 rounded-[28px] border border-gray-50 shadow-sm flex items-center justify-between">
-               <div>
-                  <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1 leading-none">Dispatcher Cancelled</p>
-                  <p className="text-2xl font-semibold text-gray-950 tracking-tight leading-none">0</p>
-               </div>
-               <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
-                  <Zap size={18} />
-               </div>
-            </div>
-         </div>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {[
+              { label: 'No Drivers', color: '#3f51b5' },
+              { label: 'By Users', color: '#ffb300' },
+              { label: 'By Drivers', color: '#009688' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="text-[10px] font-medium text-gray-400">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cancel Stats */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <SectionTitle>Cancellation Summary</SectionTitle>
+          <div className="space-y-3">
+            <CancelPill label="Total Cancelled"      value={stats.cancelChart.total}      color="#6366f1" />
+            <CancelPill label="Cancelled by Users"   value={stats.cancelChart.byUser}     color="#f59e0b" />
+            <CancelPill label="Cancelled by Drivers" value={stats.cancelChart.byDriver}   color="#3b82f6" />
+            <CancelPill label="Dispatcher Cancelled" value={stats.cancelChart.byDispatch} color="#10b981" />
+          </div>
+        </div>
       </div>
 
     </div>

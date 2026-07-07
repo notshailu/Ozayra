@@ -30,18 +30,26 @@ const RideRequests = () => {
             try {
                 const res = await api.get('/rides');
                 const results = res.data?.results || [];
-                const formatted = results.map(r => ({
-                    id: r.rideId || r.id,
-                    type: String(r.serviceType || 'ride').toLowerCase(),
-                    title: `Ride with ${r.user?.name || r.driver?.name || 'Customer'}`,
-                    date: new Date(r.createdAt || Date.now()).toLocaleString('en-IN', {
-                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                    }),
-                    price: `₹ ${r.fare || 0}`,
-                    from: r.pickupAddress || 'Pickup Location',
-                    to: r.dropAddress || 'Drop Location',
-                    status: r.status
-                }));
+                const formatted = results.map(r => {
+                    const fare = Number(r.fare || 0);
+                    const commissionAmount = Number(r.commissionAmount || 0);
+                    const driverEarnings = Math.max(fare - commissionAmount, 0);
+                    return {
+                        id: r.rideId || r.id,
+                        type: String(r.serviceType || 'ride').toLowerCase(),
+                        title: `Ride with ${r.user?.name || r.driver?.name || 'Customer'}`,
+                        date: new Date(r.createdAt || Date.now()).toLocaleString('en-IN', {
+                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                        }),
+                        fare,
+                        commissionAmount,
+                        driverEarnings,
+                        price: `₹${driverEarnings}`,
+                        from: r.pickupAddress || 'Pickup Location',
+                        to: r.dropAddress || 'Drop Location',
+                        status: r.status
+                    };
+                });
                 setHistory(formatted);
             } catch (error) {
                 console.error("Failed to fetch history", error);
@@ -57,7 +65,7 @@ const RideRequests = () => {
         : history.filter(item => item.type === activeTab);
         
     const completedRides = history.filter(h => h.status === 'completed');
-    const totalEarned = completedRides.reduce((acc, curr) => acc + Number(String(curr.price).replace(/[^0-9.-]+/g, "")), 0);
+    const totalEarned = completedRides.reduce((acc, curr) => acc + curr.driverEarnings, 0);
     const successRate = history.length > 0 ? Math.round((completedRides.length / history.length) * 100) : 0;
 
     return (
@@ -150,7 +158,7 @@ const RideRequests = () => {
                                     <div className="flex-1 min-w-0 pt-0.5">
                                         <div className="flex justify-between items-center mb-0.5">
                                             <h4 className="text-[14px] font-medium text-slate-900 truncate pr-2 capitalize">{item.title.toLowerCase()}</h4>
-                                            <span className="text-[14px] font-semibold text-slate-900 shrink-0">{item.price}</span>
+                                            <span className="text-[14px] font-semibold text-emerald-600 shrink-0">{item.price}</span>
                                         </div>
                                         <p className="text-[11px] text-slate-400 mb-2">{item.date}</p>
                                         

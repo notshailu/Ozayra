@@ -171,6 +171,7 @@ const DriverWallet = () => {
         cutoff.setDate(cutoff.getDate() - (period === 'Weekly' ? 7 : 30));
 
         return transactions.filter((tx) => {
+            if (tx.type === 'commission_deduction') return false;
             const createdAt = tx.createdAt ? new Date(tx.createdAt) : null;
             return !createdAt || Number.isNaN(createdAt.getTime()) || createdAt >= cutoff;
         });

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, ChevronRight, MessageSquare, Receipt, Share2, Star } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, MessageSquare, Receipt, Share2, Star } from 'lucide-react';
 import api from '../../../../shared/api/axiosInstance';
 import { clearCurrentRide, getCurrentRide } from '../../services/currentRideService';
 import carIcon from '../../../../assets/icons/car.png';
@@ -361,6 +361,16 @@ const RideComplete = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Back Button */}
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="fixed top-4 left-4 z-40 flex items-center justify-center w-9 h-9 rounded-full bg-white border border-slate-100 shadow-md text-slate-600 active:scale-95 transition-transform"
+        aria-label="Go back"
+      >
+        <ArrowLeft size={18} strokeWidth={2.2} />
+      </button>
 
       <div className="px-6 py-10 space-y-8">
         {/* Header */}

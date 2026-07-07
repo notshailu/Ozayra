@@ -4082,34 +4082,120 @@ export const deleteOwner = async (id) => {
   };
 
   export const getDashboardData = async () => {
-    const [totalUsers, totalDrivers, totalOwners] = await Promise.all([
+    const [totalUsers, totalDrivers] = await Promise.all([
       User.countDocuments(),
       Driver.countDocuments(),
-      Owner.countDocuments(),
     ]);
 
     const approvedDrivers = await Driver.countDocuments({ approve: true });
 
-    // Dummy aggregation for now, until real transaction models are connected
+    // Today date range
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // ── Today trip counts ──
+    const [todayCompleted, todayCancelled] = await Promise.all([
+      Ride.countDocuments({ status: 'completed', completedAt: { $gte: todayStart, $lte: todayEnd } }),
+      Ride.countDocuments({ status: 'cancelled', updatedAt: { $gte: todayStart, $lte: todayEnd } }),
+    ]);
+
+    // ── Overall trip counts ──
+    const [overallCompleted, overallCancelled] = await Promise.all([
+      Ride.countDocuments({ status: 'completed' }),
+      Ride.countDocuments({ status: 'cancelled' }),
+    ]);
+
+    // ── Today earnings aggregation ──
+    const todayEarningsAgg = await Ride.aggregate([
+      { $match: { status: 'completed', completedAt: { $gte: todayStart, $lte: todayEnd } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$fare' },
+          by_cash: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, '$fare', 0] } },
+          by_online: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'online'] }, '$fare', 0] } },
+          admin_commission: { $sum: '$commissionAmount' },
+          driver_earnings: { $sum: '$driverEarnings' },
+        },
+      },
+    ]);
+    const todayE = todayEarningsAgg[0] || { total: 0, by_cash: 0, by_online: 0, admin_commission: 0, driver_earnings: 0 };
+
+    // ── Overall earnings aggregation ──
+    const overallEarningsAgg = await Ride.aggregate([
+      { $match: { status: 'completed' } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$fare' },
+          by_cash: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, '$fare', 0] } },
+          by_online: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'online'] }, '$fare', 0] } },
+          admin_commission: { $sum: '$commissionAmount' },
+          driver_earnings: { $sum: '$driverEarnings' },
+        },
+      },
+    ]);
+    const overallE = overallEarningsAgg[0] || { total: 0, by_cash: 0, by_online: 0, admin_commission: 0, driver_earnings: 0 };
+
+    // ── Cancellation breakdown ──
+    const cancelStats = await Ride.aggregate([
+      { $match: { status: 'cancelled' } },
+      {
+        $group: {
+          _id: '$cancelledBy',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    const cancelByUser = cancelStats.find(c => c._id === 'user')?.count || 0;
+    const cancelByDriver = cancelStats.find(c => c._id === 'driver')?.count || 0;
+    const cancelByDispatch = cancelStats.find(c => c._id === 'admin' || c._id === 'dispatcher')?.count || 0;
+    const cancelNoDriver = cancelStats.find(c => c._id === 'no_driver' || c._id === null)?.count || 0;
+
+    const fmt = (v) => Math.round((v || 0) * 100) / 100;
+
     return {
       totalUsers,
       totalDrivers: {
         total: totalDrivers,
         approved: approvedDrivers,
-        declined: totalDrivers - approvedDrivers
+        declined: totalDrivers - approvedDrivers,
       },
-      total_earnings: 124500,
-      payment_success_rate: 99.4,
-      todayEarnings: 1450,
+      todayTrips: {
+        completed: todayCompleted,
+        cancelled: todayCancelled,
+        scheduled: 0,
+      },
+      overallTrips: {
+        completed: overallCompleted,
+        cancelled: overallCancelled,
+        scheduled: 0,
+      },
+      todayEarnings: {
+        total: fmt(todayE.total),
+        by_cash: fmt(todayE.by_cash),
+        by_wallet: 0,
+        by_card: fmt(todayE.by_online),
+        admin_commission: fmt(todayE.admin_commission),
+        driver_earnings: fmt(todayE.driver_earnings),
+      },
       overallEarnings: {
-        today: 1450,
-        by_cash: 950,
-        by_wallet: 200,
-        by_card: 300,
-        admin_commission: 195,
-        driver_earnings: 1255,
+        total: fmt(overallE.total),
+        by_cash: fmt(overallE.by_cash),
+        by_wallet: 0,
+        by_card: fmt(overallE.by_online),
+        admin_commission: fmt(overallE.admin_commission),
+        driver_earnings: fmt(overallE.driver_earnings),
       },
-      cancelChart: { total: 7, byUser: 3, byDriver: 3, noDriver: 1 },
+      cancelChart: {
+        total: overallCancelled,
+        byUser: cancelByUser,
+        byDriver: cancelByDriver,
+        noDriver: cancelNoDriver,
+        byDispatch: cancelByDispatch,
+      },
     };
   };
 

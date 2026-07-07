@@ -916,7 +916,7 @@ const SelectVehicle = () => {
         vehicle: selectedVehicle,
         vehicleTypeId: selectedVehicle.vehicleTypeId,
         vehicleIconType: selectedVehicle.iconType,
-        paymentMethod,
+        paymentMethod: paymentMethod.toLowerCase(),
         fare: selectedVehicle.price,
         estimatedDistanceMeters: tripMetrics.distanceMeters,
         estimatedDurationMinutes: tripMetrics.durationMinutes,
@@ -1220,6 +1220,27 @@ const SelectVehicle = () => {
         </div>
 
         <div className="shrink-0 border-t border-slate-100 bg-white/90 backdrop-blur-xl px-5 pb-6 pt-3.5 space-y-3 shadow-[0_-12px_40px_rgba(15,23,42,0.08)]">
+          {/* Payment Method Toggle */}
+          <div className="flex items-center gap-2 bg-slate-50 rounded-[16px] p-1 border border-slate-100">
+            {['Cash', 'Online'].map((method) => (
+              <button
+                key={method}
+                type="button"
+                onClick={() => setPaymentMethod(method)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[12px] text-[12px] font-semibold transition-all ${
+                  paymentMethod === method
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-100'
+                    : 'text-slate-400'
+                }`}
+              >
+                {method === 'Cash'
+                  ? <Banknote size={14} strokeWidth={2} />
+                  : <CreditCard size={14} strokeWidth={2} />}
+                {method}
+              </button>
+            ))}
+          </div>
+
           {isParcel && selectedVehicle && (
             <div className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-yellow-50/80 border border-yellow-200 text-gray-900">
               <div className="flex items-center gap-2">
