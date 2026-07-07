@@ -59,7 +59,15 @@ const PhoneRegistration = () => {
                 state: nextState,
             });
         } catch (err) {
-            setError(err?.message || 'Unable to send OTP right now');
+            const errMsg = err?.message || 'Unable to send OTP right now';
+            if (isLoginPage && String(errMsg).toLowerCase().includes('not found')) {
+                setError('Driver account not found. Redirecting to registration...');
+                setTimeout(() => {
+                    navigate('/taxi/driver/welcome');
+                }, 1800);
+            } else {
+                setError(errMsg);
+            }
         } finally {
             setLoading(false);
         }
