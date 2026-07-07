@@ -759,7 +759,11 @@ export const updateRideLifecycle = async ({ rideId, driverId, nextStatus, paymen
       Driver.findByIdAndUpdate(driverId, { isOnRide: false }),
     ]);
 
-    walletUpdate = await settleCompletedRideWallet({ rideId: ride._id });
+    try {
+      walletUpdate = await settleCompletedRideWallet({ rideId: ride._id });
+    } catch (err) {
+      console.error(`[rideService] Wallet settlement failed for completed ride ${ride._id}. Auto-heal will resolve this. Error:`, err);
+    }
   }
 
   const populatedRide = await populateRideRealtime(ride._id);

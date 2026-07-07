@@ -189,7 +189,39 @@ const getWalletSnapshot = async (driver) => {
   };
 };
 
+export const healUnsettledDriverRides = async (driverId) => {
+  try {
+    const unsettledRides = await Ride.find({
+      driverId,
+      status: 'completed',
+      walletSettledAt: null
+    }).select('_id');
+
+    if (unsettledRides.length > 0) {
+      console.info(`[walletService] Found ${unsettledRides.length} unsettled completed rides for driver ${driverId}. Auto-settling...`);
+      for (const ride of unsettledRides) {
+        try {
+          await settleCompletedRideWallet({ rideId: ride._id });
+          console.info(`[walletService] Successfully auto-settled ride ${ride._id}`);
+        } catch (err) {
+          console.error(`[walletService] Failed to auto-settle ride ${ride._id}:`, err);
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`[walletService] Error in healUnsettledDriverRides for driver ${driverId}:`, error);
+  }
+};
+
 export const serializeDriverWallet = async (driver) => {
+  if (driver?._id) {
+    await healUnsettledDriverRides(driver._id);
+    const freshDriver = await Driver.findById(driver._id).lean();
+    if (freshDriver) {
+      driver = freshDriver;
+    }
+  }
+
   const wallet = await getWalletSnapshot(driver);
 
   return {
