@@ -153,15 +153,14 @@ const PhoneRegistration = () => {
                         {/* Error Handling */}
                         <AnimatePresence mode="wait">
                             {error && (
-                                <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="bg-rose-50 text-rose-600 p-3 rounded-xl text-xs font-semibold flex items-center gap-2"
+                                <motion.p 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="text-xs font-semibold text-slate-500 text-center py-1"
                                 >
-                                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                                     {error}
-                                </motion.div>
+                                </motion.p>
                             )}
                         </AnimatePresence>
 
