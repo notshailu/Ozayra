@@ -448,12 +448,12 @@ const ActiveTrip = () => {
         }
     }, [driverPaymentStatus, liveRaw, liveRequest?.paymentStatus]);
 
-    const publishRideStatus = useCallback((nextStatus) => {
+    const publishRideStatus = useCallback((nextStatus, paymentMethod = null) => {
         if (!rideId) {
             return;
         }
 
-        socketService.emit('ride:status:update', { rideId, status: nextStatus });
+        socketService.emit('ride:status:update', { rideId, status: nextStatus, paymentMethod });
     }, [rideId]);
 
     const updateDriverPosition = useCallback((position, heading = null) => {
@@ -1183,7 +1183,7 @@ const ActiveTrip = () => {
                                 </div>
                             </div>
                             <button onClick={() => {
-                                publishRideStatus('completed');
+                                publishRideStatus('completed', selectedPaymentMode);
                                 navigate('/taxi/driver/home');
                             }} className="w-full h-15 bg-slate-900 text-white rounded-xl flex items-center justify-center gap-3 text-[14px] font-semibold uppercase tracking-wide shadow-xl active:scale-95 transition-all">Done <Check size={20} strokeWidth={4} /></button>
                         </motion.div>

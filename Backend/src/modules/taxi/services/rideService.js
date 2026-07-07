@@ -716,7 +716,7 @@ const rideStatusConfig = {
   },
 };
 
-export const updateRideLifecycle = async ({ rideId, driverId, nextStatus }) => {
+export const updateRideLifecycle = async ({ rideId, driverId, nextStatus, paymentMethod }) => {
   const config = rideStatusConfig[nextStatus];
 
   if (!config) {
@@ -742,6 +742,10 @@ export const updateRideLifecycle = async ({ rideId, driverId, nextStatus }) => {
 
   if (nextStatus === RIDE_LIVE_STATUS.COMPLETED) {
     ride.completedAt = new Date();
+    if (paymentMethod) {
+      ride.paymentMethod = normalizeRidePaymentMethod(paymentMethod);
+    }
+    ride.paymentStatus = 'paid';
   }
 
   await ride.save();

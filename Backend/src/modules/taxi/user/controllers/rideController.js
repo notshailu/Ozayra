@@ -443,6 +443,7 @@ export const verifyRazorpayRidePayment = async (req, res) => {
 
   // Update ride payment status
   ride.paymentStatus = 'paid';
+  ride.paymentMethod = 'online';
   if (tipAmount > 0) {
     ride.feedback = ride.feedback || {};
     ride.feedback.tipAmount = tipAmount;
