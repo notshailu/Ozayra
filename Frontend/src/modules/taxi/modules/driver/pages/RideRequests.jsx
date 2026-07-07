@@ -33,7 +33,11 @@ const RideRequests = () => {
                 const formatted = results.map(r => {
                     const fare = Number(r.fare || 0);
                     const commissionAmount = Number(r.commissionAmount || 0);
-                    const driverEarnings = Math.max(fare - commissionAmount, 0);
+                    // Use backend-settled driverEarnings when available (wallet already settled)
+                    // Fall back to fare - commission for unsettled rides
+                    const driverEarnings = r.driverEarnings != null
+                        ? Number(r.driverEarnings)
+                        : Math.max(fare - commissionAmount, 0);
                     return {
                         id: r.rideId || r.id,
                         type: String(r.serviceType || 'ride').toLowerCase(),
@@ -44,7 +48,7 @@ const RideRequests = () => {
                         fare,
                         commissionAmount,
                         driverEarnings,
-                        price: `₹${driverEarnings}`,
+                        price: `₹${driverEarnings.toFixed(2)}`,
                         from: r.pickupAddress || 'Pickup Location',
                         to: r.dropAddress || 'Drop Location',
                         status: r.status
@@ -115,7 +119,7 @@ const RideRequests = () => {
                          <div className="w-7 h-7 bg-blue-50 rounded-full flex items-center justify-center text-blue-500">
                              <IndianRupee size={14} strokeWidth={2.5} />
                          </div>
-                         <h3 className="text-xl font-semibold text-slate-900 leading-none">₹{totalEarned}</h3>
+                         <h3 className="text-xl font-semibold text-slate-900 leading-none">₹{totalEarned.toFixed(2)}</h3>
                      </div>
                  </div>
             </div>
