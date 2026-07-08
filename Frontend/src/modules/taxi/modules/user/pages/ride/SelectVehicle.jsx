@@ -38,24 +38,6 @@ const defaultIcons = {
   suv: SuvIcon,
 };
 
-const getVehicleIcon = (type = 'car') => {
-  const val = String(type).trim().toLowerCase();
-  if (defaultIcons[val]) return defaultIcons[val];
-  
-  if (val.includes('bike')) return BikeIcon;
-  if (val.includes('auto')) return AutoIcon;
-  if (val.includes('truck')) return TruckIcon;
-  if (val.includes('lcv')) return LcvIcon;
-  if (val.includes('mcv')) return McvIcon;
-  if (val.includes('hcv')) return HcvIcon;
-  if (val.includes('ehcv')) return EhcvIcon;
-  if (val.includes('ehcb')) return EhcvIcon;
-  if (val.includes('lux')) return LuxuryIcon;
-  if (val.includes('premium')) return PremiumIcon;
-  if (val.includes('suv')) return SuvIcon;
-  
-  return CarIcon;
-};
 
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 
@@ -281,46 +263,46 @@ const getVehicleIcon = (type) => {
   const value = getIconValue(type);
 
   if (value.includes('bike')) {
-    return '/1_Bike.png';
+    return BikeIcon;
   }
 
   if (value.includes('auto')) {
-    return '/2_AutoRickshaw.png';
+    return AutoIcon;
   }
 
   if (value.includes('ehc')) {
-    return '/ehcv.webp';
+    return EhcvIcon;
   }
 
   if (value.includes('hcv')) {
-    return '/hcv.webp';
+    return HcvIcon;
   }
 
   if (value.includes('lcv')) {
-    return '/LCV.webp';
+    return LcvIcon;
   }
 
   if (value.includes('mcv')) {
-    return '/mcv.webp';
+    return McvIcon;
   }
 
   if (value.includes('truck')) {
-    return '/truck.webp';
+    return TruckIcon;
   }
 
   if (value.includes('lux')) {
-    return '/Luxury.webp';
+    return LuxuryIcon;
   }
 
   if (value.includes('premium')) {
-    return '/Premium.webp';
+    return PremiumIcon;
   }
 
   if (value.includes('suv')) {
-    return '/SUV.webp';
+    return SuvIcon;
   }
 
-  return '/4_Taxi.png';
+  return CarIcon;
 };
 
 const getCapacity = (type) => {
