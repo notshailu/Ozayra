@@ -339,6 +339,7 @@ const dispatchAttempt = async (rideId, attemptIndex = 0) => {
       maxDistance: radius,
       vehicleTypeId: ride.vehicleTypeId,
       vehicleTypeIds: dispatchVehicleTypeIds,
+      transportType: ride.transport_type || 'taxi',
     });
 
     const rejectedDriverIds = new Set(dispatchState.rejectedDriverIds);

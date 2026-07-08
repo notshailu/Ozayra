@@ -29,7 +29,7 @@ const normalizeVehicleTypeIds = (vehicleTypeIds = [], vehicleTypeId = null) => {
   return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
 };
 
-const buildDriverMatchFilters = ({ zoneId, vehicleTypeId, vehicleTypeIds, vehicleTypeKeys }) => {
+const buildDriverMatchFilters = ({ zoneId, vehicleTypeId, vehicleTypeIds, vehicleTypeKeys, transportType }) => {
   const normalizedVehicleTypeIds = normalizeVehicleTypeIds(vehicleTypeIds, vehicleTypeId);
   const normalizedVehicleTypeKeys = Array.isArray(vehicleTypeKeys)
     ? [...new Set(vehicleTypeKeys.map(normalizeVehicleKey).filter(Boolean))]
@@ -48,11 +48,16 @@ const buildDriverMatchFilters = ({ zoneId, vehicleTypeId, vehicleTypeIds, vehicl
       ? { $or: vehicleTypeClauses }
       : vehicleTypeClauses[0] || {};
 
+  const serviceFilter = String(transportType || 'taxi').toLowerCase() === 'delivery'
+    ? { registerFor: { $in: ['delivery', 'both'] } }
+    : { registerFor: { $in: ['taxi', 'both'] } };
+
   return {
     isOnline: true,
     isOnRide: false,
     'wallet.isBlocked': { $ne: true },
     ...(zoneId ? { zoneId } : {}),
+    ...serviceFilter,
     ...vehicleTypeFilter,
   };
 };
@@ -80,6 +85,7 @@ export const matchDrivers = async (pickupCoords, options = {}) => {
     limit = DISPATCH_TOP_DRIVERS,
     vehicleTypeId,
     vehicleTypeIds,
+    transportType = 'taxi',
   } = options;
   const normalizedVehicleTypeIds = normalizeVehicleTypeIds(vehicleTypeIds, vehicleTypeId);
   const allowedVehicles = normalizedVehicleTypeIds.length
@@ -107,6 +113,7 @@ export const matchDrivers = async (pickupCoords, options = {}) => {
       zoneId: zone?._id || null,
       vehicleTypeIds: normalizedVehicleTypeIds,
       vehicleTypeKeys,
+      transportType,
     }),
     ...locationFilter,
   })
@@ -119,6 +126,7 @@ export const matchDrivers = async (pickupCoords, options = {}) => {
         zoneId: null,
         vehicleTypeIds: normalizedVehicleTypeIds,
         vehicleTypeKeys,
+        transportType,
       }),
       ...locationFilter,
     })

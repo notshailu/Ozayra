@@ -6,6 +6,7 @@ import {
     getCurrentDriver,
     getDriverVehicleTypes,
     updateDriverVehicle,
+    updateDriverProfile,
 } from '../../services/registrationService';
 import { useImageUpload } from '../../../../shared/hooks/useImageUpload';
 import OwnerVehicleFleet from './OwnerVehicleFleet';
@@ -286,6 +287,40 @@ const VehicleFleet = () => {
                             <div className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-medium">
                                 Active
                             </div>
+                        </div>
+
+                        <div className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
+                            <div className="space-y-1 pr-4">
+                                <h4 className="text-[15px] font-semibold text-slate-900 leading-tight">Parcel & Delivery Mode</h4>
+                                <p className="text-[12px] font-medium text-slate-400 leading-normal">
+                                    When enabled, you will receive both ride requests and parcel delivery requests.
+                                </p>
+                            </div>
+                            <button 
+                                onClick={async () => {
+                                    const nextMode = String(driver?.registerFor || 'taxi').toLowerCase() === 'both' ? 'taxi' : 'both';
+                                    setIsSaving(true);
+                                    try {
+                                        const response = await updateDriverProfile({ registerFor: nextMode });
+                                        const nextDriver = unwrap(response);
+                                        setDriver(prev => ({ ...prev, registerFor: nextDriver.registerFor }));
+                                        setMessage('Service mode updated successfully.');
+                                    } catch (error) {
+                                        setMessage(error.message || 'Could not update service mode.');
+                                    } finally {
+                                        setIsSaving(false);
+                                    }
+                                }}
+                                disabled={isLoading || isSaving}
+                                className={`w-11 h-6 rounded-full relative transition-colors duration-300 shrink-0 ${
+                                    String(driver?.registerFor || 'taxi').toLowerCase() === 'both' ? 'bg-slate-950' : 'bg-slate-200'
+                                }`}
+                            >
+                                <motion.div 
+                                    animate={{ x: String(driver?.registerFor || 'taxi').toLowerCase() === 'both' ? 22 : 2 }}
+                                    className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm"
+                                />
+                            </button>
                         </div>
                     </section>
                 </main>

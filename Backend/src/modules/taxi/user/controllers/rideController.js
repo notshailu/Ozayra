@@ -234,7 +234,7 @@ export const cancelRide = async (req, res) => {
 };
 
 export const listAvailableDrivers = async (req, res) => {
-  const { vehicleTypeId, lat, lng, maxDistance, limit = 30 } = req.query;
+  const { vehicleTypeId, lat, lng, maxDistance, limit = 30, transport_type } = req.query;
   const latitude = Number(lat);
   const longitude = Number(lng);
   const distance = Number(maxDistance);
@@ -262,10 +262,15 @@ export const listAvailableDrivers = async (req, res) => {
     near.$maxDistance = Math.min(distance, 25000);
   }
 
+  const serviceFilter = String(transport_type || 'taxi').toLowerCase() === 'delivery'
+    ? { registerFor: { $in: ['delivery', 'both'] } }
+    : { registerFor: { $in: ['taxi', 'both'] } };
+
   const drivers = await Driver.find({
     isOnline: true,
     isOnRide: false,
     vehicleTypeId,
+    ...serviceFilter,
     location: {
       $near: near,
     },

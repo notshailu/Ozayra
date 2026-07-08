@@ -461,6 +461,13 @@ export const updateCurrentDriver = async (req, res) => {
     driver.profileImage = String(req.body.profileImage || "").trim();
   }
 
+  if (Object.prototype.hasOwnProperty.call(req.body || {}, "registerFor")) {
+    const rf = String(req.body.registerFor || "").trim().toLowerCase();
+    if (["taxi", "delivery", "both"].includes(rf)) {
+      driver.registerFor = rf;
+    }
+  }
+
   await driver.save();
 
   res.json({
@@ -471,6 +478,7 @@ export const updateCurrentDriver = async (req, res) => {
       phone: driver.phone,
       email: driver.email,
       profileImage: driver.profileImage || "",
+      registerFor: driver.registerFor,
     },
   });
 };
