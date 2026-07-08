@@ -12,6 +12,7 @@ import { Airport } from '../models/Airport.js';
 import { ExplorerDestination } from '../models/ExplorerDestination.js';
 import { DriverNeededDocument } from '../models/DriverNeededDocument.js';
 import { GoodsType } from '../models/GoodsType.js';
+import { WeightRange } from '../models/WeightRange.js';
 import { OwnerNeededDocument } from '../models/OwnerNeededDocument.js';
 import { OwnerBooking } from '../models/OwnerBooking.js';
 import { Owner } from '../models/Owner.js';
@@ -5640,4 +5641,69 @@ export const deleteOwner = async (id) => {
       }
     }
     return results;
+  };
+
+  export const listWeightRanges = async () => {
+    const items = await WeightRange.find().sort({ createdAt: -1 }).lean();
+    return items.map((item) => ({
+      id: String(item._id || item.id || ''),
+      weight_range: item.weight_range || '',
+      base_price: Number(item.base_price || 0),
+      base_distance: Number(item.base_distance || 0),
+      price_per_distance: Number(item.price_per_distance || 0),
+      active: Number(item.active ?? 1),
+      status: item.status || 'active',
+    }));
+  };
+
+  export const createWeightRange = async (payload) => {
+    if (!payload.weight_range || payload.base_price === undefined || payload.base_distance === undefined || payload.price_per_distance === undefined) {
+      throw new ApiError(400, 'Missing required weight range fields');
+    }
+    const item = await WeightRange.create({
+      weight_range: String(payload.weight_range).trim(),
+      base_price: Number(payload.base_price),
+      base_distance: Number(payload.base_distance),
+      price_per_distance: Number(payload.price_per_distance),
+      active: payload.active !== undefined ? Number(payload.active) : 1,
+      status: payload.status || 'active',
+    });
+    return {
+      id: String(item._id || item.id || ''),
+      weight_range: item.weight_range || '',
+      base_price: Number(item.base_price || 0),
+      base_distance: Number(item.base_distance || 0),
+      price_per_distance: Number(item.price_per_distance || 0),
+      active: Number(item.active ?? 1),
+      status: item.status || 'active',
+    };
+  };
+
+  export const updateWeightRange = async (id, payload) => {
+    const item = await WeightRange.findById(id);
+    if (!item) throw new ApiError(404, 'Weight range not found');
+
+    if (payload.weight_range !== undefined) item.weight_range = String(payload.weight_range).trim();
+    if (payload.base_price !== undefined) item.base_price = Number(payload.base_price);
+    if (payload.base_distance !== undefined) item.base_distance = Number(payload.base_distance);
+    if (payload.price_per_distance !== undefined) item.price_per_distance = Number(payload.price_per_distance);
+    if (payload.active !== undefined) item.active = Number(payload.active);
+    if (payload.status !== undefined) item.status = String(payload.status).trim();
+
+    await item.save();
+    return {
+      id: String(item._id || item.id || ''),
+      weight_range: item.weight_range || '',
+      base_price: Number(item.base_price || 0),
+      base_distance: Number(item.base_distance || 0),
+      price_per_distance: Number(item.price_per_distance || 0),
+      active: Number(item.active ?? 1),
+      status: item.status || 'active',
+    };
+  };
+
+  export const deleteWeightRange = async (id) => {
+    const deleted = await WeightRange.findByIdAndDelete(id);
+    if (!deleted) throw new ApiError(404, 'Weight range not found');
+    return true;
   };

@@ -3,6 +3,7 @@ import { ApiError } from '../../../utils/ApiError.js';
 import { normalizePoint, toPoint } from '../../../utils/geo.js';
 import { RIDE_LIVE_STATUS, RIDE_STATUS } from '../constants/index.js';
 import { SetPrice } from '../admin/models/SetPrice.js';
+import { WeightRange } from '../admin/models/WeightRange.js';
 import { Vehicle } from '../admin/models/Vehicle.js';
 import { Driver } from '../driver/models/Driver.js';
 import { ensureDriverWalletCanAcceptRide, settleCompletedRideWallet, extractAdminCommission } from '../driver/services/walletService.js';
@@ -307,7 +308,7 @@ export const createRideRecord = async ({
   const resolvedServiceType = normalizeServiceType(serviceType);
   const isParcelRide = resolvedServiceType === 'parcel' || normalizedTransportType === 'delivery';
   const weightLabel = parcel?.weight || 'Under 5kg';
-  const extractedComm = extractAdminCommission(pricingRule, {
+  const extractedComm = await extractAdminCommission(pricingRule, {
     isParcel: isParcelRide,
     weightLabel,
     fallbackPercent: Number(process.env.DRIVER_COMMISSION_PERCENT || 20),
@@ -327,9 +328,21 @@ export const createRideRecord = async ({
   let calculatedFare = safeFare;
   if (resolvedServiceType === 'parcel' && pricingRule) {
     const weightLabel = parcel?.weight || 'Under 5kg';
-    const weightRule = Array.isArray(pricingRule.parcel_weight_ranges) && pricingRule.parcel_weight_ranges.find(
+    let weightRule = Array.isArray(pricingRule.parcel_weight_ranges) && pricingRule.parcel_weight_ranges.find(
       r => String(r.weight_range).trim().toLowerCase() === String(weightLabel).trim().toLowerCase()
     );
+
+    if (!weightRule) {
+      // Fallback: Query the global WeightRange collection
+      const globalRange = await WeightRange.findOne({
+        weight_range: new RegExp(`^${String(weightLabel).trim()}$`, 'i'),
+        status: 'active'
+      }).lean();
+      if (globalRange) {
+        weightRule = globalRange;
+      }
+    }
+
     if (weightRule) {
       const distanceKm = finalDistanceMeters / 1000;
       const basePrice = Number(weightRule.base_price || 0);

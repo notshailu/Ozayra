@@ -305,6 +305,7 @@ const AdminLayout = () => {
               { label: 'Airport', path: '/taxi/admin/pricing/airport' },
               { label: 'Explorer Destinations', path: '/taxi/admin/pricing/explorer-destinations' },
               { label: 'Vehicle Type', path: '/taxi/admin/pricing/vehicle-type' },
+              { label: 'Weight Management', path: '/taxi/admin/pricing/weight-management' },
               { label: 'Rental Package Types', path: '/taxi/admin/pricing/rental-packages' },
               { label: 'Taxi Commission', path: '/taxi/admin/pricing/taxi-commission' },
               { label: 'Parcel Commission', path: '/taxi/admin/pricing/parcel-commission' },

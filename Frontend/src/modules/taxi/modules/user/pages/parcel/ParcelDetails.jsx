@@ -28,40 +28,24 @@ const ParcelDetails = () => {
     let active = true;
     const fetchWeightRanges = async () => {
       try {
-        const response = await api.get('/users/set-prices');
+        const response = await api.get('/users/weight-ranges');
         const results = response?.data?.results || response?.data?.data || (Array.isArray(response) ? response : []);
         
-        const activeRules = results.filter(
-          (rule) =>
-            Number(rule.active ?? 1) === 1 &&
-            String(rule.status || 'active').toLowerCase() !== 'inactive' &&
-            (String(rule.transport_type).toLowerCase() === 'delivery' ||
-              String(rule.transport_type).toLowerCase() === 'both')
+        const activeRanges = results.filter(
+          (r) =>
+            Number(r.active ?? 1) === 1 &&
+            String(r.status || 'active').toLowerCase() !== 'inactive'
         );
-
-        const ranges = [];
-        const seen = new Set();
-        activeRules.forEach((rule) => {
-          if (Array.isArray(rule.parcel_weight_ranges)) {
-            rule.parcel_weight_ranges.forEach((r) => {
-              const name = String(r.weight_range || '').trim();
-              if (name && !seen.has(name.toLowerCase())) {
-                seen.add(name.toLowerCase());
-                ranges.push(r);
-              }
-            });
-          }
-        });
 
         if (!active) return;
 
-        if (ranges.length > 0) {
-          setWeightRanges(ranges);
-          const defaultWeight = parcelState.weight || ranges[0].weight_range;
-          const matched = ranges.some(
+        if (activeRanges.length > 0) {
+          setWeightRanges(activeRanges);
+          const defaultWeight = parcelState.weight || activeRanges[0].weight_range;
+          const matched = activeRanges.some(
             (r) => String(r.weight_range).trim().toLowerCase() === String(defaultWeight).trim().toLowerCase()
           );
-          setWeight(matched ? defaultWeight : ranges[0].weight_range);
+          setWeight(matched ? defaultWeight : activeRanges[0].weight_range);
         } else {
           const fallbackRanges = [
             { weight_range: 'Under 5kg', base_price: 45, base_distance: 2, price_per_distance: 15 },

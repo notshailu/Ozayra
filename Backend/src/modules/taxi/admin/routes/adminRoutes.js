@@ -169,6 +169,10 @@ import {
   deleteVehicleType,
   getTransportTypes,
   deleteFleetVehicle,
+  getWeightRanges,
+  createWeightRange,
+  updateWeightRange,
+  deleteWeightRange,
 } from '../controllers/adminController.js';
 import { promotionsRouter } from '../promotions/routes/index.js';
 
@@ -259,6 +263,10 @@ adminRouter.get('/admin/goods-types', getGoodsTypes);
 adminRouter.post('/admin/goods-types', createGoodsType);
 adminRouter.patch('/admin/goods-types/:id', updateGoodsType);
 adminRouter.delete('/admin/goods-types/:id', deleteGoodsType);
+adminRouter.get('/admin/types/weight-ranges', getWeightRanges);
+adminRouter.post('/admin/types/weight-ranges', createWeightRange);
+adminRouter.patch('/admin/types/weight-ranges/:id', updateWeightRange);
+adminRouter.delete('/admin/types/weight-ranges/:id', deleteWeightRange);
 adminRouter.get('/admin/types/rental-packages', getRentalPackageTypes);
 adminRouter.post('/admin/types/rental-packages', createRentalPackageType);
 adminRouter.patch('/admin/types/rental-packages/:id', updateRentalPackageType);

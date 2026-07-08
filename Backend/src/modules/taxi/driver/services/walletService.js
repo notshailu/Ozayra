@@ -38,18 +38,34 @@ const computeCommissionAmount = ({ fare, type, value }) => {
   return Math.min(safeValue, safeFare);
 };
 
-export const extractAdminCommission = (setPrice, { isParcel = false, weightLabel = 'Under 5kg', fallbackPercent = 20 } = {}) => {
+export const extractAdminCommission = async (setPrice, { isParcel = false, weightLabel = 'Under 5kg', fallbackPercent = 20 } = {}) => {
   const defaultVal = Number(fallbackPercent || 0);
 
   if (!setPrice) {
     return { type: 1, value: defaultVal };
   }
 
-  if (isParcel && Array.isArray(setPrice.parcel_weight_ranges) && setPrice.parcel_weight_ranges.length > 0) {
+  if (isParcel) {
     const normWeight = String(weightLabel || 'Under 5kg').trim().toLowerCase();
-    const weightRule = setPrice.parcel_weight_ranges.find(
-      r => String(r.weight_range || '').trim().toLowerCase() === normWeight
-    ) || setPrice.parcel_weight_ranges[0];
+    let weightRule = null;
+    
+    if (Array.isArray(setPrice.parcel_weight_ranges) && setPrice.parcel_weight_ranges.length > 0) {
+      weightRule = setPrice.parcel_weight_ranges.find(
+        r => String(r.weight_range || '').trim().toLowerCase() === normWeight
+      ) || setPrice.parcel_weight_ranges[0];
+    }
+
+    if (!weightRule) {
+      // Fallback: Query the global WeightRange collection
+      const { WeightRange } = await import('../../admin/models/WeightRange.js');
+      const globalRange = await WeightRange.findOne({
+        weight_range: new RegExp(`^${normWeight.trim()}$`, 'i'),
+        status: 'active'
+      }).lean();
+      if (globalRange) {
+        weightRule = globalRange;
+      }
+    }
 
     if (weightRule) {
       const commVal = Number(weightRule.admin_commission ?? weightRule.admin_commision ?? weightRule.driver_commission ?? 0);

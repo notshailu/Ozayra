@@ -59,6 +59,7 @@ const AdminSurgePricing = lazy(() => import('../pages/price-management/SurgePric
 const AdminVehicleType = lazy(() => import('../pages/price-management/VehicleType'));
 const AdminRentalPackageTypes = lazy(() => import('../pages/price-management/RentalPackageTypes'));
 const AdminGoodsTypes = lazy(() => import('../pages/price-management/GoodsTypes'));
+const AdminWeightManagement = lazy(() => import('../pages/price-management/WeightManagement'));
 
 const AdminOwnerDashboard = lazy(() => import('../pages/owners/OwnerDashboard'));
 const AdminManageOwners = lazy(() => import('../pages/owners/ManageOwners'));
@@ -244,6 +245,9 @@ const TaxiAdminRoutes = () => {
           <Route path="goods-types" element={<AdminGoodsTypes />} />
           <Route path="goods-types/create" element={<AdminGoodsTypes mode="create" />} />
           <Route path="goods-types/edit/:id" element={<AdminGoodsTypes mode="edit" />} />
+          <Route path="weight-management" element={<AdminWeightManagement />} />
+          <Route path="weight-management/create" element={<AdminWeightManagement mode="create" />} />
+          <Route path="weight-management/edit/:id" element={<AdminWeightManagement mode="edit" />} />
         </Route>
         
         <Route path="safety" element={<AdminSafetyCenter />} />

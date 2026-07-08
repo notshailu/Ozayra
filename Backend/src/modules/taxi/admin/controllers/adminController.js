@@ -461,6 +461,20 @@ export const deleteGoodsType = asyncHandler(async (req, res) => {
   ok(res, { deleted: true });
 });
 
+export const getWeightRanges = asyncHandler(async (_req, res) =>
+  res.json(await adminService.listWeightRanges()),
+);
+export const createWeightRange = asyncHandler(async (req, res) =>
+  ok(res, await adminService.createWeightRange(req.body)),
+);
+export const updateWeightRange = asyncHandler(async (req, res) =>
+  ok(res, await adminService.updateWeightRange(req.params.id, req.body)),
+);
+export const deleteWeightRange = asyncHandler(async (req, res) => {
+  await adminService.deleteWeightRange(req.params.id);
+  ok(res, { deleted: true });
+});
+
 export const getRentalPackageTypes = asyncHandler(async (_req, res) =>
   ok(res, { rental_packages: await adminService.listRentalPackageTypes() }),
 );
