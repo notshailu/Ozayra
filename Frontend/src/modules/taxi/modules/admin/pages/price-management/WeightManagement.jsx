@@ -27,6 +27,7 @@ const defaultFormData = {
   base_distance: '',
   price_per_distance: '',
   active: 1,
+  vehicle_types: [],
 };
 
 const unwrap = (response) => response?.data?.data || response?.data || response || {};
@@ -50,6 +51,7 @@ const WeightManagement = ({ mode }) => {
   const isEditor = mode === 'create' || mode === 'edit';
 
   const [ranges, setRanges] = useState([]);
+  const [vehicleOptions, setVehicleOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,13 +66,25 @@ const WeightManagement = ({ mode }) => {
       setErrorMessage('');
 
       try {
-        const response = await api.get('/admin/types/weight-ranges');
+        const [rangesResponse, vehiclesResponse] = await Promise.all([
+          api.get('/admin/types/weight-ranges'),
+          api.get('/admin/types/vehicle-types'),
+        ]);
+
         if (!mounted) return;
 
-        const payload = unwrap(response);
-        const results = Array.isArray(payload) ? payload : (payload?.results || []);
+        const rangesPayload = unwrap(rangesResponse);
+        const results = Array.isArray(rangesPayload) ? rangesPayload : (rangesPayload?.results || []);
+
+        const vehiclesPayload = unwrap(vehiclesResponse);
+        const vehicleResults = Array.isArray(vehiclesPayload) ? vehiclesPayload : (vehiclesPayload?.results || vehiclesPayload?.vehicle_types || []);
 
         setRanges(results);
+        setVehicleOptions(vehicleResults.map(v => ({
+          id: String(v._id || v.id),
+          name: v.name || 'Unknown Vehicle',
+          transport_type: v.transport_type || '',
+        })));
 
         if (mode === 'edit' && id) {
           const existing = results.find((item) => String(item.id || item._id) === String(id));
@@ -81,6 +95,9 @@ const WeightManagement = ({ mode }) => {
               base_distance: String(existing.base_distance ?? ''),
               price_per_distance: String(existing.price_per_distance ?? ''),
               active: existing.active,
+              vehicle_types: Array.isArray(existing.vehicle_types) 
+                ? existing.vehicle_types.map(vt => vt.id || vt._id || vt) 
+                : [],
             });
           }
         } else if (mode === 'create') {
@@ -133,6 +150,10 @@ const WeightManagement = ({ mode }) => {
       setErrorMessage('Price per Km is required.');
       return;
     }
+    if (!formData.vehicle_types.length) {
+      setErrorMessage('Select at least one supported vehicle type.');
+      return;
+    }
 
     setSaving(true);
     setErrorMessage('');
@@ -144,6 +165,7 @@ const WeightManagement = ({ mode }) => {
         base_distance: Number(formData.base_distance),
         price_per_distance: Number(formData.price_per_distance),
         active: Number(formData.active),
+        vehicle_types: formData.vehicle_types,
       };
 
       if (id && mode === 'edit') {
@@ -238,6 +260,7 @@ const WeightManagement = ({ mode }) => {
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Base Price</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Included Distance</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Price Per Km</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Supported Vehicles</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
                   <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Action</th>
                 </tr>
@@ -245,11 +268,11 @@ const WeightManagement = ({ mode }) => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-sm text-slate-400">Loading weight brackets...</td>
+                    <td colSpan={7} className="px-6 py-20 text-center text-sm text-slate-400">Loading weight brackets...</td>
                   </tr>
                 ) : !filteredRanges.length ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-sm text-slate-400">No weight brackets found.</td>
+                    <td colSpan={7} className="px-6 py-20 text-center text-sm text-slate-400">No weight brackets found.</td>
                   </tr>
                 ) : filteredRanges.map((item) => (
                   <tr key={item.id} className="border-t border-slate-100">
@@ -264,6 +287,19 @@ const WeightManagement = ({ mode }) => {
                     <td className="px-6 py-5 font-medium text-slate-700">₹{item.base_price}</td>
                     <td className="px-6 py-5 font-medium text-slate-700">{item.base_distance} Km</td>
                     <td className="px-6 py-5 font-medium text-slate-700">₹{item.price_per_distance}/Km</td>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-wrap gap-1.5 max-w-xs">
+                        {item.vehicle_types && item.vehicle_types.length > 0 ? (
+                          item.vehicle_types.map((vt) => (
+                            <span key={vt.id} className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                              {vt.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs italic text-slate-400">No vehicles assigned</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-5">
                       <StatusToggle active={item.active === 1} onToggle={() => handleToggleStatus(item)} />
                     </td>
@@ -391,6 +427,49 @@ const WeightManagement = ({ mode }) => {
                 placeholder="15"
                 required
               />
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className={labelClass}>Supported Vehicles *</label>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              {vehicleOptions.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {vehicleOptions.map((option) => {
+                    const checked = formData.vehicle_types.includes(option.id);
+                    return (
+                      <label
+                        key={option.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
+                          checked
+                            ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setFormData((prev) => {
+                              const exists = prev.vehicle_types.includes(option.id);
+                              return {
+                                ...prev,
+                                vehicle_types: exists
+                                  ? prev.vehicle_types.filter((id) => id !== option.id)
+                                  : [...prev.vehicle_types, option.id],
+                              };
+                            });
+                          }}
+                          className="h-4 w-4 rounded border-slate-300"
+                        />
+                        <span>{option.name} {option.transport_type ? `(${option.transport_type})` : ''}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">No vehicle types found.</p>
+              )}
             </div>
           </div>
         </div>

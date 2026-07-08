@@ -5644,13 +5644,19 @@ export const deleteOwner = async (id) => {
   };
 
   export const listWeightRanges = async () => {
-    const items = await WeightRange.find().sort({ createdAt: -1 }).lean();
+    const items = await WeightRange.find().populate('vehicle_types').sort({ createdAt: -1 }).lean();
     return items.map((item) => ({
       id: String(item._id || item.id || ''),
       weight_range: item.weight_range || '',
       base_price: Number(item.base_price || 0),
       base_distance: Number(item.base_distance || 0),
       price_per_distance: Number(item.price_per_distance || 0),
+      vehicle_types: Array.isArray(item.vehicle_types) 
+        ? item.vehicle_types.map(vt => ({
+            id: String(vt._id || vt.id || vt),
+            name: vt.name || 'Unknown Vehicle'
+          }))
+        : [],
       active: Number(item.active ?? 1),
       status: item.status || 'active',
     }));
@@ -5665,17 +5671,25 @@ export const deleteOwner = async (id) => {
       base_price: Number(payload.base_price),
       base_distance: Number(payload.base_distance),
       price_per_distance: Number(payload.price_per_distance),
+      vehicle_types: Array.isArray(payload.vehicle_types) ? payload.vehicle_types : [],
       active: payload.active !== undefined ? Number(payload.active) : 1,
       status: payload.status || 'active',
     });
+    const populated = await item.populate('vehicle_types');
     return {
-      id: String(item._id || item.id || ''),
-      weight_range: item.weight_range || '',
-      base_price: Number(item.base_price || 0),
-      base_distance: Number(item.base_distance || 0),
-      price_per_distance: Number(item.price_per_distance || 0),
-      active: Number(item.active ?? 1),
-      status: item.status || 'active',
+      id: String(populated._id || populated.id || ''),
+      weight_range: populated.weight_range || '',
+      base_price: Number(populated.base_price || 0),
+      base_distance: Number(populated.base_distance || 0),
+      price_per_distance: Number(populated.price_per_distance || 0),
+      vehicle_types: Array.isArray(populated.vehicle_types) 
+        ? populated.vehicle_types.map(vt => ({
+            id: String(vt._id || vt.id || vt),
+            name: vt.name || 'Unknown Vehicle'
+          }))
+        : [],
+      active: Number(populated.active ?? 1),
+      status: populated.status || 'active',
     };
   };
 
@@ -5687,18 +5701,26 @@ export const deleteOwner = async (id) => {
     if (payload.base_price !== undefined) item.base_price = Number(payload.base_price);
     if (payload.base_distance !== undefined) item.base_distance = Number(payload.base_distance);
     if (payload.price_per_distance !== undefined) item.price_per_distance = Number(payload.price_per_distance);
+    if (payload.vehicle_types !== undefined) item.vehicle_types = Array.isArray(payload.vehicle_types) ? payload.vehicle_types : [];
     if (payload.active !== undefined) item.active = Number(payload.active);
     if (payload.status !== undefined) item.status = String(payload.status).trim();
 
     await item.save();
+    const populated = await item.populate('vehicle_types');
     return {
-      id: String(item._id || item.id || ''),
-      weight_range: item.weight_range || '',
-      base_price: Number(item.base_price || 0),
-      base_distance: Number(item.base_distance || 0),
-      price_per_distance: Number(item.price_per_distance || 0),
-      active: Number(item.active ?? 1),
-      status: item.status || 'active',
+      id: String(populated._id || populated.id || ''),
+      weight_range: populated.weight_range || '',
+      base_price: Number(populated.base_price || 0),
+      base_distance: Number(populated.base_distance || 0),
+      price_per_distance: Number(populated.price_per_distance || 0),
+      vehicle_types: Array.isArray(populated.vehicle_types) 
+        ? populated.vehicle_types.map(vt => ({
+            id: String(vt._id || vt.id || vt),
+            name: vt.name || 'Unknown Vehicle'
+          }))
+        : [],
+      active: Number(populated.active ?? 1),
+      status: populated.status || 'active',
     };
   };
 

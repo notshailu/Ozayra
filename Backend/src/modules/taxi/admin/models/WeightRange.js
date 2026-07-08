@@ -19,6 +19,13 @@ const weightRangeSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    vehicle_types: {
+      type: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TaxiVehicle',
+      }],
+      default: [],
+    },
     active: {
       type: Number,
       default: 1,
