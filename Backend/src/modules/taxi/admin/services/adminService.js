@@ -3259,6 +3259,9 @@ export const createVehicleType = async (payload) => {
     dispatch_type: payload.dispatch_type || 'normal',
     icon_types: payload.icon_types || 'car',
     image: payload.image ?? '',
+    icon: payload.icon ?? '',
+    capacity: payload.capacity !== undefined ? Number(payload.capacity) : 0,
+    weight: payload.weight !== undefined ? Number(payload.weight) : 0,
     status: Number(payload.status ?? 1) ? 1 : 0,
     active: Number(payload.status ?? 1) === 1,
     supported_other_vehicle_types: Array.isArray(payload.supported_other_vehicle_types)
@@ -3298,6 +3301,15 @@ export const updateVehicleType = async (id, payload) => {
   }
   if (payload.image !== undefined) {
     vehicle.image = payload.image ?? '';
+  }
+  if (payload.icon !== undefined) {
+    vehicle.icon = payload.icon ?? '';
+  }
+  if (payload.capacity !== undefined) {
+    vehicle.capacity = Number(payload.capacity || 0);
+  }
+  if (payload.weight !== undefined) {
+    vehicle.weight = Number(payload.weight || 0);
   }
   if (payload.status !== undefined) {
     vehicle.status = Number(payload.status) ? 1 : 0;

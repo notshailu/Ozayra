@@ -77,6 +77,7 @@ const defaultFormData = {
   image: '',
   icon: '',
   capacity: 0,
+  weight: 0,
   is_accept_share_ride: 0,
   status: 1,
   active: true,
@@ -230,6 +231,7 @@ const VehicleType = ({ mode: propMode }) => {
               image: selectedVehicle.image || '',
               icon: selectedVehicle.icon || '',
               capacity: Number(selectedVehicle.capacity || 0),
+              weight: Number(selectedVehicle.weight || 0),
               is_accept_share_ride: Number(selectedVehicle.is_accept_share_ride || 0),
               status: Number(selectedVehicle.status ?? (selectedVehicle.active !== false ? 1 : 0)),
               active: selectedVehicle.active !== false && Number(selectedVehicle.status ?? 1) !== 0,
@@ -300,7 +302,13 @@ const VehicleType = ({ mode: propMode }) => {
     setIsSaving(true);
     setErrorMessage('');
 
-    if (!formData.name.trim() || !formData.transport_type || !formData.short_description.trim() || !formData.description.trim() || !formData.capacity) {
+    const hasCapacityOrWeight = String(formData.transport_type).toLowerCase() === 'delivery'
+      ? Number(formData.weight || formData.capacity) > 0
+      : String(formData.transport_type).toLowerCase() === 'both'
+      ? (Number(formData.capacity) > 0 && Number(formData.weight) > 0)
+      : Number(formData.capacity) > 0;
+
+    if (!formData.name.trim() || !formData.transport_type || !formData.short_description.trim() || !formData.description.trim() || !hasCapacityOrWeight) {
       setErrorMessage('Please fill all required fields marked with *');
       setIsSaving(false);
       return;
@@ -317,6 +325,7 @@ const VehicleType = ({ mode: propMode }) => {
         image: formData.image || '',
         icon: formData.icon || '',
         capacity: Number(formData.capacity || 0),
+        weight: Number(formData.weight || 0),
         is_accept_share_ride: Number(formData.is_accept_share_ride || 0),
         status: formData.active ? 1 : 0,
         active: formData.active,
@@ -588,20 +597,54 @@ const VehicleType = ({ mode: propMode }) => {
               </div>
             </div>
 
-            <div>
-              <label className={labelClass}>
-                {formData.transport_type?.toLowerCase() === 'taxi' ? 'Sitting Capacity *' : 
-                 formData.transport_type?.toLowerCase() === 'delivery' ? 'Maximum Weight *' : 
-                 'Maximum Weight / Capacity *'}
-              </label>
-              <input
-                type="number"
-                value={formData.capacity}
-                onChange={(e) => updateForm('capacity', e.target.value)}
-                className={inputClass}
-                placeholder="12"
-              />
-            </div>
+            {String(formData.transport_type).toLowerCase() === 'both' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Sitting Capacity *</label>
+                  <input
+                    type="number"
+                    value={formData.capacity}
+                    onChange={(e) => updateForm('capacity', e.target.value)}
+                    className={inputClass}
+                    placeholder="4"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Max Weight (Kg) *</label>
+                  <input
+                    type="number"
+                    value={formData.weight}
+                    onChange={(e) => updateForm('weight', e.target.value)}
+                    className={inputClass}
+                    placeholder="100"
+                    required
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className={labelClass}>
+                  {String(formData.transport_type).toLowerCase() === 'taxi' ? 'Sitting Capacity *' : 'Maximum Weight (Kg) *'}
+                </label>
+                <input
+                  type="number"
+                  value={String(formData.transport_type).toLowerCase() === 'taxi' ? formData.capacity : (formData.weight || formData.capacity)}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (String(formData.transport_type).toLowerCase() === 'taxi') {
+                      updateForm('capacity', val);
+                    } else {
+                      updateForm('weight', val);
+                      updateForm('capacity', val);
+                    }
+                  }}
+                  className={inputClass}
+                  placeholder={String(formData.transport_type).toLowerCase() === 'taxi' ? 'e.g. 4' : 'e.g. 100'}
+                  required
+                />
+              </div>
+            )}
 
             <div>
               <label className={labelClass}>Short Description *</label>

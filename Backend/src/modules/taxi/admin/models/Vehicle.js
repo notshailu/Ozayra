@@ -55,6 +55,10 @@ const vehicleSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    weight: {
+      type: Number,
+      default: 0,
+    },
 
     is_accept_share_ride: {
       type: Number,
