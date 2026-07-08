@@ -375,7 +375,8 @@ export const createRazorpayRideOrder = async (req, res) => {
 
   const { keyId, keySecret } = await resolveRazorpayCredentials();
   const amountPaise = Math.round(totalAmount * 100);
-  const receipt = `ride_${rideId}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  // Razorpay limits receipt identifiers to 40 characters maximum
+  const receipt = `r_${String(rideId).slice(-12)}_${Date.now().toString().slice(-8)}`;
 
   const order = await razorpayRequest({
     method: 'POST',
