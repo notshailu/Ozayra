@@ -7,6 +7,56 @@ import api from '../../../../shared/api/axiosInstance';
 import { getLocalUserToken, userAuthService } from '../../services/authService';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, RAPIDO_MAP_STYLE } from '../../../admin/utils/googleMaps';
 
+import CarIcon from '../../../../assets/icons/car.webp';
+import BikeIcon from '../../../../assets/icons/bike.webp';
+import AutoIcon from '../../../../assets/icons/auto.webp';
+import TruckIcon from '../../../../assets/icons/truck.webp';
+import EhcvIcon from '../../../../assets/icons/ehcv.webp';
+import HcvIcon from '../../../../assets/icons/hcv.webp';
+import LcvIcon from '../../../../assets/icons/LCV.webp';
+import McvIcon from '../../../../assets/icons/mcv.webp';
+import LuxuryIcon from '../../../../assets/icons/Luxury.webp';
+import PremiumIcon from '../../../../assets/icons/Premium.webp';
+import SuvIcon from '../../../../assets/icons/SUV.webp';
+
+const defaultIcons = {
+  car: CarIcon,
+  bike: BikeIcon,
+  auto: AutoIcon,
+  truck: TruckIcon,
+  ehcb: EhcvIcon,
+  ehcv: EhcvIcon,
+  HCV: HcvIcon,
+  hcv: HcvIcon,
+  LCV: LcvIcon,
+  lcv: LcvIcon,
+  MCV: McvIcon,
+  mcv: McvIcon,
+  Luxary: LuxuryIcon,
+  luxury: LuxuryIcon,
+  premium: PremiumIcon,
+  suv: SuvIcon,
+};
+
+const getVehicleIcon = (type = 'car') => {
+  const val = String(type).trim().toLowerCase();
+  if (defaultIcons[val]) return defaultIcons[val];
+  
+  if (val.includes('bike')) return BikeIcon;
+  if (val.includes('auto')) return AutoIcon;
+  if (val.includes('truck')) return TruckIcon;
+  if (val.includes('lcv')) return LcvIcon;
+  if (val.includes('mcv')) return McvIcon;
+  if (val.includes('hcv')) return HcvIcon;
+  if (val.includes('ehcv')) return EhcvIcon;
+  if (val.includes('ehcb')) return EhcvIcon;
+  if (val.includes('lux')) return LuxuryIcon;
+  if (val.includes('premium')) return PremiumIcon;
+  if (val.includes('suv')) return SuvIcon;
+  
+  return CarIcon;
+};
+
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 
 const toLatLng = (coords, fallback = { lat: 22.7196, lng: 75.8577 }) => {
@@ -1311,7 +1361,7 @@ const SelectVehicle = () => {
                 <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 transition-all duration-300 ${
                   isSelected ? (isParcel ? 'bg-yellow-400 text-gray-900 shadow-md scale-110' : 'bg-white shadow-sm scale-110') : isUnavailable ? 'bg-slate-200' : 'bg-slate-50'
                 }`}>
-                  <img src={v.icon} alt={v.name} className="w-9 h-9 object-contain drop-shadow-sm" />
+                  <img src={getVehicleIcon(v.icon_types || v.icon_types_for || v.name)} alt={v.name} className="w-9 h-9 object-contain drop-shadow-sm" />
                 </div>
 
                 <div className="flex-1 min-w-0 z-10">

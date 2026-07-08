@@ -120,7 +120,7 @@ const SearchingDriver = () => {
     () => routeState.vehicleIconType || routeState.vehicle?.iconType || routeState.vehicle?.name || 'car',
     [routeState],
   );
-  const selectedVehicleIcon = routeState.vehicle?.icon || getVehicleIcon(selectedVehicleIconType);
+  const selectedVehicleIcon = getVehicleIcon(selectedVehicleIconType);
   const selectedVehicleName = routeState.vehicle?.name || 'Ride';
   const activeRideIdRef = useRef('');
   const [nearbyDrivers, setNearbyDrivers] = useState([]);
