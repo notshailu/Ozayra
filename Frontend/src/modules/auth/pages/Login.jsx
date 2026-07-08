@@ -264,8 +264,8 @@ export default function UnifiedOTPFastLogin() {
 
   // Service images (served from public folder)
   const foodIcon = "/super-app/food.png"
-  const taxiIcon = "/super-app/taxi.png"
-  const groceryIcon = "/super-app/grocery.png"
+  const taxiIcon = "/super-app/taxi.webp"
+  const groceryIcon = "/super-app/grocery.webp"
   const hotelIcon = "/super-app/hotel.png"
 
   const services = [

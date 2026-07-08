@@ -8,7 +8,7 @@ import {
   Globe
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Rydon24Logo from '../../../../assets/rydon24_logo.png';
+import Rydon24Logo from '../../../../assets/rydon24_logo.webp';
 
 const HeaderFooter = () => {
   const [loading, setLoading] = useState(false);

@@ -6,7 +6,7 @@ import { Input } from "@food/components/ui/input"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
 
 // Import banner
-import collectionsBanner from "@food/assets/collectionspagebanner.png"
+import collectionsBanner from "@food/assets/collectionspagebanner.webp"
 
 // Gradient colors for collection cards
 const gradientColors = [

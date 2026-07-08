@@ -1,6 +1,6 @@
 import React from 'react';
 import { User, Globe, Navigation } from 'lucide-react';
-import logo from '../../assets/rokologin-removebg-preview.png';
+import logo from '../../assets/rokologin-removebg-preview.webp';
 import { Link, useNavigate } from 'react-router-dom';
 import { propertyService } from '../../services/propertyService';
 import { toast } from 'react-hot-toast';

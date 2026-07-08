@@ -20,12 +20,12 @@ const unwrapLoginPayload = (response) => {
   const payload = unwrap(response);
   return payload?.token ? payload : payload?.user ? payload : payload?.data || payload;
 };
-import LuxuryIcon from '../../../../assets/icons/Luxury.png';
-import PremiumIcon from '../../../../assets/icons/Premium.png';
-import SuvIcon from '../../../../assets/icons/SUV.png';
-import BikeIcon from '../../../../assets/icons/bike.png';
-import CarIcon from '../../../../assets/icons/car.png';
-import AutoIcon from '../../../../assets/icons/auto.png';
+import LuxuryIcon from '../../../../assets/icons/Luxury.webp';
+import PremiumIcon from '../../../../assets/icons/Premium.webp';
+import SuvIcon from '../../../../assets/icons/SUV.webp';
+import BikeIcon from '../../../../assets/icons/bike.webp';
+import CarIcon from '../../../../assets/icons/car.webp';
+import AutoIcon from '../../../../assets/icons/auto.webp';
 
 const getVehicleIcon = (type = 'car') => {
   const val = String(type).toLowerCase();

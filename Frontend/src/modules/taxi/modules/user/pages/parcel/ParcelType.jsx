@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, ArrowLeft, ChevronRight, Loader2, Package } from 'lucide-react';
 import api from '../../../../shared/api/axiosInstance';
 
-import imgDocuments from '../../../../assets/3d images/documents.png';
-import imgGrocery from '../../../../assets/3d images/grocery.png';
-import imgGifts from '../../../../assets/3d images/gifts.png';
-import imgClothes from '../../../../assets/3d images/clothes.png';
-import imgElectronics from '../../../../assets/3d images/electronics.png';
-import imgOthers from '../../../../assets/3d images/others.png';
+import imgDocuments from '../../../../assets/3d images/documents.webp';
+import imgGrocery from '../../../../assets/3d images/grocery.webp';
+import imgGifts from '../../../../assets/3d images/gifts.webp';
+import imgClothes from '../../../../assets/3d images/clothes.webp';
+import imgElectronics from '../../../../assets/3d images/electronics.webp';
+import imgOthers from '../../../../assets/3d images/others.webp';
 
 const Motion = motion;
 

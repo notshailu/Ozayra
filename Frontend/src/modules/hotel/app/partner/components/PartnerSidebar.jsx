@@ -9,7 +9,7 @@ import {
     ChevronRight, Wallet, Bell, Settings, Edit3, Info, Phone, Calendar
 } from 'lucide-react';
 import usePartnerStore from '../store/partnerStore';
-import logo from '../../../assets/rokologin-removebg-preview.png';
+import logo from '../../../assets/rokologin-removebg-preview.webp';
 
 const PartnerSidebar = ({ isOpen, onClose }) => {
     const navigate = useNavigate();

@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-import imgShared    from '../../../../assets/3d images/AutoCab/taxi.png';
-import imgAirport   from '../../../../assets/3d images/AutoCab/airoplan.png';
-import imgSpiritual from '../../../../assets/3d images/AutoCab/temple.png';
-import imgOneWay    from '../../../../assets/3d images/AutoCab/one way.png';
-import imgBus       from '../../../../assets/3d images/AutoCab/bus.png';
+import imgShared    from '../../../../assets/3d images/AutoCab/taxi.webp';
+import imgAirport   from '../../../../assets/3d images/AutoCab/airoplan.webp';
+import imgSpiritual from '../../../../assets/3d images/AutoCab/temple.webp';
+import imgOneWay    from '../../../../assets/3d images/AutoCab/one way.webp';
+import imgBus       from '../../../../assets/3d images/AutoCab/bus.webp';
 
 const services = [
   {

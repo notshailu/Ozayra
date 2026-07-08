@@ -25,17 +25,17 @@ import api from '../../../shared/api/axiosInstance';
 import { useSettings } from '../../../shared/context/SettingsContext';
 
 // Vehicle Icons for Map
-import BikeIcon from '../../../assets/icons/bike.png';
-import CarIcon from '../../../assets/icons/car.png';
-import AutoIcon from '../../../assets/icons/auto.png';
-import TruckIcon from '../../../assets/icons/truck.png';
-import EhcvIcon from '../../../assets/icons/ehcv.png';
-import HcvIcon from '../../../assets/icons/hcv.png';
-import LcvIcon from '../../../assets/icons/LCV.png';
-import McvIcon from '../../../assets/icons/mcv.png';
-import LuxuryIcon from '../../../assets/icons/Luxury.png';
-import PremiumIcon from '../../../assets/icons/Premium.png';
-import SuvIcon from '../../../assets/icons/SUV.png';
+import BikeIcon from '../../../assets/icons/bike.webp';
+import CarIcon from '../../../assets/icons/car.webp';
+import AutoIcon from '../../../assets/icons/auto.webp';
+import TruckIcon from '../../../assets/icons/truck.webp';
+import EhcvIcon from '../../../assets/icons/ehcv.webp';
+import HcvIcon from '../../../assets/icons/hcv.webp';
+import LcvIcon from '../../../assets/icons/LCV.webp';
+import McvIcon from '../../../assets/icons/mcv.webp';
+import LuxuryIcon from '../../../assets/icons/Luxury.webp';
+import PremiumIcon from '../../../assets/icons/Premium.webp';
+import SuvIcon from '../../../assets/icons/SUV.webp';
 
 import { socketService } from '../../../shared/api/socket';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, RAPIDO_MAP_STYLE } from '../../admin/utils/googleMaps';
@@ -83,14 +83,14 @@ const getMapIconForVehicle = (iconType = '') => {
 
     if (value.includes('bike')) return '/1_Bike.png';
     if (value.includes('auto')) return '/2_AutoRickshaw.png';
-    if (value.includes('ehc')) return '/ehcv.png';
-    if (value.includes('hcv')) return '/hcv.png';
-    if (value.includes('lcv')) return '/LCV.png';
-    if (value.includes('mcv')) return '/mcv.png';
-    if (value.includes('truck')) return '/truck.png';
-    if (value.includes('lux')) return '/Luxury.png';
-    if (value.includes('premium')) return '/Premium.png';
-    if (value.includes('suv')) return '/SUV.png';
+    if (value.includes('ehc')) return '/ehcv.webp';
+    if (value.includes('hcv')) return '/hcv.webp';
+    if (value.includes('lcv')) return '/LCV.webp';
+    if (value.includes('mcv')) return '/mcv.webp';
+    if (value.includes('truck')) return '/truck.webp';
+    if (value.includes('lux')) return '/Luxury.webp';
+    if (value.includes('premium')) return '/Premium.webp';
+    if (value.includes('suv')) return '/SUV.webp';
 
     return '/4_Taxi.png';
 };

@@ -25,10 +25,10 @@ import { GoogleMap, MarkerF, OverlayView, PolylineF } from '@react-google-maps/a
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader } from '../../admin/utils/googleMaps';
 import { socketService } from '../../../shared/api/socket';
 import api from '../../../shared/api/axiosInstance';
-import carIcon from '../../../assets/icons/car.png';
-import bikeIcon from '../../../assets/icons/bike.png';
-import autoIcon from '../../../assets/icons/auto.png';
-import deliveryIcon from '../../../assets/icons/Delivery.png';
+import carIcon from '../../../assets/icons/car.webp';
+import bikeIcon from '../../../assets/icons/bike.webp';
+import autoIcon from '../../../assets/icons/auto.webp';
+import deliveryIcon from '../../../assets/icons/Delivery.webp';
 import { getLocalDriverToken } from '../services/registrationService';
 
 const MAP_CONTAINER_STYLE = {

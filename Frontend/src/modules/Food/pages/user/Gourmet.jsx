@@ -13,7 +13,7 @@ import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 import { useLocation } from "@food/hooks/useLocation"
 
 // Import banner
-import gourmetBanner from "@food/assets/groumetpagebanner.png"
+import gourmetBanner from "@food/assets/groumetpagebanner.webp"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ExploreGridSkeleton } from "@food/components/ui/loading-skeletons";
 import OptimizedImage from "@food/components/OptimizedImage";
-import discoveryBg from "@food/assets/food_discovery_bg.png";
+import discoveryBg from "@food/assets/food_discovery_bg.webp";
 
 const ExploreMoreSection = memo(({
   exploreMoreHeading,

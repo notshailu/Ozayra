@@ -7,10 +7,10 @@ import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, RAPIDO_MAP_STYLE } f
 import { socketService } from '../../../../shared/api/socket';
 import api from '../../../../shared/api/axiosInstance';
 import { clearCurrentRide, getCurrentRide, saveCurrentRide } from '../../services/currentRideService';
-import carIcon from '../../../../assets/icons/car.png';
-import bikeIcon from '../../../../assets/icons/bike.png';
-import autoIcon from '../../../../assets/icons/auto.png';
-import deliveryIcon from '../../../../assets/icons/Delivery.png';
+import carIcon from '../../../../assets/icons/car.webp';
+import bikeIcon from '../../../../assets/icons/bike.webp';
+import autoIcon from '../../../../assets/icons/auto.webp';
+import deliveryIcon from '../../../../assets/icons/Delivery.webp';
 
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 const DEFAULT_CENTER = { lat: 22.7196, lng: 75.8577 };

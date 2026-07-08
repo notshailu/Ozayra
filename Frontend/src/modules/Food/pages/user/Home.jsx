@@ -85,9 +85,9 @@ import {
 import { useLocation } from "@food/hooks/useLocation";
 import { useZone } from "@food/hooks/useZone";
 
-import offerImage from "@food/assets/offerimage.png";
-import bannerEatingFood from "../../../../assets/eading_food_2_image-removebg-preview.png";
-import bannerEatingBoy from "../../../../assets/eating_boy_image-removebg-preview.png";
+import offerImage from "@food/assets/offerimage.webp";
+import bannerEatingFood from "../../../../assets/eading_food_2_image-removebg-preview.webp";
+import bannerEatingBoy from "../../../../assets/eating_boy_image-removebg-preview.webp";
 import api, { publicGetOnce, restaurantAPI, adminAPI } from "@food/api";
 import { API_BASE_URL } from "@food/api/config";
 import OptimizedImage from "@food/components/OptimizedImage";

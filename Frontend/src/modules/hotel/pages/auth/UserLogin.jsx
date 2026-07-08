@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, ArrowRight, Loader2, Shield } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logo from '../../assets/rokologin-removebg-preview.png';
+import logo from '../../assets/rokologin-removebg-preview.webp';
 import { authService } from '../../services/apiService';
 import toast from 'react-hot-toast';
 

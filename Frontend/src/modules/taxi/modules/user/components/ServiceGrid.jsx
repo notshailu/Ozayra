@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { userService } from '../services/userService';
 import toast from 'react-hot-toast';
 
-import carIcon from '../../../assets/icons/car.png';
-import bikeIcon from '../../../assets/icons/bike.png';
-import autoIcon from '../../../assets/icons/auto.png';
-import deliveryIcon from '../../../assets/icons/Delivery.png';
+import carIcon from '../../../assets/icons/car.webp';
+import bikeIcon from '../../../assets/icons/bike.webp';
+import autoIcon from '../../../assets/icons/auto.webp';
+import deliveryIcon from '../../../assets/icons/Delivery.webp';
 
 const FALLBACK_SERVICES = [
   { icon: carIcon, label: 'Car', description: 'Book a premium ride', path: '/taxi/user/ride/select-location', accentClass: 'bg-orange-50/80' },

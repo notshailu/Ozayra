@@ -6,7 +6,7 @@ import {
     Settings, Bell, Search, LogOut, Menu, X, DollarSign, ClipboardCheck, Star, Tag, FileText, MessageSquare, CircleHelp, Home
 } from 'lucide-react';
 
-import logo from '../../../assets/rokologin-removebg-preview.png';
+import logo from '../../../assets/rokologin-removebg-preview.webp';
 import useAdminStore from '../store/adminStore';
 import toast from 'react-hot-toast';
 import adminService from '../../../services/adminService';

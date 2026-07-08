@@ -4,8 +4,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@food/components/ui/dialog";
 
 import burgerIcon from "@food/assets/Dashboard-icons/image13.png";
-import leafIcon from "@food/assets/Dashboard-icons/image14.png";
-import chefIcon from "@food/assets/Dashboard-icons/image16.png";
+import leafIcon from "@food/assets/Dashboard-icons/image14.webp";
+import chefIcon from "@food/assets/Dashboard-icons/image16.webp";
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}

@@ -19,7 +19,7 @@ import { useLenis } from './app/shared/hooks/useLenis';
 import { legalService, userService, hotelService } from './services/apiService';
 import adminService from './services/adminService';
 import { requestNotificationPermission, onMessageListener } from './utils/firebase';
-import logo from './assets/rokologin-removebg-preview.png';
+import logo from './assets/rokologin-removebg-preview.webp';
 import { initAppMode, isWebView } from './utils/deviceDetect';
 
 // Init app mode from URL params on very first load

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Mail, ArrowRight, Loader2, Shield, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../../services/apiService';
-import logo from '../../../assets/rokologin-removebg-preview.png';
+import logo from '../../../assets/rokologin-removebg-preview.webp';
 
 const HotelLogin = () => {
     const OTP_LENGTH = 4;

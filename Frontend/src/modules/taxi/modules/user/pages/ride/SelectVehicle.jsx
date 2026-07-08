@@ -239,35 +239,35 @@ const getVehicleIcon = (type) => {
   }
 
   if (value.includes('ehc')) {
-    return '/ehcv.png';
+    return '/ehcv.webp';
   }
 
   if (value.includes('hcv')) {
-    return '/hcv.png';
+    return '/hcv.webp';
   }
 
   if (value.includes('lcv')) {
-    return '/LCV.png';
+    return '/LCV.webp';
   }
 
   if (value.includes('mcv')) {
-    return '/mcv.png';
+    return '/mcv.webp';
   }
 
   if (value.includes('truck')) {
-    return '/truck.png';
+    return '/truck.webp';
   }
 
   if (value.includes('lux')) {
-    return '/Luxury.png';
+    return '/Luxury.webp';
   }
 
   if (value.includes('premium')) {
-    return '/Premium.png';
+    return '/Premium.webp';
   }
 
   if (value.includes('suv')) {
-    return '/SUV.png';
+    return '/SUV.webp';
   }
 
   return '/4_Taxi.png';

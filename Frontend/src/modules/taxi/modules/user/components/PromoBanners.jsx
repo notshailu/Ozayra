@@ -25,7 +25,7 @@ const rotatingCards = [
     path: '/taxi/user/ride/select-location',
     images: [
       { src: '/4_Taxi.png', alt: 'Taxi' },
-      { src: '/white_sedan_banner_car.png', alt: 'Sedan' },
+      { src: '/white_sedan_banner_car.webp', alt: 'Sedan' },
     ],
   },
 ];

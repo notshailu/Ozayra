@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowDownUp } from "lucide-react";
 import { CategoryChipRowSkeleton } from "@food/components/ui/loading-skeletons";
 import OptimizedImage from "@food/components/OptimizedImage";
-import foodPattern from "@food/assets/food_pattern_background.png";
+import foodPattern from "@food/assets/food_pattern_background.webp";
 
 const CategoryRail = memo(({ 
   displayCategories, 

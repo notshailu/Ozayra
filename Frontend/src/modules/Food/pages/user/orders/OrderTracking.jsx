@@ -42,7 +42,7 @@ import { useCompanyName } from "@food/hooks/useCompanyName"
 import { useUserNotifications } from "@food/hooks/useUserNotifications"
 import { customerApi } from "../../../../quickCommerce/user/services/customerApi"
 import DeliveryOtpDisplay from "../../../../quickCommerce/user/components/DeliveryOtpDisplay"
-import circleIcon from "@food/assets/circleicon.png"
+import circleIcon from "@food/assets/circleicon.webp"
 import { RESTAURANT_PIN_SVG, CUSTOMER_PIN_SVG, RIDER_BIKE_SVG } from "@food/constants/mapIcons"
 
 // Fallback definitions in case imports fail at runtime or are shadowed

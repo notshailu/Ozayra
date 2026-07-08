@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Wallet, Heart, Gift, HelpCircle, FileText, Shield, ChevronRight, LogOut, Settings, BookOpen, Building, Briefcase, Bell, Edit3 } from 'lucide-react';
-import logo from '../../assets/rokologin-removebg-preview.png';
+import logo from '../../assets/rokologin-removebg-preview.webp';
 import { userService } from '../../services/apiService';
 import { isWebView } from '../../utils/deviceDetect';
 

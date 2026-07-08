@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, CheckCircle2, ChevronRight, MessageSquare, Receipt, Share2, Star } from 'lucide-react';
 import api from '../../../../shared/api/axiosInstance';
 import { clearCurrentRide, getCurrentRide } from '../../services/currentRideService';
-import carIcon from '../../../../assets/icons/car.png';
-import bikeIcon from '../../../../assets/icons/bike.png';
-import autoIcon from '../../../../assets/icons/auto.png';
-import deliveryIcon from '../../../../assets/icons/Delivery.png';
+import carIcon from '../../../../assets/icons/car.webp';
+import bikeIcon from '../../../../assets/icons/bike.webp';
+import autoIcon from '../../../../assets/icons/auto.webp';
+import deliveryIcon from '../../../../assets/icons/Delivery.webp';
 
 const TIP_OPTIONS = [0, 20, 50, 100];
 
