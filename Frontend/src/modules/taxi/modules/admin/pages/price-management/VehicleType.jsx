@@ -459,7 +459,7 @@ const VehicleType = ({ mode: propMode }) => {
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50">
-                          <img src={vehicle.icon || vehicle.image || currentIconPreview} alt={vehicle.name} className="h-10 w-10 object-contain" />
+                          <img src={vehicle.icon || vehicle.image || iconMap[normalizeIconType(vehicle.icon_types || vehicle.icon_types_for)] || CarIcon} alt={vehicle.name} className="h-10 w-10 object-contain" />
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-slate-900">{vehicle.name}</p>
