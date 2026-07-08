@@ -264,13 +264,6 @@ const VehicleType = ({ mode: propMode }) => {
     };
   }, [id, propMode]);
 
-  const previewImage = useMemo(() => {
-    if (formData.image && typeof formData.image === 'string') {
-      return formData.image;
-    }
-    return '';
-  }, [formData.image]);
-
   const previewIcon = useMemo(() => {
     if (formData.icon && typeof formData.icon === 'string') {
       return formData.icon;
@@ -292,15 +285,6 @@ const VehicleType = ({ mode: propMode }) => {
 
   const updateForm = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleImageChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-    const dataUrl = await fileToDataUrl(file);
-    updateForm('image', dataUrl);
   };
 
   const handleIconChange = async (event) => {
@@ -576,34 +560,7 @@ const VehicleType = ({ mode: propMode }) => {
             </div>
           </div>
 
-          <div>
-            <label className={labelClass}>Vehicle Image</label>
-            <div className="rounded-2xl border border-dashed border-slate-300 p-4">
-              <div className="group relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl bg-slate-50">
-                {previewImage ? (
-                  <>
-                    <img src={previewImage} alt="Vehicle preview" className="max-h-[280px] w-full object-contain p-4" />
-                    <button
-                      type="button"
-                      onClick={() => updateForm('image', '')}
-                      className="absolute right-3 top-3 rounded-xl bg-white p-2 text-red-500 shadow-sm transition hover:bg-red-500 hover:text-white"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </>
-                ) : (
-                  <label className="flex cursor-pointer flex-col items-center gap-3">
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-orange-500 shadow-sm">
-                      <Upload size={20} />
-                    </span>
-                    <span className="text-sm font-semibold text-slate-700">Upload image</span>
-                    <span className="text-xs text-slate-400">Use a square image for the cleanest card preview</span>
-                  </label>
-                )}
-              </div>
-            </div>
-          </div>
+
 
           <div className="space-y-6">
             <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
