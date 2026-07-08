@@ -1031,7 +1031,7 @@ const ActiveTrip = () => {
                                         <h3 className="text-[18px] font-semibold text-slate-900 tracking-tight capitalize">{isParcel ? tripData.receiver.name : tripData.user.name}</h3>
                                         <div className="flex items-center gap-1.5 mt-0.5">
                                             <Star size={12} className="text-slate-400 fill-slate-400" />
-                                            <span className="text-[13px] text-slate-500">{tripData.user.rating || '4.8'}</span>
+                                            <span className="text-[13px] text-slate-500">{isParcel ? '5.0' : tripData.user.rating || '4.8'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1165,8 +1165,8 @@ const ActiveTrip = () => {
                             className="bg-white rounded-t-[2.5rem] p-6 pb-8 shadow-2xl border-t border-slate-50 text-center"
                         >
                             <div className="mb-8 space-y-4">
-                                <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-lg overflow-hidden">
-                                    {tripData.user.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={24} className="text-white" />}
+                                <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-lg overflow-hidden text-white">
+                                    {isParcel ? <Package size={24} /> : (tripData.user?.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={24} />)}
                                 </div>
                                 <h3 className="text-xl font-semibold text-slate-900 uppercase tracking-tight">Rate Experience</h3>
                                 <div className="flex justify-center gap-2">
