@@ -79,8 +79,13 @@ const WeightManagement = ({ mode }) => {
         const vehiclesPayload = unwrap(vehiclesResponse);
         const vehicleResults = Array.isArray(vehiclesPayload) ? vehiclesPayload : (vehiclesPayload?.results || vehiclesPayload?.vehicle_types || []);
 
+        const filteredVehicles = vehicleResults.filter(v => {
+          const type = String(v.transport_type || '').toLowerCase();
+          return type === 'delivery' || type === 'both';
+        });
+
         setRanges(results);
-        setVehicleOptions(vehicleResults.map(v => ({
+        setVehicleOptions(filteredVehicles.map(v => ({
           id: String(v._id || v.id),
           name: v.name || 'Unknown Vehicle',
           transport_type: v.transport_type || '',
