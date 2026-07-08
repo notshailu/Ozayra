@@ -131,11 +131,11 @@ class SocketService {
     }
 
     if (this.socket && this.currentToken === token) {
-      console.info('[socket] reusing existing connection', {
-        role: options.role || 'unknown',
-        socketId: this.socket.id || null,
-        connected: this.socket.connected,
-      });
+      // console.info('[socket] reusing existing connection', {
+      //   role: options.role || 'unknown',
+      //   socketId: this.socket.id || null,
+      //   connected: this.socket.connected,
+      // });
       return this.socket;
     }
 

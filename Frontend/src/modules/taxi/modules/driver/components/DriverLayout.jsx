@@ -145,6 +145,7 @@ const DriverLayout = () => {
     
     const driverCoordsRef = useRef(null);
     const acceptingRideIdRef = useRef('');
+    const currentRequestRef = useRef(null);
 
     const fetchActiveJob = useCallback(async (type = 'ride') => {
         const normalizedType = String(type || 'ride').toLowerCase();
@@ -386,6 +387,7 @@ const DriverLayout = () => {
                     raw: data,
                 };
                 setCurrentRequest(request);
+                currentRequestRef.current = request;
                 setShowRequest(true);
                 setStatusMessage('New booking received.');
             };
@@ -394,9 +396,11 @@ const DriverLayout = () => {
                 if (acceptingRideIdRef.current && acceptingRideIdRef.current === rideId) {
                     return;
                 }
-                if (!currentRequest?.rideId || currentRequest.rideId === rideId) {
+                const curReq = currentRequestRef.current;
+                if (!curReq?.rideId || curReq.rideId === rideId) {
                     setShowRequest(false);
                     setCurrentRequest(null);
+                    currentRequestRef.current = null;
                     if (reason === 'user-cancelled') {
                         setStatusMessage(message || 'User cancelled the ride.');
                     } else if (reason === 'deleted-by-admin') {
@@ -412,6 +416,7 @@ const DriverLayout = () => {
                 if (String(message || '').toLowerCase().includes('no longer available')) {
                     setShowRequest(false);
                     setCurrentRequest(null);
+                    currentRequestRef.current = null;
                 }
                 acceptingRideIdRef.current = '';
                 setAcceptingRideId('');
@@ -422,7 +427,8 @@ const DriverLayout = () => {
                     return;
                 }
 
-                const nextType = currentRequest?.type || 'ride';
+                const curReq = currentRequestRef.current;
+                const nextType = curReq?.type || 'ride';
                 let currentJob = null;
 
                 try {
@@ -439,10 +445,10 @@ const DriverLayout = () => {
                         type: nextType,
                         rideId: currentJob?.rideId || payload.rideId,
                         request: {
-                            ...currentRequest,
+                            ...curReq,
                             rideId: currentJob?.rideId || payload.rideId,
                             raw: currentJob || {
-                                ...(currentRequest?.raw || {}),
+                                ...(curReq?.raw || {}),
                                 status: payload.status,
                                 liveStatus: payload.liveStatus,
                                 acceptedAt: payload.acceptedAt,
@@ -489,24 +495,28 @@ const DriverLayout = () => {
             socketService.disconnect();
         }
         return undefined;
-    }, [currentRequest, isOnline, isAllowed, navigate, fetchActiveJob]);
+    }, [isOnline, isAllowed, navigate, fetchActiveJob]);
 
     const handleAccept = () => {
-        if (!currentRequest?.rideId || acceptingRideId) {
+        const curReq = currentRequestRef.current;
+        if (!curReq?.rideId || acceptingRideId) {
             return;
         }
 
-        acceptingRideIdRef.current = currentRequest.rideId;
-        setAcceptingRideId(currentRequest.rideId);
+        acceptingRideIdRef.current = curReq.rideId;
+        setAcceptingRideId(curReq.rideId);
         setStatusMessage('Accepting ride...');
-        socketService.emit('acceptRide', { rideId: currentRequest.rideId });
+        socketService.emit('acceptRide', { rideId: curReq.rideId });
     };
 
     const handleDecline = () => {
-        if (currentRequest?.rideId) {
-            socketService.emit('rejectRide', { rideId: currentRequest.rideId });
+        const curReq = currentRequestRef.current;
+        if (curReq?.rideId) {
+            socketService.emit('rejectRide', { rideId: curReq.rideId });
         }
         setShowRequest(false);
+        setCurrentRequest(null);
+        currentRequestRef.current = null;
     };
 
     return (
