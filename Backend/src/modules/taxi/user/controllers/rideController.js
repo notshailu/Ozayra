@@ -103,7 +103,9 @@ export const createRide = async (req, res) => {
     otp,
   });
 
-  await startDispatchFlow(ride);
+  if (String(paymentMethod).toLowerCase() !== 'online') {
+    await startDispatchFlow(ride);
+  }
 
   res.status(201).json({
     success: true,
@@ -454,6 +456,12 @@ export const verifyRazorpayRidePayment = async (req, res) => {
     ride.feedback.tipAmount = tipAmount;
   }
   await ride.save();
+
+  // Start matching/dispatching drivers if the booking is newly created upfront
+  if (['pending', 'searching'].includes(ride.status) && !ride.driverId) {
+    const { startDispatchFlow } = await import('../../services/dispatchService.js');
+    await startDispatchFlow(ride);
+  }
 
   // Try settling wallet for the driver
   let walletUpdate = null;

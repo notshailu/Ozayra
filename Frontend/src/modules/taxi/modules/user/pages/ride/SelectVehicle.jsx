@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Users, X, Banknote, CreditCard, ChevronDown, ChevronRight, LoaderCircle, Package, ShieldCheck, Clock, Truck, MapPin, Sparkles, AlertCircle } from 'lucide-react';
 import { GoogleMap, MarkerF, PolylineF } from '@react-google-maps/api';
 import api from '../../../../shared/api/axiosInstance';
+import { getLocalUserToken, userAuthService } from '../../services/authService';
 import { HAS_VALID_GOOGLE_MAPS_KEY, useAppGoogleMapsLoader, RAPIDO_MAP_STYLE } from '../../../admin/utils/googleMaps';
 
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
@@ -578,6 +579,8 @@ const SelectVehicle = () => {
   const [availabilityByVehicleId, setAvailabilityByVehicleId] = useState({});
   const [selected, setSelected] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPromo, setShowPromo] = useState(true);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
@@ -896,32 +899,195 @@ const SelectVehicle = () => {
     }
   }, [availabilityByVehicleId, selected, sortedPricedVehicles]);
 
-  const handleBook = () => {
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
+  const handleBook = async () => {
     if (!selectedVehicle) {
       return;
     }
 
+    const isOnline = paymentMethod.toLowerCase() === 'online';
     const targetPath = isParcel
       ? `${routePrefix}/parcel/searching`
       : `${routePrefix}/ride/searching`;
 
-    navigate(targetPath, {
-      state: {
-        ...routeState,
-        pickup,
-        drop,
-        pickupCoords,
-        dropCoords,
-        stops,
-        vehicle: selectedVehicle,
-        vehicleTypeId: selectedVehicle.vehicleTypeId,
-        vehicleIconType: selectedVehicle.iconType,
-        paymentMethod: paymentMethod.toLowerCase(),
-        fare: selectedVehicle.price,
-        estimatedDistanceMeters: tripMetrics.distanceMeters,
-        estimatedDurationMinutes: tripMetrics.durationMinutes,
-      },
-    });
+    const nextState = {
+      ...routeState,
+      pickup,
+      drop,
+      pickupCoords,
+      dropCoords,
+      stops,
+      vehicle: selectedVehicle,
+      vehicleTypeId: selectedVehicle.vehicleTypeId,
+      vehicleIconType: selectedVehicle.iconType,
+      paymentMethod: paymentMethod.toLowerCase(),
+      fare: selectedVehicle.price,
+      estimatedDistanceMeters: tripMetrics.distanceMeters,
+      estimatedDurationMinutes: tripMetrics.durationMinutes,
+    };
+
+    if (isOnline) {
+      setIsProcessingPayment(true);
+      setPaymentError('');
+      try {
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          throw new Error('Razorpay SDK failed to load');
+        }
+
+        let userToken = getLocalUserToken();
+        if (!userToken) {
+          const loginResponse = await userAuthService.loginDemoUser();
+          const loginPayload = unwrapLoginPayload(loginResponse);
+          if (loginPayload?.token) {
+            userToken = loginPayload.token;
+            localStorage.setItem('token', userToken);
+            localStorage.setItem('userToken', userToken);
+            localStorage.setItem('role', 'user');
+            localStorage.setItem('userInfo', JSON.stringify(loginPayload.user || {}));
+          }
+        }
+
+        const requestConfig = userToken ? { headers: { Authorization: `Bearer ${userToken}` } } : {};
+
+        // 1. Create the ride or delivery record first on the backend in pending payment status
+        let response;
+        if (isParcel) {
+          const parcelPayload = {
+            ...(routeState.parcel || {}),
+            category: routeState.parcel?.category || routeState.parcelType || 'Parcel',
+            weight: routeState.parcel?.weight || routeState.weight || 'Under 5kg',
+            description: routeState.parcel?.description || routeState.description || '',
+            deliveryScope: routeState.parcel?.deliveryScope || routeState.deliveryScope || 'city',
+            isOutstation: Boolean(routeState.parcel?.isOutstation || routeState.isOutstation || routeState.deliveryScope === 'outstation'),
+            senderName: routeState.parcel?.senderName || routeState.senderName || '',
+            senderMobile: routeState.parcel?.senderMobile || routeState.senderMobile || '',
+            receiverName: routeState.parcel?.receiverName || routeState.receiverName || '',
+            receiverMobile: routeState.parcel?.receiverMobile || routeState.receiverMobile || '',
+            goodsTypeFor: routeState.parcel?.goodsTypeFor || 'both',
+          };
+
+          response = await api.post('/deliveries', {
+            pickup: pickupCoords,
+            drop: dropCoords,
+            pickupAddress: pickup,
+            dropAddress: drop,
+            fare: selectedVehicle.price,
+            vehicleTypeId: selectedVehicle.vehicleTypeId,
+            vehicleTypeIds: [selectedVehicle.vehicleTypeId],
+            vehicleIconType: selectedVehicle.iconType || 'bike',
+            paymentMethod: 'online',
+            type: 'parcel',
+            parcel: parcelPayload,
+            otp: String(Math.floor(1000 + Math.random() * 9000)),
+          }, requestConfig);
+        } else {
+          response = await api.post('/rides', {
+            pickup: pickupCoords,
+            drop: dropCoords,
+            pickupAddress: pickup,
+            dropAddress: drop,
+            fare: selectedVehicle.price,
+            estimatedDistanceMeters: tripMetrics.distanceMeters,
+            estimatedDurationMinutes: tripMetrics.durationMinutes,
+            vehicleTypeId: selectedVehicle.vehicleTypeId,
+            vehicleIconType: selectedVehicle.iconType || 'car',
+            paymentMethod: 'online',
+            otp: String(Math.floor(1000 + Math.random() * 9000)),
+          }, requestConfig);
+        }
+
+        const payload = response?.data?.data || response?.data || response;
+        const createdRideId = payload?.rideId || payload?.realtime?.rideId || payload?.ride?._id || payload?._id || payload?.id;
+
+        if (!createdRideId) {
+          throw new Error('Could not initialize booking record');
+        }
+
+        // 2. Create Razorpay order for this ride
+        const orderResponse = await api.post(`/rides/${createdRideId}/razorpay/order`, {}, requestConfig);
+        const order = orderResponse?.data?.data || orderResponse?.data || orderResponse;
+
+        if (!order.keyId || !order.orderId) {
+          throw new Error('Unable to start online payment transaction');
+        }
+
+        let userInfo = {};
+        try {
+          userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        } catch {
+          userInfo = {};
+        }
+
+        // 3. Launch Razorpay Checkout Modal
+        const rzp = new window.Razorpay({
+          key: order.keyId,
+          amount: order.amount,
+          currency: order.currency || 'INR',
+          name: 'Ozayra',
+          description: isParcel ? 'Parcel Booking Payment' : 'Taxi Booking Payment',
+          order_id: order.orderId,
+          prefill: {
+            name: userInfo?.name || '',
+            email: userInfo?.email || '',
+            contact: userInfo?.phone ? `+91${userInfo.phone}` : '',
+          },
+          modal: {
+            ondismiss: () => {
+              setIsProcessingPayment(false);
+            },
+          },
+          handler: async (paymentResponse) => {
+            try {
+              // 4. Verify payment on successful response
+              await api.post(`/rides/${createdRideId}/razorpay/verify`, {
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              }, requestConfig);
+
+              setIsProcessingPayment(false);
+              // Navigate to searching page with verified rideId
+              navigate(targetPath, {
+                state: {
+                  ...nextState,
+                  rideId: createdRideId,
+                },
+              });
+            } catch (verifyError) {
+              setPaymentError(verifyError?.message || 'Payment verification failed');
+              setIsProcessingPayment(false);
+            }
+          },
+          theme: {
+            color: '#FACC15',
+          },
+        });
+
+        rzp.open();
+      } catch (paymentErr) {
+        setPaymentError(paymentErr?.message || 'Online payment initialization failed.');
+        setIsProcessingPayment(false);
+      }
+    } else {
+      navigate(targetPath, {
+        state: nextState,
+      });
+    }
   };
 
   return (
@@ -1251,30 +1417,45 @@ const SelectVehicle = () => {
             </div>
           )}
 
+          {paymentError && (
+            <p className="text-center text-xs font-bold text-rose-500 py-1">{paymentError}</p>
+          )}
+
           <motion.button
-            whileHover={selectedVehicle && selectedAvailability.totalDrivers ? { scale: 1.01, translateY: -2 } : {}}
-            whileTap={selectedVehicle && selectedAvailability.totalDrivers ? { scale: 0.98 } : undefined}
-            disabled={!selectedVehicle || !selectedAvailability.totalDrivers}
+            whileHover={selectedVehicle && selectedAvailability.totalDrivers && !isProcessingPayment ? { scale: 1.01, translateY: -2 } : {}}
+            whileTap={selectedVehicle && selectedAvailability.totalDrivers && !isProcessingPayment ? { scale: 0.98 } : undefined}
+            disabled={!selectedVehicle || !selectedAvailability.totalDrivers || isProcessingPayment}
             onClick={handleBook}
             className={`w-full py-4 rounded-[20px] text-[15px] font-semibold shadow-xl transition-all duration-300 uppercase tracking-tight flex items-center justify-center gap-3 ${
               selectedVehicle && selectedAvailability.totalDrivers
-                ? isParcel
-                  ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900 shadow-[0_12px_28px_-4px_rgba(250,204,21,0.4)] active:scale-[0.99]'
-                  : 'bg-[#f8e001] text-slate-900 shadow-[0_12px_28px_-4px_rgba(248,224,1,0.4)] active:shadow-none'
+                ? isProcessingPayment
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                  : isParcel
+                    ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900 shadow-[0_12px_28px_-4px_rgba(250,204,21,0.4)] active:scale-[0.99]'
+                    : 'bg-[#f8e001] text-slate-900 shadow-[0_12px_28px_-4px_rgba(248,224,1,0.4)] active:shadow-none'
                 : 'bg-slate-200 text-slate-400 shadow-none cursor-not-allowed'
             }`}
           >
-            {selectedVehicle
-              ? selectedAvailability.totalDrivers
-                ? (
-                  <>
-                    <span>{isParcel ? `Confirm ${selectedVehicle.name} Delivery` : `Book ${selectedVehicle.name}`}</span>
-                    <div className={`w-1.5 h-1.5 rounded-full ${isParcel ? 'bg-gray-900/30' : 'bg-slate-900/20'}`} />
-                    <span>{formatCurrency(selectedVehicle.price)}</span>
-                  </>
-                )
-                : `${selectedVehicle.name} Offline`
-              : isParcel ? 'Select Delivery Partner' : 'Select Vehicle'}
+            {isProcessingPayment ? (
+              <>
+                <LoaderCircle size={18} className="animate-spin text-slate-500" />
+                <span>Processing Payment...</span>
+              </>
+            ) : selectedVehicle ? (
+              selectedAvailability.totalDrivers ? (
+                <>
+                  <span>{isParcel ? `Confirm ${selectedVehicle.name} Delivery` : `Book ${selectedVehicle.name}`}</span>
+                  <div className={`w-1.5 h-1.5 rounded-full ${isParcel ? 'bg-gray-900/30' : 'bg-slate-900/20'}`} />
+                  <span>{formatCurrency(selectedVehicle.price)}</span>
+                </>
+              ) : (
+                `${selectedVehicle.name} Offline`
+              )
+            ) : isParcel ? (
+              'Select Delivery Partner'
+            ) : (
+              'Select Vehicle'
+            )}
           </motion.button>
         </div>
       </div>

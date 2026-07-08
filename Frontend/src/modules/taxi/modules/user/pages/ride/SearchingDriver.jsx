@@ -327,7 +327,6 @@ const SearchingDriver = () => {
             localStorage.setItem('userInfo', JSON.stringify(loginPayload.user || {}));
           }
         }
-
         const rideRequestConfig = userToken
           ? {
               headers: {
@@ -336,30 +335,41 @@ const SearchingDriver = () => {
             }
           : {};
 
-        const response = await api.post('/rides', {
-          pickup: routeState.pickupCoords || [75.9048, 22.7039],
-          drop: routeState.dropCoords || [75.8937, 22.7533],
-          pickupAddress: routeState.pickup || '',
-          dropAddress: routeState.drop || '',
-          fare: routeState.fare || routeState.vehicle?.price || 22,
-          estimatedDistanceMeters: routeState.estimatedDistanceMeters || 0,
-          estimatedDurationMinutes: routeState.estimatedDurationMinutes || 0,
-          vehicleTypeId: selectedVehicleTypeId,
-          vehicleIconType: routeState.vehicleIconType || routeState.vehicle?.iconType,
-          paymentMethod: routeState.paymentMethod || 'Cash',
-          otp,
-        }, rideRequestConfig);
+        let rideId = routeState.rideId;
 
-        const payload = unwrap(response);
-        const ride = payload?.ride || payload;
-        const rideId = ride?._id || ride?.id || payload?.realtime?.rideId;
-        const normalizedRideId = String(rideId || '');
-        activeRideIdRef.current = normalizedRideId;
-        const socket = socketService.connect({ role: 'user', token: userToken });
+        if (rideId) {
+          activeRideIdRef.current = String(rideId);
+          const socket = socketService.connect({ role: 'user', token: userToken });
+          if (socket) {
+            socketService.emit('joinRide', { rideId });
+            socketService.emit('ride:join', { rideId });
+          }
+          setSearchStatus('Payment verified. Searching nearby drivers...');
+        } else {
+          const response = await api.post('/rides', {
+            pickup: routeState.pickupCoords || [75.9048, 22.7039],
+            drop: routeState.dropCoords || [75.8937, 22.7533],
+            pickupAddress: routeState.pickup || '',
+            dropAddress: routeState.drop || '',
+            fare: routeState.fare || routeState.vehicle?.price || 22,
+            estimatedDistanceMeters: routeState.estimatedDistanceMeters || 0,
+            estimatedDurationMinutes: routeState.estimatedDurationMinutes || 0,
+            vehicleTypeId: selectedVehicleTypeId,
+            vehicleIconType: routeState.vehicleIconType || routeState.vehicle?.iconType,
+            paymentMethod: routeState.paymentMethod || 'Cash',
+            otp,
+          }, rideRequestConfig);
 
-        if (socket && rideId) {
-          socketService.emit('joinRide', { rideId });
-          socketService.emit('ride:join', { rideId });
+          const payload = unwrap(response);
+          rideId = payload?.rideId || payload?.realtime?.rideId || payload?.ride?._id || payload?._id || payload?.id;
+          activeRideIdRef.current = String(rideId || '');
+
+          const socket = socketService.connect({ role: 'user', token: userToken });
+
+          if (socket && rideId) {
+            socketService.emit('joinRide', { rideId });
+            socketService.emit('ride:join', { rideId });
+          }
         }
 
         const pollActiveRide = async () => {

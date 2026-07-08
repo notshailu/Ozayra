@@ -64,7 +64,9 @@ export const createDeliveryRecord = async ({
     otp,
   });
 
-  await startDispatchFlow(ride);
+  if (String(paymentMethod).toLowerCase() !== 'online') {
+    await startDispatchFlow(ride);
+  }
 
   const detailedRide = await getRideDetails(ride._id);
   return serializeDeliveryRealtime(ensureParcelRide(detailedRide));
