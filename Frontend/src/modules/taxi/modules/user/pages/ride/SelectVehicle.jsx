@@ -1343,7 +1343,7 @@ const SelectVehicle = () => {
                 <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 transition-all duration-300 ${
                   isSelected ? (isParcel ? 'bg-yellow-400 text-gray-900 shadow-md scale-110' : 'bg-white shadow-sm scale-110') : isUnavailable ? 'bg-slate-200' : 'bg-slate-50'
                 }`}>
-                  <img src={getVehicleIcon(v.icon_types || v.icon_types_for || v.name)} alt={v.name} className="w-9 h-9 object-contain drop-shadow-sm" />
+                  <img src={getVehicleIcon(v)} alt={v.name} className="w-9 h-9 object-contain drop-shadow-sm" />
                 </div>
 
                 <div className="flex-1 min-w-0 z-10">
