@@ -54,10 +54,18 @@ const RAPIDO_MAP_STYLE = [
 ];
 
 const getDriverVehicleIcon = (driverObj, isParcel) => {
-    if (isParcel) return '/5_Parcel.png';
     const iconType = String(driverObj?.vehicleIconType || driverObj?.vehicleType || '').toLowerCase();
+    if (isParcel && !iconType.includes('truck') && !iconType.includes('auto') && !iconType.includes('bike')) return '/5_Parcel.png';
     if (iconType.includes('bike') || iconType.includes('motorcycle')) return '/1_Bike.png';
     if (iconType.includes('auto') || iconType.includes('rickshaw')) return '/2_AutoRickshaw.png';
+    if (iconType.includes('ehc')) return '/ehcv.png';
+    if (iconType.includes('hcv')) return '/hcv.png';
+    if (iconType.includes('lcv')) return '/LCV.png';
+    if (iconType.includes('mcv')) return '/mcv.png';
+    if (iconType.includes('truck')) return '/truck.png';
+    if (iconType.includes('lux')) return '/Luxury.png';
+    if (iconType.includes('premium')) return '/Premium.png';
+    if (iconType.includes('suv')) return '/SUV.png';
     return '/4_Taxi.png';
 };
 

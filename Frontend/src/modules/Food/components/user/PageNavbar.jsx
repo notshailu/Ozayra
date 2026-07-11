@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+﻿import { Link } from "react-router-dom"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { ChevronDown, ShoppingCart, Wallet } from "lucide-react"
 import { Button } from "@food/components/ui/button"
@@ -1003,7 +1003,7 @@ export default function PageNavbar({
               />
             ) : (
               <span className={`text-lg font-bold text-${textColor} scale-[1.8] sm:scale-[2] origin-left inline-block`}>
-                {companyName || "Ishsys"}
+                {companyName || "Ozayra"}
               </span>
             )}
           </Link>

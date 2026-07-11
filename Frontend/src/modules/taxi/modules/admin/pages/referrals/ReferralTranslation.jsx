@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+﻿import { useRef, useEffect, useState } from 'react';
 import {
   ChevronRight,
   Copy,
@@ -276,7 +276,7 @@ const HtmlEditor = ({ label, value, onChange, plainText = false }) => {
             className="min-h-[180px] px-8 py-3 text-xs text-gray-700 outline-none prose prose-xs max-w-none leading-relaxed overflow-y-auto bg-white custom-html-editor font-medium"
           />
           <div className="px-3 py-1 border-t border-gray-50 flex justify-end">
-            <span className="text-[9px] text-gray-300 font-bold uppercase tracking-tighter">Powered by ishsys</span>
+            <span className="text-[9px] text-gray-300 font-bold uppercase tracking-tighter">Powered by ozayra</span>
           </div>
         </div>
       )}

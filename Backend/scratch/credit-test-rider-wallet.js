@@ -1,8 +1,8 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { creditWallet } from '../src/core/payments/wallet.service.js';
 
-dotenv.config({ path: 'c:/Users/Shailendra Rajpoot/Desktop/ishsys-project/Master/Ishsys master/Backend/.env' });
+dotenv.config({ path: 'c:/Users/Shailendra Rajpoot/Desktop/ozayra-project/Master/Ozayra master/Backend/.env' });
 const MONGODB_URI = process.env.MONGODB_URI;
 
 async function run() {

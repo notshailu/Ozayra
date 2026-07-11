@@ -1,4 +1,4 @@
-import { verifyAccessToken } from '../../../../core/auth/token.util.js';
+﻿import { verifyAccessToken } from '../../../../core/auth/token.util.js';
 import { FoodAdmin } from '../../../../core/admin/admin.model.js';
 import { FoodUser as MasterFoodUser } from '../../../../core/users/user.model.js';
 import { ApiError } from '../../../../utils/ApiError.js';
@@ -29,7 +29,7 @@ const isTaxiPayload = (payload) =>
 const buildTaxiUserPatch = (masterUser) => ({
   phone: String(masterUser.phone || '').trim(),
   countryCode: String(masterUser.countryCode || '+91').trim(),
-  name: String(masterUser.name || 'Ishsys User').trim(),
+  name: String(masterUser.name || 'Ozayra User').trim(),
   email: String(masterUser.email || '').trim().toLowerCase(),
   profileImage: String(masterUser.profileImage || '').trim(),
   addresses: Array.isArray(masterUser.addresses) ? masterUser.addresses : [],

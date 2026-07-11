@@ -65,6 +65,14 @@ const IncomingRideRequest = ({ visible, onAccept, onDecline, requestData, isAcce
     const val = String(type).toLowerCase();
     if (val.includes('bike') || val.includes('motorcycle')) return '/1_Bike.png';
     if (val.includes('auto') || val.includes('rickshaw')) return '/2_AutoRickshaw.png';
+    if (val.includes('ehc')) return '/ehcv.png';
+    if (val.includes('hcv')) return '/hcv.png';
+    if (val.includes('lcv')) return '/LCV.png';
+    if (val.includes('mcv')) return '/mcv.png';
+    if (val.includes('truck')) return '/truck.png';
+    if (val.includes('lux')) return '/Luxury.png';
+    if (val.includes('premium')) return '/Premium.png';
+    if (val.includes('suv')) return '/SUV.png';
     if (val.includes('parcel') || val.includes('delivery')) return '/5_Parcel.png';
     return '/4_Taxi.png';
   };

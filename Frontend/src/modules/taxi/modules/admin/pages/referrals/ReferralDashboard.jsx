@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   ArrowUpRight, 
@@ -246,8 +246,8 @@ const ReferralDashboard = () => {
 
       {/* FOOTER */}
       <footer className="mt-20 flex items-center justify-between text-[11px] font-bold text-gray-400 uppercase tracking-widest border-t border-gray-100 pt-6">
-         <div>2026 © Ishsys.</div>
-         <div>Design & Develop by Ishsys</div>
+         <div>2026 © Ozayra.</div>
+         <div>Design & Develop by Ozayra</div>
          <div>App version 2.3</div>
       </footer>
     </div>

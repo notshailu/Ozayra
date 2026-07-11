@@ -83,14 +83,14 @@ const getMapIconForVehicle = (iconType = '') => {
 
     if (value.includes('bike')) return '/1_Bike.png';
     if (value.includes('auto')) return '/2_AutoRickshaw.png';
-    if (value.includes('ehc')) return '/ehcv.webp';
-    if (value.includes('hcv')) return '/hcv.webp';
-    if (value.includes('lcv')) return '/LCV.webp';
-    if (value.includes('mcv')) return '/mcv.webp';
-    if (value.includes('truck')) return '/truck.webp';
-    if (value.includes('lux')) return '/Luxury.webp';
-    if (value.includes('premium')) return '/Premium.webp';
-    if (value.includes('suv')) return '/SUV.webp';
+    if (value.includes('ehc')) return '/ehcv.png';
+    if (value.includes('hcv')) return '/hcv.png';
+    if (value.includes('lcv')) return '/LCV.png';
+    if (value.includes('mcv')) return '/mcv.png';
+    if (value.includes('truck')) return '/truck.png';
+    if (value.includes('lux')) return '/Luxury.png';
+    if (value.includes('premium')) return '/Premium.png';
+    if (value.includes('suv')) return '/SUV.png';
 
     return '/4_Taxi.png';
 };

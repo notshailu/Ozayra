@@ -11,16 +11,17 @@ import {
   Filter,
   Save,
   Activity,
-  ChevronDown
+  ChevronDown,
+  Info
 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from "framer-motion";
 
-const inputClass = "w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors";
-const labelClass = "block text-xs font-semibold text-gray-500 mb-1.5";
-const selectClass = "w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M6%209L12%2015L18%209%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:18px] bg-[right_12px_center] bg-no-repeat";
+const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100';
+const labelClass = 'mb-2 block text-[12px] font-bold text-slate-700';
+const selectClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 appearance-none cursor-pointer bg-[url(\'data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M6%209L12%2015L18%209%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E\')] bg-[length:18px] bg-[right_12px_center] bg-no-repeat';
 
 const StatusToggle = ({ active, onToggle }) => (
   <button
@@ -268,75 +269,85 @@ const RentalPackageTypes = ({ mode: propMode }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F9] animate-in fade-in duration-500 font-sans flex flex-col">
-      {/* Create/Edit Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shrink-0 shadow-sm relative z-10">
-        <h1 className="text-[14px] font-black text-slate-900 uppercase tracking-tight">{isEdit ? 'EDIT' : 'CREATE'}</h1>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
-          <span className="hover:text-indigo-600 cursor-pointer" onClick={() => navigate("/admin/pricing/rental-packages")}>Rental Package Types</span>
-          <ChevronRight size={12} className="opacity-50" />
-          <span className="text-gray-700 uppercase">{isEdit ? 'Edit' : 'Create'}</span>
+    <div className="min-h-screen bg-[#f6f7fb] p-6 lg:p-8 font-sans">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="hover:text-indigo-600 cursor-pointer" onClick={() => navigate("/admin/pricing/rental-packages")}>Rental Package Types</span>
+            <ChevronRight size={12} />
+            <span className="text-slate-700">{isEdit ? 'Edit' : 'Create'}</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">{isEdit ? 'Edit Rental Package' : 'Create Rental Package'}</h1>
+          <p className="mt-1 text-sm text-slate-500">Define rental package details and its transport type.</p>
         </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-8 lg:p-10 shrink-0">
-        <motion.div 
-          key="form" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-          className="max-w-[1400px] mx-auto bg-white rounded shadow-sm border border-gray-100 mb-20 relative"
+        <button
+          onClick={() => navigate('/admin/pricing/rental-packages')}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
-          {/* Main Content Area */}
-          <div className="p-8 lg:px-12 lg:py-10 border-b border-gray-100 border-dashed">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-              <div className="space-y-1.5 font-sans">
-                <label className={labelClass}>Transport Type *</label>
-                <select name="transport_type" value={formData.transport_type} onChange={handleInputChange} className={selectClass}>
-                  <option value="">Select Transport Type</option>
-                  <option value="taxi">Taxi / Ride-Hailing</option>
-                  <option value="delivery">Logistics / Delivery</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5 font-sans">
-                <label className={labelClass}>Name *</label>
-                <input name="name" value={formData.name} onChange={handleInputChange} placeholder="Enter Name" className={inputClass} />
-              </div>
-
-              <div className="space-y-1.5 font-sans">
-                <label className={labelClass}>Short Description *</label>
-                <input name="short_description" value={formData.short_description} onChange={handleInputChange} placeholder="Enter Short Description" className={inputClass} />
-              </div>
-
-              <div className="space-y-1.5 font-sans">
-                <label className={labelClass}>Description *</label>
-                <textarea 
-                  name="description" 
-                  value={formData.description} 
-                  onChange={handleInputChange} 
-                  rows={2} 
-                  placeholder="Enter Description" 
-                  className={inputClass + " resize-none min-h-[46px] flex items-center pt-2.5"} 
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8 flex justify-end items-center gap-4">
-             <button 
-                onClick={() => navigate('/admin/pricing/rental-packages')}
-                className="px-6 py-2.5 bg-gray-50 text-gray-500 rounded text-sm font-semibold hover:bg-gray-100 transition-all active:scale-95 border border-gray-200"
-             >
-                Cancel
-             </button>
-             <button 
-                onClick={handleSubmit} disabled={submitting}
-                className="px-10 py-2.5 bg-[#3B488C] text-white rounded text-sm font-bold hover:bg-[#2D3870] transition-all shadow-md active:scale-95 flex items-center gap-2 group"
-              >
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} className="group-hover:scale-110 transition-transform" />}
-                {isEdit ? 'Update' : 'Save'}
-             </button>
-          </div>
-        </motion.div>
+          <ArrowLeft size={16} />
+          Back
+        </button>
       </div>
+
+      <form onSubmit={handleSubmit} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <div className="grid grid-cols-1 gap-8 p-6 lg:grid-cols-2 lg:p-8">
+          <div>
+            <label className={labelClass}>Transport Type *</label>
+            <select name="transport_type" value={formData.transport_type} onChange={handleInputChange} className={selectClass}>
+              <option value="">Select Transport Type</option>
+              <option value="taxi">Taxi / Ride-Hailing</option>
+              <option value="delivery">Logistics / Delivery</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>Name *</label>
+            <input name="name" value={formData.name} onChange={handleInputChange} placeholder="e.g. 2 Hrs - 20 Kms" className={inputClass} />
+          </div>
+
+          <div>
+            <label className={labelClass}>Short Description *</label>
+            <input name="short_description" value={formData.short_description} onChange={handleInputChange} placeholder="e.g. Ideal for short trips" className={inputClass} />
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className={labelClass}>Description *</label>
+            <textarea 
+              name="description" 
+              value={formData.description} 
+              onChange={handleInputChange} 
+              rows={3} 
+              placeholder="Enter detailed description here..." 
+              className={inputClass + " resize-none min-h-[80px]"} 
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 border-t border-slate-100 bg-slate-50/50 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="flex items-start gap-3 rounded-2xl bg-indigo-50 px-4 py-3">
+            <Info size={16} className="mt-0.5 shrink-0 text-indigo-600" />
+            <p className="text-sm text-indigo-800">
+              Rental packages allow users to book vehicles on an hourly basis. Ensure descriptions clearly state what is included.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 lg:items-end">
+            <button 
+              type="submit" disabled={submitting}
+              className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl bg-[#2e3c78] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#24305f] disabled:opacity-60"
+            >
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {submitting ? 'Saving...' : (isEdit ? 'Update' : 'Create')}
+            </button>
+            <button 
+              type="button" onClick={() => navigate('/admin/pricing/rental-packages')}
+              className="text-sm font-medium text-slate-500 transition hover:text-slate-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   );
 };

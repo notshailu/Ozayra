@@ -324,8 +324,8 @@ const VehicleType = ({ mode: propMode }) => {
         icon_types: normalizeIconType(formData.icon_types),
         image: formData.image || '',
         icon: formData.icon || '',
-        capacity: Number(formData.capacity || 0),
-        weight: Number(formData.weight || 0),
+        capacity: Number(formData.capacity) || 0,
+        weight: Number(formData.weight) || 0,
         is_accept_share_ride: Number(formData.is_accept_share_ride || 0),
         status: formData.active ? 1 : 0,
         active: formData.active,
@@ -603,8 +603,11 @@ const VehicleType = ({ mode: propMode }) => {
                   <label className={labelClass}>Sitting Capacity *</label>
                   <input
                     type="number"
-                    value={formData.capacity}
-                    onChange={(e) => updateForm('capacity', e.target.value)}
+                    value={formData.capacity === 0 && formData._capacityRaw === '' ? '' : formData.capacity}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      updateForm('capacity', raw === '' ? '' : Number(raw));
+                    }}
                     className={inputClass}
                     placeholder="4"
                     required
@@ -614,8 +617,11 @@ const VehicleType = ({ mode: propMode }) => {
                   <label className={labelClass}>Max Weight (Kg) *</label>
                   <input
                     type="number"
-                    value={formData.weight}
-                    onChange={(e) => updateForm('weight', e.target.value)}
+                    value={formData.weight === 0 && formData._weightRaw === '' ? '' : formData.weight}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      updateForm('weight', raw === '' ? '' : Number(raw));
+                    }}
                     className={inputClass}
                     placeholder="100"
                     required
@@ -629,9 +635,10 @@ const VehicleType = ({ mode: propMode }) => {
                 </label>
                 <input
                   type="number"
-                  value={String(formData.transport_type).toLowerCase() === 'taxi' ? formData.capacity : (formData.weight || formData.capacity)}
+                  value={String(formData.transport_type).toLowerCase() === 'taxi' ? formData.capacity : (formData.weight !== '' ? formData.weight : formData.capacity)}
                   onChange={(e) => {
-                    const val = Number(e.target.value);
+                    const raw = e.target.value;
+                    const val = raw === '' ? '' : Number(raw);
                     if (String(formData.transport_type).toLowerCase() === 'taxi') {
                       updateForm('capacity', val);
                     } else {

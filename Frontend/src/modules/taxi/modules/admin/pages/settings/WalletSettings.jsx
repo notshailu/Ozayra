@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronRight,
   Loader2,
   Save,
   ShieldCheck,
   Wallet,
+  Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../../shared/api/axiosInstance';
@@ -66,45 +67,20 @@ const SWITCH_FIELDS = [
 
 const isEnabled = (value) => ['1', 'true', 'yes', 'on'].includes(String(value ?? '1').trim().toLowerCase());
 
-const Stat = ({ label, value, tone = 'slate' }) => {
-  const toneClass = tone === 'green' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-700 bg-slate-50';
+const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100';
+const labelClass = 'mb-1 block text-sm font-bold text-slate-700';
+const helpClass = 'mb-3 block text-xs text-slate-500';
 
-  return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
-      <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-black ${toneClass}`}>{value}</p>
-    </div>
-  );
-};
-
-const AmountField = ({ field, value, onChange }) => (
-  <label className="block rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-    <span className="text-sm font-black text-slate-900">{field.label}</span>
-    <span className="mt-1 block text-xs font-semibold leading-relaxed text-slate-500">{field.help}</span>
-    <input
-      type="number"
-      name={field.name}
-      value={value ?? ''}
-      onChange={(event) => onChange(field.name, event.target.value)}
-      placeholder={field.placeholder}
-      className="mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-slate-900 focus:bg-white"
-    />
-  </label>
-);
-
-const SwitchField = ({ field, checked, onToggle }) => (
+const StatusToggle = ({ active, onToggle }) => (
   <button
     type="button"
-    onClick={() => onToggle(field.name)}
-    className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-4 text-left shadow-sm"
+    onClick={(e) => {
+      e.preventDefault();
+      onToggle();
+    }}
+    className={`relative h-6 w-12 shrink-0 rounded-full transition-all ${active ? 'bg-emerald-500' : 'bg-slate-300'}`}
   >
-    <span>
-      <span className="block text-sm font-black text-slate-900">{field.label}</span>
-      <span className="mt-1 block text-xs font-semibold leading-relaxed text-slate-500">{field.help}</span>
-    </span>
-    <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${checked ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${checked ? 'left-6' : 'left-1'}`} />
-    </span>
+    <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${active ? 'left-7' : 'left-1'}`} />
   </button>
 );
 
@@ -130,18 +106,8 @@ const WalletSettings = () => {
     fetchData();
   }, []);
 
-  const preview = useMemo(() => {
-    const driverMinimum = Number(settings.driver_wallet_minimum_amount_to_get_an_order || 0);
-    const sampleBalance = -47.55;
-
-    return {
-      driverMinimum,
-      sampleBalance,
-      canReceiveOrders: isEnabled(settings.show_wallet_feature_for_driver) && sampleBalance >= driverMinimum,
-    };
-  }, [settings]);
-
-  const handleUpdate = async () => {
+  const handleUpdate = async (e) => {
+    if (e) e.preventDefault();
     try {
       setSaving(true);
       const response = await api.patch('/admin/general-settings/wallet', { settings });
@@ -164,101 +130,100 @@ const WalletSettings = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <Loader2 className="h-10 w-10 animate-spin text-slate-900" />
+      <div className="flex min-h-screen items-center justify-center bg-[#f6f7fb]">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] p-5 lg:p-8">
-      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-h-screen bg-[#f6f7fb] p-6 lg:p-8 font-sans">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">App Settings</p>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">Wallet Settings</h1>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
-          <span>Wallet Settings</span>
-          <ChevronRight size={13} strokeWidth={3} />
-          <span className="text-slate-900">Wallet</span>
+          <div className="mb-2 flex items-center gap-1.5 text-xs text-slate-400">
+            <span>App Settings</span>
+            <ChevronRight size={12} />
+            <span className="text-slate-700">Wallet</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Wallet Settings</h1>
+          <p className="mt-1 text-sm text-slate-500">Configure wallet limits, minimum balances, and feature toggles.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 pb-28 xl:grid-cols-[1.25fr_0.75fr]">
-        <section className="space-y-5">
-          <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-950 text-white">
-                <Wallet size={21} />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-slate-950">Amounts</h2>
-                <p className="text-xs font-semibold text-slate-500">These numbers directly control driver wallet behavior.</p>
-              </div>
+      <form onSubmit={handleUpdate} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        {/* Amounts Section */}
+        <div className="border-b border-slate-100 p-6 lg:p-8">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <Wallet size={18} />
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {AMOUNT_FIELDS.map((field) => (
-                <AmountField key={field.name} field={field} value={settings[field.name]} onChange={handleChange} />
-              ))}
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Amounts & Limits</h2>
+              <p className="text-sm text-slate-500">These numbers directly control wallet behavior.</p>
             </div>
           </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {AMOUNT_FIELDS.map((field) => (
+              <div key={field.name}>
+                <label className={labelClass}>{field.label}</label>
+                <span className={helpClass}>{field.help}</span>
+                <input
+                  type="number"
+                  value={settings[field.name] ?? ''}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  className={inputClass}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
 
-          <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
-                <ShieldCheck size={21} />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-slate-950">Feature Controls</h2>
-                <p className="text-xs font-semibold text-slate-500">Switch wallet features on or off without touching code.</p>
-              </div>
+        {/* Feature Controls Section */}
+        <div className="p-6 lg:p-8">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <ShieldCheck size={18} />
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {SWITCH_FIELDS.map((field) => (
-                <SwitchField key={field.name} field={field} checked={isEnabled(settings[field.name])} onToggle={handleToggle} />
-              ))}
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Feature Controls</h2>
+              <p className="text-sm text-slate-500">Switch wallet features on or off.</p>
             </div>
           </div>
-        </section>
-
-        <aside className="space-y-5">
-          <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Driver preview</p>
-            <div className="mt-4 rounded-[2rem] bg-slate-950 p-5 text-white">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/45">Sample wallet balance</p>
-              <h3 className="mt-2 text-4xl font-black">Rs {preview.sampleBalance.toFixed(2)}</h3>
-              <p className={`mt-4 inline-flex rounded-full px-3 py-1 text-[11px] font-black ${preview.canReceiveOrders ? 'bg-emerald-400/15 text-emerald-200' : 'bg-amber-400/15 text-amber-200'}`}>
-                {preview.canReceiveOrders ? 'Ready for orders' : 'Top up to receive orders'}
-              </p>
-            </div>
-            <div className="mt-4 grid grid-cols-1 gap-3">
-              <Stat label="Driver order minimum" value={`Rs ${preview.driverMinimum.toFixed(2)}`} tone="green" />
-              <Stat label="Driver wallet" value={isEnabled(settings.show_wallet_feature_for_driver) ? 'Enabled' : 'Disabled'} />
-              <Stat label="Driver transfer" value={isEnabled(settings.enable_wallet_transfer_driver) ? 'Enabled' : 'Disabled'} />
-            </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {SWITCH_FIELDS.map((field) => (
+              <div key={field.name} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <div>
+                  <span className="block text-sm font-bold text-slate-800">{field.label}</span>
+                  <span className="mt-1 block text-xs text-slate-500">{field.help}</span>
+                </div>
+                <StatusToggle active={isEnabled(settings[field.name])} onToggle={() => handleToggle(field.name)} />
+              </div>
+            ))}
           </div>
+        </div>
 
-          <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5">
-            <p className="text-sm font-black text-amber-900">How driver control works</p>
-            <p className="mt-2 text-xs font-bold leading-relaxed text-amber-800">
+        {/* Footer */}
+        <div className="grid grid-cols-1 gap-4 border-t border-slate-100 bg-slate-50/50 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="flex items-start gap-3 rounded-2xl bg-indigo-50 px-4 py-3">
+            <Info size={16} className="mt-0.5 shrink-0 text-indigo-600" />
+            <p className="text-sm text-indigo-800">
               The driver wallet page reads these settings from the backend. Top-up minimum is enforced by the API, and order eligibility uses the driver minimum balance.
             </p>
           </div>
-        </aside>
-      </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/90 p-4 backdrop-blur">
-        <div className="mx-auto flex max-w-[1500px] justify-end">
-          <button
-            onClick={handleUpdate}
-            disabled={saving}
-            className="flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 text-sm font-black uppercase tracking-widest text-white shadow-lg disabled:bg-slate-300"
-          >
-            {saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
-            Save
-          </button>
+          <div className="flex flex-col gap-3 lg:items-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl bg-[#2e3c78] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#24305f] disabled:opacity-60"
+            >
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {saving ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 };

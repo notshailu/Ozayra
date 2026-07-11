@@ -1,5 +1,5 @@
-export const TAXI_LOCATION_STORAGE_KEY = 'ishsys:lastLocation';
-export const TAXI_LOCATION_UPDATED_EVENT = 'ishsys:location-updated';
+﻿export const TAXI_LOCATION_STORAGE_KEY = 'ozayra:lastLocation';
+export const TAXI_LOCATION_UPDATED_EVENT = 'ozayra:location-updated';
 
 export const DEFAULT_TAXI_LOCATION_LABEL = 'Choose your location';
 

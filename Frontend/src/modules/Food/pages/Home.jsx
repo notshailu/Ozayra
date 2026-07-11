@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom"
+﻿import { Link, useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { ArrowRight, Utensils, Truck, Store, Globe, Heart, Shield, Clock } from "lucide-react"
 import { motion } from "framer-motion"
@@ -10,7 +10,7 @@ import { getCachedSettings, loadBusinessSettings } from "@common/utils/businessS
 export default function Home() {
   const navigate = useNavigate()
   const [logoUrl, setLogoUrl] = useState(() => getCachedSettings()?.logo?.url || null)
-  const [companyName, setCompanyName] = useState(() => getCachedSettings()?.companyName || "Ishsys Food")
+  const [companyName, setCompanyName] = useState(() => getCachedSettings()?.companyName || "Ozayra Food")
 
   useEffect(() => {
     const loadLogo = async () => {
@@ -58,7 +58,7 @@ export default function Home() {
               </div>
             )}
           </div>
-          <CardTitle className="text-3xl font-bold text-center">{companyName || "Ishsys Food"}</CardTitle>
+          <CardTitle className="text-3xl font-bold text-center">{companyName || "Ozayra Food"}</CardTitle>
           <CardDescription className="text-lg">
             Welcome to the Food Delivery Platform
           </CardDescription>

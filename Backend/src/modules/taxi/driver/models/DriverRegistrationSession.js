@@ -64,6 +64,7 @@ const driverRegistrationSessionSchema = new mongoose.Schema(
       city: { type: String, default: '' },
       postalCode: { type: String, default: '' },
       taxNumber: { type: String, default: '' },
+      vehicleImage: { type: String, default: '' },
     },
     documents: {
       type: mongoose.Schema.Types.Mixed,

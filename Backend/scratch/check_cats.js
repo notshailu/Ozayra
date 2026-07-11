@@ -1,8 +1,8 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import { QuickCategory } from '../src/modules/quick-commerce/models/category.model.js';
 
 async function checkCategories() {
-  const uri = "mongodb+srv://Ishsys:Ishsys123@cluster0.jkxcmhk.mongodb.net/Ishsys-Master-Product";
+  const uri = "mongodb+srv://Ozayra:Ozayra123@cluster0.jkxcmhk.mongodb.net/Ozayra-Master-Product";
   try {
     console.log('Connecting to MongoDB...');
     await mongoose.connect(uri);

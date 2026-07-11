@@ -74,10 +74,15 @@ const PhoneRegistration = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans p-6 pt-12 select-none flex flex-col justify-between text-slate-900 relative overflow-hidden">
-            {/* Soft background ambient glow */}
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full bg-slate-200/40 blur-[80px] pointer-events-none" />
-
+        <div 
+            className="min-h-screen font-sans p-6 pt-12 select-none flex flex-col justify-between relative overflow-hidden"
+            style={{
+                backgroundImage: 'url(/image.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            }}
+        >
             <div className="max-w-sm mx-auto w-full flex-1 flex flex-col justify-between relative z-10">
                 
                 {/* Header back button */}
@@ -92,9 +97,8 @@ const PhoneRegistration = () => {
 
                 {/* Content Box */}
                 <div className="flex-1 flex flex-col justify-center py-6">
-                    
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center block mb-3">
-                        {role === 'owner' ? 'Owner Portal' : 'Driver Portal'}
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 text-center block mb-3 drop-shadow-sm">
+                        Driver Portal
                     </span>
 
                     <motion.div 
@@ -102,10 +106,10 @@ const PhoneRegistration = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-center mb-8"
                     >
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                        <h1 className="text-3xl font-bold tracking-tight text-slate-950 drop-shadow-md">
                             {isLoginPage ? 'Welcome back' : `Join ${appName}`}
                         </h1>
-                        <p className="text-sm font-medium text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
+                        <p className="text-sm font-bold text-slate-700 mt-2 max-w-xs mx-auto leading-relaxed drop-shadow-sm">
                             {isLoginPage ? 'Enter your registered mobile number to receive an OTP and securely login.' : "Let's verify your mobile number to get started on your journey."}
                         </p>
                     </motion.div>
@@ -118,10 +122,10 @@ const PhoneRegistration = () => {
                     >
                         {/* Elegant Minimal Input Field */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                            <label className="text-[10px] font-bold text-slate-700 uppercase tracking-widest ml-1 drop-shadow-sm">
                                 Mobile Number
                             </label>
-                            <div className="flex items-center bg-white border border-slate-200 rounded-2xl px-4 py-3.5 focus-within:border-slate-800 transition-all duration-200 shadow-sm">
+                            <div className="flex items-center bg-white/90 backdrop-blur-md border border-slate-200/50 rounded-2xl px-4 py-3.5 focus-within:border-slate-900 focus-within:ring-2 focus-within:ring-slate-900/10 transition-all duration-200 shadow-xl">
                                 <span className="text-base font-bold text-slate-400 mr-3 pr-3 border-r border-slate-100">+91</span>
                                 <input 
                                     type="tel" 
@@ -140,13 +144,13 @@ const PhoneRegistration = () => {
                                 type="button"
                                 onClick={() => setAgreed(!agreed)}
                                 className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                                    agreed ? 'bg-slate-900 border-slate-900 text-white' : 'border-slate-300 hover:border-slate-450 bg-white'
+                                    agreed ? 'bg-slate-900 border-slate-900 text-white shadow-md' : 'border-slate-400 hover:border-slate-600 bg-white/80'
                                 }`}
                             >
                                 {agreed && <Check size={11} strokeWidth={3} />}
                             </button>
-                            <label onClick={() => setAgreed(!agreed)} className="text-xs font-semibold text-slate-400 leading-relaxed cursor-pointer select-none">
-                                I agree to the <span className="text-slate-700 underline font-bold">Terms</span> and <span className="text-slate-700 underline font-bold">Privacy Policy</span>.
+                            <label onClick={() => setAgreed(!agreed)} className="text-xs font-bold text-slate-800 leading-relaxed cursor-pointer select-none drop-shadow-sm">
+                                I agree to the <span className="text-slate-950 underline font-black">Terms</span> and <span className="text-slate-950 underline font-black">Privacy Policy</span>.
                             </label>
                         </div>
 
@@ -170,8 +174,8 @@ const PhoneRegistration = () => {
                             disabled={loading || !agreed || phone.length !== 10}
                             className={`w-full h-13 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold transition-all ${
                                 agreed && phone.length === 10 
-                                    ? 'bg-slate-900 text-white hover:bg-slate-950 active:scale-[0.99] shadow-md shadow-slate-950/5' 
-                                    : 'bg-slate-200/70 text-slate-400 pointer-events-none'
+                                    ? 'bg-slate-900 text-white hover:bg-slate-950 active:scale-[0.99] shadow-xl shadow-slate-900/20' 
+                                    : 'bg-white/60 text-slate-400 border border-slate-200/50 backdrop-blur-sm pointer-events-none'
                             }`}
                         >
                             {loading ? 'Sending OTP...' : 'Continue'}  
@@ -183,37 +187,27 @@ const PhoneRegistration = () => {
                 {/* Footer Switch Options */}
                 <footer className="mt-6 space-y-4">
                     <div className="flex flex-col items-center gap-3">
-                        <button 
-                            onClick={() => setRole(role === 'driver' ? 'owner' : 'driver')}
-                            className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-all"
-                        >
-                            {isLoginPage ? (
-                                <>Switch to <span className="text-indigo-600 font-extrabold">{role === 'driver' ? 'Owner Portal' : 'Driver Portal'}</span></>
-                            ) : (
-                                <>Register as <span className="text-indigo-600 font-extrabold">{role === 'driver' ? 'Owner' : 'Driver'}</span></>
-                            )}
-                        </button>
 
                         {!isLoginPage && (
                             <button
                                 onClick={() => navigate('/taxi/driver/login')}
                                 className="text-xs font-bold text-slate-400 hover:text-slate-900 transition-all"
                             >
-                                Already have an account? <span className="text-slate-900 font-extrabold ml-1">Login Here</span>
+                                Already have an account? <span className="text-slate-950 font-black ml-1">Login Here</span>
                             </button>
                         )}
 
                         {isLoginPage && (
                             <button
                                 onClick={() => navigate('/taxi/driver/welcome')}
-                                className="text-xs font-bold text-slate-400 hover:text-slate-900 transition-all"
+                                className="text-xs font-bold text-slate-700 hover:text-slate-950 transition-all drop-shadow-sm"
                             >
-                                New here? <span className="text-slate-900 font-extrabold ml-1">Create an Account</span>
+                                New here? <span className="text-slate-950 font-black ml-1">Create an Account</span>
                             </button>
                         )}
                     </div>
 
-                    <div className="flex items-center justify-center gap-1.5 text-slate-400/60 pt-4 border-t border-slate-200/40">
+                    <div className="flex items-center justify-center gap-1.5 text-slate-700 pt-4 border-t border-slate-400/30">
                         <ShieldCheck size={13} strokeWidth={2.5} />
                         <span className="text-[8px] font-black uppercase tracking-widest mt-0.5">End-to-End Encrypted</span>
                     </div>

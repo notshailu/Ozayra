@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom"
+﻿import { useParams, Link, useNavigate } from "react-router-dom"
 import {
   ArrowLeft,
   Package,
@@ -434,10 +434,10 @@ export default function OrderHelp() {
                       Include order {order.id} in subject
                     </p>
                     <a
-                      href={`mailto:support@ishsys.com?subject=Help with Order ${order.id}`}
+                      href={`mailto:support@ozayra.com?subject=Help with Order ${order.id}`}
                       className="text-sm text-primary hover:underline font-medium"
                     >
-                      support@ishsys.com
+                      support@ozayra.com
                     </a>
                   </div>
                 </div>

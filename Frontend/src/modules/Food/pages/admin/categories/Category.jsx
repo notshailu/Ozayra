@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+﻿import { useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import {
@@ -332,7 +332,7 @@ export default function Category() {
       let imageUrl = String(formData.image || "").trim()
 
       if (selectedImageFile) {
-        const uploadRes = await uploadAPI.uploadMedia(selectedImageFile, { folder: "ishsys/categories" })
+        const uploadRes = await uploadAPI.uploadMedia(selectedImageFile, { folder: "ozayra/categories" })
         const payload = uploadRes?.data?.data || uploadRes?.data
         imageUrl = payload?.url || imageUrl
       }

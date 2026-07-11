@@ -13,12 +13,14 @@ import {
   updateRideStatus,
   createRazorpayRideOrder,
   verifyRazorpayRidePayment,
+  checkZoneByCoords,
 } from '../controllers/rideController.js';
 
 export const rideRouter = Router();
 
 rideRouter.post('/', authenticateOrResolveUser(['user']), asyncHandler(createRide));
 rideRouter.get('/', authenticateOrResolveUser(['user', 'driver']), asyncHandler(listMyRides));
+rideRouter.get('/check-zone', asyncHandler(checkZoneByCoords));
 rideRouter.get('/app-settings/tip', asyncHandler(getRideAppTipSettings));
 rideRouter.get('/available-drivers', asyncHandler(listAvailableDrivers));
 rideRouter.get('/active/me', authenticateOrResolveUser(['user', 'driver']), asyncHandler(getMyActiveRide));

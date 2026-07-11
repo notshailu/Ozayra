@@ -997,6 +997,7 @@ const SenderReceiverDetails = () => {
           receiverMobile: receiverMobile || '9999999999',
           paymentMethod: 'Cash',
           fare: finalFare,
+          weightRule: parcelState.weightRule || null,
           deliveryScope: parcelState.deliveryScope || 'city',
           isOutstation: Boolean(parcelState.isOutstation || parcelState.deliveryScope === 'outstation'),
           parcel: {
@@ -1334,7 +1335,7 @@ const SenderReceiverDetails = () => {
           </div>
         </motion.div>
 
-        {/* Distance & Fare Summary */}
+        {/* Distance Summary */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1344,11 +1345,6 @@ const SenderReceiverDetails = () => {
           <div className="flex justify-between items-center text-xs">
             <span className="font-medium text-gray-400">Est. Route Distance</span>
             <span className="font-semibold text-gray-800">{(distanceMeters / 1000).toFixed(1)} km</span>
-          </div>
-          <div className="h-px bg-gray-100" />
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-medium text-gray-500">Est. Delivery Fare</span>
-            <span className="text-base font-semibold text-emerald-600">₹{calculatedFare}</span>
           </div>
         </motion.div>
       </div>

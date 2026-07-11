@@ -1,5 +1,5 @@
-export const APP_CONFIG = {
-  NAME: 'Ishsys Master',
+﻿export const APP_CONFIG = {
+  NAME: 'Ozayra Master',
   VERSION: '1.0.0',
 };
 

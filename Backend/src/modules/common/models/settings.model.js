@@ -1,9 +1,9 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 
 const globalSettingsSchema = new mongoose.Schema(
     {
-        companyName: { type: String, required: true, default: 'Ishsys' },
-        email: { type: String, required: true, default: 'admin@ishsys.com' },
+        companyName: { type: String, required: true, default: 'Ozayra' },
+        email: { type: String, required: true, default: 'admin@ozayra.com' },
         phone: {
             countryCode: { type: String, default: '+91' },
             number: { type: String, default: '' }

@@ -1,8 +1,8 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve('C:/Users/Shailendra Rajpoot/Desktop/ishsys-project/Master/Ishsys master/Backend/.env') });
+dotenv.config({ path: path.resolve('C:/Users/Shailendra Rajpoot/Desktop/ozayra-project/Master/Ozayra master/Backend/.env') });
 
 const run = async () => {
   await mongoose.connect(process.env.MONGODB_URI);

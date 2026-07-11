@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+﻿import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -91,7 +91,7 @@ export const env = {
     nodeEnv: config.nodeEnv,
     port: Number(config.port),
     mongoUri: config.mongodbUri,
-    mongoDbName: process.env.MONGODB_DB_NAME || 'ishsys_taxi',
+    mongoDbName: process.env.MONGODB_DB_NAME || 'ozayra_taxi',
     jwtSecret: config.jwtAccessSecret,
     jwtExpiresIn: config.jwtAccessExpiresIn,
     corsOrigin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || '*',
@@ -99,7 +99,7 @@ export const env = {
         cloudName: config.cloudinaryCloudName || '',
         apiKey: config.cloudinaryApiKey || '',
         apiSecret: config.cloudinaryApiSecret || '',
-        folder: process.env.CLOUDINARY_FOLDER || 'ishsys-taxi',
+        folder: process.env.CLOUDINARY_FOLDER || 'ozayra-taxi',
     },
     firebase: {
         databaseURL: process.env.FIREBASE_DATABASE_URL || config.firebaseDatabaseUrl || '',

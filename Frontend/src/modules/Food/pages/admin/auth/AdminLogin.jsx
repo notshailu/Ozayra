@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+﻿import { useState, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { adminAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
@@ -153,7 +153,7 @@ export default function AdminLogin() {
                   />
                 ) : (
                   <span className="text-xs font-bold text-gray-900 truncate px-2">
-                    {companyName || "Ishsys"}
+                    {companyName || "Ozayra"}
                   </span>
                 )}
               </div>

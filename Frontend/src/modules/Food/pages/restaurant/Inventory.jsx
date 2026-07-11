@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react"
+﻿import { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Search,
@@ -1132,7 +1132,7 @@ export default function Inventory() {
     try {
       let imageUrl = ""
       if (addonImageFile) {
-        const uploadRes = await uploadAPI.uploadMedia(addonImageFile, { folder: "ishsys/restaurant/addons" })
+        const uploadRes = await uploadAPI.uploadMedia(addonImageFile, { folder: "ozayra/restaurant/addons" })
         imageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || ""
       }
       const payload = {

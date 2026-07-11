@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { customerApi } from "../services/customerApi";
 import { useAuth } from "@core/context/AuthContext";
 import { useCart as useFoodCart } from "@food/context/CartContext";
@@ -162,7 +162,7 @@ const persistQuickCartSnapshot = (items) => {
           "cart",
           "recent_searches",
           "search_history",
-          "ishsys_recent_searches",
+          "ozayra_recent_searches",
           "user_recent_searches_v1",
         ];
         legacyKeys.forEach(key => {

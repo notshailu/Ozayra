@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 
-const mongoUri = 'mongodb+srv://Ishsys:Ishsys123@cluster0.jkxcmhk.mongodb.net/Ishsys-Master-Product';
+const mongoUri = 'mongodb+srv://Ozayra:Ozayra123@cluster0.jkxcmhk.mongodb.net/Ozayra-Master-Product';
 
 async function dropIndex() {
     try {

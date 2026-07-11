@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+﻿import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { MapPin, ShoppingCart, Trophy } from "lucide-react"
 import { Button } from "@food/components/ui/button"
@@ -132,7 +132,7 @@ export default function Navbar() {
               />
             ) : (
               <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900">
-                {companyName || "Ishsys"}
+                {companyName || "Ozayra"}
               </span>
             )}
           </Link>

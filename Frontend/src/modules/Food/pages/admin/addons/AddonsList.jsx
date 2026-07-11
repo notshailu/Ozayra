@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
 import { Eye, Loader2, Search, Trash2, Pencil } from "lucide-react"
 import { Switch } from "@food/components/ui/switch"
 import { adminAPI, uploadAPI } from "@food/api"
@@ -123,7 +123,7 @@ export default function AddonsList() {
       let imageUrl = editImagePreview || ""
       // If a new file selected, upload it
       if (editImageFile) {
-        const uploadRes = await uploadAPI.uploadMedia(editImageFile, { folder: "ishsys/admin/addons" })
+        const uploadRes = await uploadAPI.uploadMedia(editImageFile, { folder: "ozayra/admin/addons" })
         imageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || imageUrl
       }
 

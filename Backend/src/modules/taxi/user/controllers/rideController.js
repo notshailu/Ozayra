@@ -505,3 +505,26 @@ export const verifyRazorpayRidePayment = async (req, res) => {
     data: serializeRideRealtime(ride),
   });
 };
+
+import { findZoneByPickup } from '../../services/matchingService.js';
+
+export const checkZoneByCoords = async (req, res) => {
+  const { lat, lng } = req.query;
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new ApiError(400, 'lat and lng are required');
+  }
+
+  const zone = await findZoneByPickup([longitude, latitude]);
+
+  res.json({
+    success: true,
+    data: {
+      inZone: !!zone,
+      zone: zone || null,
+    },
+  });
+};
+

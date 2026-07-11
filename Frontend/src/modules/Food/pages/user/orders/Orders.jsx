@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+﻿import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft, Search, MoreVertical, ChevronRight, Star, RotateCcw, AlertCircle, Loader2, Clock, X, Share2, MessageCircle, Send, Copy, Mail, MessagesSquare, Link2, Calendar } from "lucide-react"
 import { orderAPI } from "@food/api"
@@ -1068,7 +1068,7 @@ Order again from this restaurant in the ${companyName} app.`
 
       {/* Footer Branding */}
       <div className="flex justify-center mt-8 mb-4">
-        <h1 className="text-4xl font-black text-gray-200 dark:text-gray-700 tracking-tighter italic">ishsys</h1>
+        <h1 className="text-4xl font-black text-gray-200 dark:text-gray-700 tracking-tighter italic">ozayra</h1>
       </div>
 
       {/* Rating & Feedback Modal */}

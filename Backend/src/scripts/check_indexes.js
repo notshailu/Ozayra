@@ -1,8 +1,8 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Ishsys-Master-Product';
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Ozayra-Master-Product';
 
 async function checkIndexes() {
     try {

@@ -1,8 +1,8 @@
-{
-  "name": "ishsys-backend",
+﻿{
+  "name": "ozayra-backend",
   "version": "1.0.0",
   "type": "module",
-  "description": "Ishsys Master Product Backend",
+  "description": "Ozayra Master Product Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+﻿import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -293,7 +293,7 @@ export default function AdminNavbar({ onMenuClick }) {
                   />
                 ) : (
                   <span className="text-sm font-semibold text-neutral-700 px-2 truncate">
-                    {businessSettings?.companyName || "Ishsys"}
+                    {businessSettings?.companyName || "Ozayra"}
                   </span>
                 )}
               </div>

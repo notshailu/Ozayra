@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 
 // Resolved standard mongodb:// URI using the resolved hostnames
-const resolvedUri = 'mongodb://Ozayra2025:Ozayra2025@ac-zxypxil-shard-00-00.dkjt4ux.mongodb.net:27017,ac-zxypxil-shard-00-01.dkjt4ux.mongodb.net:27017,ac-zxypxil-shard-00-02.dkjt4ux.mongodb.net:27017/ishsys_taxi?ssl=true&authSource=admin&retryWrites=true&w=majority';
+const resolvedUri = 'mongodb://Ozayra2025:Ozayra2025@ac-zxypxil-shard-00-00.dkjt4ux.mongodb.net:27017,ac-zxypxil-shard-00-01.dkjt4ux.mongodb.net:27017,ac-zxypxil-shard-00-02.dkjt4ux.mongodb.net:27017/ozayra_taxi?ssl=true&authSource=admin&retryWrites=true&w=majority';
 
 async function testConnection() {
   console.log(`Testing connection for resolved standard Atlas URI...`);

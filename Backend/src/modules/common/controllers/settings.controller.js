@@ -1,4 +1,4 @@
-import { GlobalSettings } from '../models/settings.model.js';
+﻿import { GlobalSettings } from '../models/settings.model.js';
 import { sendResponse } from '../../../utils/response.js';
 import { uploadImageBufferDetailed } from '../../../services/cloudinary.service.js';
 
@@ -8,8 +8,8 @@ export async function getGlobalSettings(req, res, next) {
         if (!settings) {
             // Create default settings if none exist
             const newSettings = await GlobalSettings.create({
-                companyName: 'Ishsys',
-                email: 'admin@ishsys.com',
+                companyName: 'Ozayra',
+                email: 'admin@ozayra.com',
                 modules: {
                     food: false,
                     taxi: true,

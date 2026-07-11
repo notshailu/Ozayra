@@ -1,4 +1,4 @@
-import React, { useMemo } from "react"
+﻿import React, { useMemo } from "react"
 import { motion } from "framer-motion"
 import { useLocation, useNavigate } from "react-router-dom"
 import { UtensilsCrossed, ShoppingBasket, Car, Bed, ShieldCheck, User } from "lucide-react"
@@ -201,7 +201,7 @@ export default function SuperAppPortal() {
       <div className="mt-4 hidden sm:flex flex-col items-center gap-3 opacity-50">
          <div className="flex items-center gap-1.5 grayscale">
             <ShieldCheck className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Secure by Ishsys</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">Secure by Ozayra</span>
          </div>
       </div>
     </div>

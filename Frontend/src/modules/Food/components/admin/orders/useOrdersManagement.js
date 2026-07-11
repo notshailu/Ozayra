@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+﻿import { useState, useMemo } from "react"
 import { exportToCSV, exportToExcel, exportToPDF, exportToJSON } from "./ordersExportUtils"
 
 import { getCachedSettings, loadBusinessSettings } from "@common/utils/businessSettings"
@@ -300,7 +300,7 @@ export function useOrdersManagement(orders, statusKey, title) {
         : (order.date || new Date().toLocaleDateString())
 
       const settings = getCachedSettings() || await loadBusinessSettings()
-      const companyName = settings?.companyName || "Ishsys Food"
+      const companyName = settings?.companyName || "Ozayra Food"
       const logoUrl = settings?.logo?.url || undefined
       const logoDataUrl = await imageUrlToDataUrl(logoUrl)
 

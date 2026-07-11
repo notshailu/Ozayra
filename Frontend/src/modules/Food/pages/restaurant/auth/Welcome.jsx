@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+﻿import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@food/components/ui/button"
@@ -34,7 +34,7 @@ const carouselData = [
 
 export default function RestaurantWelcome() {
   const navigate = useNavigate()
-  const companyName = useCompanyName() || "Ishsys"
+  const companyName = useCompanyName() || "Ozayra"
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(0) // 1 for next, -1 for previous
   const [touchStart, setTouchStart] = useState(null)
@@ -223,7 +223,7 @@ export default function RestaurantWelcome() {
 
                   {/* Text Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 pb-16">
-                    {/* Ishsys Brand */}
+                    {/* Ozayra Brand */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -300,7 +300,7 @@ export default function RestaurantWelcome() {
           variant="outline"
           className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-bold py-6 md:py-7 text-base md:text-lg rounded-lg transition-all shadow-lg bg-transparent"
         >
-          Partner with Ishsys
+          Partner with Ozayra
         </Button> */}
 
         {/* Terms and Conditions */}

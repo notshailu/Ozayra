@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 
 const objectId = () => new mongoose.Types.ObjectId().toString();
 
@@ -27,8 +27,8 @@ export const createDefaultThirdPartySettings = () => {
       mail_username: '',
       mail_password: '',
       mail_encryption: 'tls',
-      mail_from_address: 'noreply@ishsys.com',
-      mail_from_name: 'Ishsys',
+      mail_from_address: 'noreply@ozayra.com',
+      mail_from_name: 'Ozayra',
     },
     sms: {
       firebase: { enabled: '1' },

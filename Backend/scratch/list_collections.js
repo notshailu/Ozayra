@@ -1,14 +1,17 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config({ path: 'c:/Users/Shailendra Rajpoot/Desktop/ishsys-project/Master/Ishsys master/Backend/.env' });
+dotenv.config({ path: path.resolve('c:/Users/Shailendra Rajpoot/Desktop/ozayra-project/Master/Ozayra master/backend/.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 async function run() {
   await mongoose.connect(MONGODB_URI);
-  const collections = await mongoose.connection.db.listCollections().toArray();
-  collections.forEach(c => console.log(c.name));
+  const db = mongoose.connection.db;
+  const collections = await db.listCollections().toArray();
+  console.log("=== COLLECTIONS ===");
+  console.log(collections.map(c => c.name));
   await mongoose.disconnect();
 }
 

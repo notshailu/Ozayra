@@ -1,5 +1,5 @@
-Add-Type -AssemblyName System.Drawing
-$img = New-Object System.Drawing.Bitmap("c:\Users\Shailendra Rajpoot\Desktop\ishsys-project\Master\Ishsys master\Frontend\public\ozayra_logo.jpg")
+﻿Add-Type -AssemblyName System.Drawing
+$img = New-Object System.Drawing.Bitmap("c:\Users\Shailendra Rajpoot\Desktop\ozayra-project\Master\Ozayra master\Frontend\public\ozayra_logo.jpg")
 
 # Let's scan from x=200 to x=800 in steps of 100, and y=200 to y=800 in steps of 100
 # to see all yellow colors.

@@ -69,20 +69,7 @@ const ExplorerSection = () => {
 
     syncLocationCoords();
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserCoords({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          });
-        },
-        (err) => {
-          console.warn('Explorer Geolocation lookup failed:', err);
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    }
+    // Sync using saved location only; do not prompt browser permissions on load
 
     window.addEventListener('storage', syncLocationCoords);
     window.addEventListener(TAXI_LOCATION_UPDATED_EVENT, syncLocationCoords);

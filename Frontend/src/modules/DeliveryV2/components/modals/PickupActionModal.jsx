@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChefHat, MapPin, Phone, 
@@ -43,7 +43,7 @@ export const PickupActionModal = ({
 
     setIsUploadingBill(true);
     try {
-      const res = await uploadAPI.uploadMedia(file, { folder: 'ishsys/delivery/bills' });
+      const res = await uploadAPI.uploadMedia(file, { folder: 'ozayra/delivery/bills' });
       if (res?.data?.success && res?.data?.data) {
         setBillImageUrl(res.data.data.url || res.data.data.secure_url);
         setBillImageUploaded(true);

@@ -318,6 +318,7 @@ export const saveDriverVehicle = async ({
   city,
   postalCode,
   taxNumber,
+  vehicleImage,
 }) => {
   const session = await getSession(registrationId, phone);
 
@@ -330,6 +331,16 @@ export const saveDriverVehicle = async ({
 
   if (!selectedLocation) {
     throw new ApiError(400, 'A valid service location is required');
+  }
+
+  let uploadedVehicleImage = '';
+  if (vehicleImage && vehicleImage.startsWith('data:image')) {
+      const uploaded = await uploadRegistrationDocument('vehicle_image', vehicleImage);
+      if (uploaded) {
+          uploadedVehicleImage = uploaded.secureUrl;
+      }
+  } else if (vehicleImage) {
+      uploadedVehicleImage = vehicleImage;
   }
 
   session.vehicle = {
@@ -366,6 +377,7 @@ export const saveDriverVehicle = async ({
     city: String(city || selectedLocation).trim(),
     postalCode: String(postalCode || '').trim(),
     taxNumber: String(taxNumber || '').trim().toUpperCase(),
+    vehicleImage: uploadedVehicleImage || session.vehicle?.vehicleImage || '',
   };
   session.status = 'vehicle_saved';
   await session.save();
@@ -497,6 +509,7 @@ export const completeDriverOnboarding = async ({ registrationId, phone, document
     vehicleColor: session.vehicle.color,
     vehicleMake: session.vehicle.make || '',
     vehicleModel: session.vehicle.model || '',
+    vehicleImage: session.vehicle.vehicleImage || '',
     city: session.vehicle.city || session.vehicle.locationName,
     referralCode: session.referralCode,
     approve: false,

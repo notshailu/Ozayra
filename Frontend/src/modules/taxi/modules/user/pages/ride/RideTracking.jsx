@@ -43,9 +43,18 @@ const getTrackingVehicleIcon = (ride, driver) => {
   const serviceType = String(ride?.serviceType || ride?.type || '').toLowerCase();
   const iconType = String(ride?.vehicleIconType || driver?.vehicleIconType || driver?.vehicleType || '').toLowerCase();
 
-  if (serviceType === 'parcel') return '/5_Parcel.png';
+  if (serviceType === 'parcel' && !iconType.includes('truck') && !iconType.includes('auto') && !iconType.includes('bike')) return '/5_Parcel.png';
   if (iconType.includes('bike')) return '/1_Bike.png';
   if (iconType.includes('auto')) return '/2_AutoRickshaw.png';
+  if (iconType.includes('ehc')) return '/ehcv.png';
+  if (iconType.includes('hcv')) return '/hcv.png';
+  if (iconType.includes('lcv')) return '/LCV.png';
+  if (iconType.includes('mcv')) return '/mcv.png';
+  if (iconType.includes('truck')) return '/truck.png';
+  if (iconType.includes('lux')) return '/Luxury.png';
+  if (iconType.includes('premium')) return '/Premium.png';
+  if (iconType.includes('suv')) return '/SUV.png';
+
   return '/4_Taxi.png';
 };
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+﻿import { useState, useEffect, useMemo } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   adminSidebarMenu,
@@ -756,7 +756,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                     />
                   ) : (
                     <span className="text-xs font-semibold text-white px-2 truncate">
-                      {companyName || "Ishsys"}
+                      {companyName || "Ozayra"}
                     </span>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
+﻿import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useParams, Link, useSearchParams, useLocation } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
@@ -54,7 +54,7 @@ const SAFE_RESTAURANT_PIN = typeof RESTAURANT_PIN_SVG !== 'undefined' ? RESTAURA
 const debugLog = (...args) => console.log('[OrderTracking]', ...args)
 const debugWarn = (...args) => console.warn('[OrderTracking]', ...args)
 const debugError = (...args) => console.error('[OrderTracking]', ...args)
-const INVOICE_BRAND_NAME = "Ishsys"
+const INVOICE_BRAND_NAME = "Ozayra"
 
 
 // Animated checkmark component

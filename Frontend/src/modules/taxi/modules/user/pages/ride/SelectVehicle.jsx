@@ -220,8 +220,9 @@ const VehicleMapPreview = ({ center, dropPosition, drivers, selectedVehicle, isL
               position={position}
               title={`${driver.name || 'Driver'} - ${driver.vehicleNumber || selectedVehicle?.name || 'Vehicle'}`}
               icon={{
-                url: selectedVehicle?.icon || '/4_Taxi.png',
-                scaledSize: new window.google.maps.Size(28, 28),
+                url: getMapIconForVehicle(selectedVehicle?.iconType),
+                scaledSize: new window.google.maps.Size(40, 40),
+                anchor: isLoaded && window.google?.maps?.Point ? new window.google.maps.Point(20, 20) : undefined,
               }}
             />
           );
@@ -305,7 +306,30 @@ const getVehicleIcon = (type) => {
   return CarIcon;
 };
 
+const getMapIconForVehicle = (iconType = '') => {
+  const value = String(iconType).toLowerCase();
+
+  if (value.includes('bike')) return '/1_Bike.png';
+  if (value.includes('auto')) return '/2_AutoRickshaw.png';
+  if (value.includes('ehc')) return '/ehcv.png';
+  if (value.includes('hcv')) return '/hcv.png';
+  if (value.includes('lcv')) return '/LCV.png';
+  if (value.includes('mcv')) return '/mcv.png';
+  if (value.includes('truck')) return '/truck.png';
+  if (value.includes('lux')) return '/Luxury.png';
+  if (value.includes('premium')) return '/Premium.png';
+  if (value.includes('suv')) return '/SUV.png';
+
+  return '/4_Taxi.png';
+};
+
 const getCapacity = (type) => {
+  if (type && Number(type.capacity) > 0) {
+    return Number(type.capacity);
+  }
+  if (type?.raw && Number(type.raw.capacity) > 0) {
+    return Number(type.raw.capacity);
+  }
   const value = getIconValue(type);
 
   if (value.includes('bike')) {
@@ -324,6 +348,12 @@ const getCapacity = (type) => {
 };
 
 const getParcelCapacity = (type) => {
+  if (type && typeof type.weight === 'number' && type.weight > 0) {
+    return type.weight;
+  }
+  if (type?.raw && typeof type.raw.weight === 'number' && type.raw.weight > 0) {
+    return type.raw.weight;
+  }
   const value = getIconValue(type);
   const label = getTypeLabel(type).toLowerCase();
 
@@ -333,7 +363,7 @@ const getParcelCapacity = (type) => {
   if (value.includes('auto') || label.includes('auto') || label.includes('three wheeler') || label.includes('rickshaw')) {
     return 50;
   }
-  if (value.includes('lcv') || label.includes('lcv') || label.includes('ace') || label.includes('mini truck') || label.includes('chota hathi')) {
+  if (value.includes('lcv') || label.includes('lcv') || label.includes('ace') || label.includes('mini truck') || label.includes('truck mini') || label.includes('chota hathi')) {
     return 750;
   }
   if (value.includes('mcv') || label.includes('mcv') || label.includes('truck')) {
@@ -690,6 +720,18 @@ const SelectVehicle = () => {
           filteredTypes = activeTypes;
         }
 
+        const weightRule = routeState.weightRule || routeState.parcel?.weightRule || null;
+        if (isParcel && weightRule && Array.isArray(weightRule.vehicle_types) && weightRule.vehicle_types.length > 0) {
+          const allowedIds = weightRule.vehicle_types.map(vt => String(vt.id || vt._id || vt).trim());
+          const tempFiltered = filteredTypes.filter(type => {
+            const typeId = String(type._id || type.id).trim();
+            return allowedIds.includes(typeId);
+          });
+          if (tempFiltered.length > 0) {
+            filteredTypes = tempFiltered;
+          }
+        }
+
         const nextVehicles = filteredTypes.map(normalizeVehicleType);
 
         setVehicles(nextVehicles);
@@ -835,6 +877,11 @@ const SelectVehicle = () => {
       pricedVehicles
         .map((vehicle, index) => ({ ...vehicle, originalIndex: index }))
         .sort((first, second) => {
+          const priceDiff = (first.price || 0) - (second.price || 0);
+          if (priceDiff !== 0) {
+            return priceDiff;
+          }
+
           const rankDiff =
             getAvailabilitySortRank(first, availabilityByVehicleId) -
             getAvailabilitySortRank(second, availabilityByVehicleId);
@@ -1123,164 +1170,173 @@ const SelectVehicle = () => {
   };
 
   return (
-    <div className="h-[100dvh] bg-slate-50 max-w-lg mx-auto relative font-['Plus_Jakarta_Sans'] overflow-hidden">
-      <div className="absolute inset-0 w-full bg-gray-200">
-        <VehicleMapPreview
-          center={pickupPosition}
-          dropPosition={dropPosition}
-          drivers={onlineDrivers}
-          selectedVehicle={selectedVehicle}
-          isLoaded={isMapLoaded}
-          loadError={mapLoadError}
-        />
-
-        <div className="absolute top-10 left-4 right-4 z-20 flex flex-col gap-2">
-          <div className="flex items-center gap-2.5">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => navigate(-1)}
-              className="w-10 h-10 bg-white/95 rounded-[14px] shadow-[0_4px_14px_rgba(15,23,42,0.12)] flex items-center justify-center shrink-0"
-            >
-              <ArrowLeft size={18} className="text-slate-900" strokeWidth={2.5} />
-            </motion.button>
-            
-            {isParcel ? (
-              <div className="flex-1 min-w-0 bg-white/95 backdrop-blur-md rounded-[16px] px-3.5 py-2.5 shadow-[0_6px_20px_rgba(15,23,42,0.12)] border border-yellow-200 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-xl bg-yellow-100 text-yellow-700 flex items-center justify-center shrink-0">
-                    <Package size={17} strokeWidth={2.2} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-yellow-800 bg-yellow-100/80 px-1.5 py-0.5 rounded">
-                        {routeState.parcel?.category || routeState.parcelType || 'Parcel Delivery'}
-                      </span>
-                      <span className="text-[10px] font-normal text-slate-400">•</span>
-                      <span className="text-[11px] font-medium text-slate-700">{weightLabel}</span>
-                    </div>
-                    <p className="text-[12px] font-semibold text-slate-800 truncate mt-0.5">
-                      To: {drop}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(`${routePrefix}/parcel/sender-receiver-details`, {
-                      state: routeState,
-                    })
-                  }
-                  className="shrink-0 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                  title="Edit Parcel Details"
-                >
-                  <X size={15} className="shrink-0" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex-1 min-w-0 bg-white/95 rounded-[14px] px-4 py-2.5 shadow-[0_4px_14px_rgba(15,23,42,0.10)] flex items-center gap-2">
-                <span className="text-[14px] font-bold text-slate-800 truncate flex-1">{drop}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(`${routePrefix}/ride/select-location`, {
-                      state: {
-                        pickup,
-                        drop,
-                        pickupCoords,
-                        dropCoords,
-                        stops,
-                      },
-                    })
-                  }
-                  className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                  aria-label="Change destination"
-                >
-                  <X size={15} className="shrink-0" />
-                </button>
-              </div>
-            )}
-          </div>
+    <div className="h-[100dvh] bg-slate-50 max-w-lg mx-auto relative font-['Plus_Jakarta_Sans'] overflow-hidden flex flex-col">
+      {!isParcel && (
+        <div className="absolute inset-0 w-full bg-gray-200">
+          <VehicleMapPreview
+            center={pickupPosition}
+            dropPosition={dropPosition}
+            drivers={onlineDrivers}
+            selectedVehicle={selectedVehicle}
+            isLoaded={isMapLoaded}
+            loadError={mapLoadError}
+          />
         </div>
+      )}
 
-        <AnimatePresence>
-          {showPromo && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className={`absolute bottom-20 left-4 right-4 bg-white/95 backdrop-blur-md border rounded-[18px] flex items-center overflow-hidden z-30 shadow-[0_8px_24px_rgba(15,23,42,0.10)] pr-3 ${
-                isParcel ? 'border-yellow-200/80' : 'border-white/80'
-              }`}
-            >
-              <div className="flex-1 px-4 py-3">
-                {isParcel ? (
-                  <>
-                    <p className="text-[12px] font-semibold text-slate-900 leading-tight">Need fast door-to-door courier?</p>
-                    <p className="text-[10px] font-semibold text-yellow-600 mt-0.5 uppercase tracking-wider">Use PARCEL20 for 20% OFF delivery</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-[12px] font-bold text-slate-900 leading-tight">Going a few kms away?</p>
-                    <p className="text-[10px] font-semibold text-orange-500 mt-0.5 uppercase tracking-wider">Use GOFREE on 1st cab ride</p>
-                  </>
-                )}
-              </div>
-              {isParcel ? (
-                <div className="h-12 w-14 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-[12px] shrink-0 flex items-center justify-center text-gray-900 shadow-sm mr-1">
-                  <Package size={24} strokeWidth={2.2} />
+      {/* Header (Always visible, highest z-index) */}
+      <div className={isParcel ? "pt-10 px-4 pb-2 z-50 shrink-0 bg-slate-50 flex flex-col gap-2" : "absolute top-10 left-4 right-4 z-50 flex flex-col gap-2"}>
+        <div className="flex items-center gap-2.5">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate(-1)}
+            className={`w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 ${isParcel ? 'bg-white shadow-sm border border-slate-100' : 'bg-white/95 shadow-[0_4px_14px_rgba(15,23,42,0.12)]'}`}
+          >
+            <ArrowLeft size={18} className="text-slate-900" strokeWidth={2.5} />
+          </motion.button>
+          
+          {isParcel ? (
+            <div className="flex-1 min-w-0 bg-white rounded-[20px] p-3 shadow-[0_8px_30px_rgba(15,23,42,0.08)] flex items-center justify-between gap-3 border border-slate-50">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-10 h-10 rounded-[14px] bg-[#f8e001] text-slate-900 flex items-center justify-center shrink-0 shadow-md">
+                  <Package size={20} strokeWidth={1.8} />
                 </div>
-              ) : (
-                <img src="/ride_now_banner.png" className="h-12 w-16 object-cover rounded-[10px] shrink-0" alt="Promo" />
-              )}
-              <button onClick={() => setShowPromo(false)} className="ml-2 pl-2 border-l border-slate-100">
-                <X size={13} className="text-slate-400" />
+                <div className="min-w-0 flex-1 flex flex-col justify-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                      {routeState.parcel?.category || routeState.parcelType || 'Parcel'}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
+                    <span className="text-[10px] font-semibold text-slate-500">{weightLabel}</span>
+                  </div>
+                  <p className="text-[13px] font-bold text-slate-900 truncate mt-0.5 leading-tight">
+                    {drop}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`${routePrefix}/parcel/sender-receiver-details`, {
+                    state: routeState,
+                  })
+                }
+                className="shrink-0 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 transition hover:bg-slate-200 hover:text-slate-800"
+                title="Edit Parcel Details"
+              >
+                <X size={15} strokeWidth={2.5} />
               </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="absolute left-4 right-4 bottom-4 z-20 flex items-center justify-between gap-3">
-          <div className={`bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)] border ${isParcel ? 'border-yellow-200' : 'border-white/80'}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-              {isParcel ? 'Delivery Fleet Nearby' : 'Drivers Nearby'}
-            </p>
-            <p className={`text-[16px] font-semibold leading-none mt-1 ${isParcel ? 'text-yellow-700' : 'text-slate-900'}`}>
-              {isLoadingDrivers ? '...' : `${selectedAvailability.totalDrivers || 0} ${isParcel ? 'active partners' : 'online'}`}
-            </p>
-          </div>
-          {driverLoadError && (
-            <div className="bg-red-50/95 rounded-[14px] px-3 py-2 border border-red-100 max-w-[190px]">
-              <p className="text-[10px] font-bold text-red-500 leading-tight">{driverLoadError}</p>
+            </div>
+          ) : (
+            <div className="flex-1 min-w-0 bg-white/95 rounded-[14px] px-4 py-2.5 shadow-[0_4px_14px_rgba(15,23,42,0.10)] flex items-center gap-2">
+              <span className="text-[14px] font-bold text-slate-800 truncate flex-1">{drop}</span>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`${routePrefix}/ride/select-location`, {
+                    state: {
+                      pickup,
+                      drop,
+                      pickupCoords,
+                      dropCoords,
+                      stops,
+                    },
+                  })
+                }
+                className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Change destination"
+              >
+                <X size={15} className="shrink-0" />
+              </button>
             </div>
           )}
         </div>
       </div>
 
+      {/* Map Overlays (Only for Taxi) */}
+      {!isParcel && (
+        <div className="absolute inset-0 w-full z-20 pointer-events-none">
+          <AnimatePresence>
+            {showPromo && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="absolute bottom-20 left-4 right-4 bg-white/95 backdrop-blur-md border border-white/80 rounded-[18px] flex items-center overflow-hidden shadow-[0_8px_24px_rgba(15,23,42,0.10)] pr-3 pointer-events-auto"
+              >
+                <div className="flex-1 px-4 py-3">
+                  <p className="text-[12px] font-bold text-slate-900 leading-tight">Going a few kms away?</p>
+                  <p className="text-[10px] font-semibold text-orange-500 mt-0.5 uppercase tracking-wider">Use GOFREE on 1st cab ride</p>
+                </div>
+                <img src="/ride_now_banner.png" className="h-12 w-16 object-cover rounded-[10px] shrink-0" alt="Promo" />
+                <button onClick={() => setShowPromo(false)} className="ml-2 pl-2 border-l border-slate-100">
+                  <X size={13} className="text-slate-400" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="absolute left-4 right-4 bottom-4 flex items-center justify-between gap-3 pointer-events-auto">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)] border border-white/80">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">
+                Drivers Nearby
+              </p>
+              <p className="text-[16px] font-semibold leading-none mt-1 text-slate-900">
+                {isLoadingDrivers ? '...' : `${selectedAvailability.totalDrivers || 0} online`}
+              </p>
+            </div>
+            {driverLoadError && (
+              <div className="bg-red-50/95 rounded-[14px] px-3 py-2 border border-red-100 max-w-[190px]">
+                <p className="text-[10px] font-bold text-red-500 leading-tight">{driverLoadError}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div
         style={{
-          height: isExpanded ? '92dvh' : '54dvh',
+          height: isParcel ? undefined : (isExpanded ? '92dvh' : '54dvh'),
           transition: 'height 0.38s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
-        className="absolute bottom-0 left-0 right-0 z-40 flex flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-12px_44px_rgba(15,23,42,0.15)]"
+        className={isParcel 
+          ? "flex-1 relative z-40 flex flex-col overflow-hidden bg-slate-50/50" 
+          : "absolute bottom-0 left-0 right-0 z-40 flex flex-col overflow-hidden bg-white shadow-[0_-12px_44px_rgba(15,23,42,0.15)] rounded-t-[28px]"}
       >
-        {/* Drag pill — tap to expand, tap again to collapse */}
-        <div
-          className="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0 cursor-pointer active:bg-slate-400 transition-colors"
-          onClick={() => {
-            setIsExpanded((prev) => !prev);
-            if (isExpanded && scrollRef.current) {
-              scrollRef.current.scrollTop = 0;
-            }
-          }}
-        />
+        {!isParcel && (
+          <div
+            className="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0 cursor-pointer active:bg-slate-400 transition-colors"
+            onClick={() => {
+              setIsExpanded((prev) => !prev);
+              if (isExpanded && scrollRef.current) {
+                scrollRef.current.scrollTop = 0;
+              }
+            }}
+          />
+        )}
 
         <div className="relative flex-1 overflow-hidden">
           <div
             ref={scrollRef}
             onScroll={handleScroll}
-            style={{ maxHeight: isExpanded ? 'calc(92dvh - 120px)' : 'calc(54dvh - 120px)' }}
+            style={{ maxHeight: isParcel ? undefined : (isExpanded ? 'calc(92dvh - 120px)' : 'calc(54dvh - 120px)') }}
             className="h-full overflow-y-auto no-scrollbar px-4 pt-2 pb-2 space-y-2"
           >
+            {isParcel && showPromo && (
+              <div className="bg-yellow-50 border border-[#f8e001]/40 rounded-[16px] flex items-center p-3 mb-4 shadow-sm relative overflow-hidden">
+                <div className="flex-1 pr-2">
+                  <p className="text-[12px] font-semibold text-slate-900 leading-tight">Need fast door-to-door courier?</p>
+                  <p className="text-[10px] font-bold text-yellow-600 mt-1 uppercase tracking-wider">Use PARCEL20 for 20% OFF</p>
+                </div>
+                <div className="h-10 w-10 bg-[#f8e001] rounded-full flex items-center justify-center text-slate-900 shrink-0 shadow-sm border border-[#f8e001]/20">
+                  <Package size={20} strokeWidth={2.5} />
+                </div>
+                <button onClick={() => setShowPromo(false)} className="absolute top-2 right-2 p-1 bg-white/50 rounded-full hover:bg-white transition-colors">
+                  <X size={10} className="text-yellow-800" />
+                </button>
+              </div>
+            )}
+            
             {isLoadingVehicles && (
               <div className="min-h-[180px] flex flex-col items-center justify-center gap-3 text-slate-400">
                 <LoaderCircle size={26} className="animate-spin" />
@@ -1291,18 +1347,18 @@ const SelectVehicle = () => {
             )}
 
             {!isLoadingVehicles && vehicleLoadError && (
-              <div className="bg-white border border-red-50 rounded-[18px] px-4 py-5 text-center">
+              <div className="bg-white border border-red-50 rounded-[18px] px-4 py-5 text-center shadow-sm">
                 <p className="text-[12px] font-black text-red-500">{vehicleLoadError}</p>
-                <p className="text-[10px] font-bold text-slate-400 mt-1">Please try again later.</p>
+                <p className="text-[10px] font-medium text-slate-400 mt-1">Please try again later.</p>
               </div>
             )}
 
             {!isLoadingVehicles && !vehicleLoadError && sortedPricedVehicles.length === 0 && (
-              <div className="bg-white border border-slate-50 rounded-[18px] px-4 py-5 text-center">
-                <p className="text-[13px] font-bold text-slate-900">
+              <div className="bg-white border border-slate-100 rounded-[18px] px-4 py-5 text-center shadow-sm">
+                <p className="text-[13px] font-semibold text-slate-900">
                   {isParcel ? 'No Delivery Vehicles Available' : 'No vehicles available'}
                 </p>
-                <p className="text-[11px] font-bold text-slate-400 mt-1">Try changing your location or method.</p>
+                <p className="text-[11px] font-medium text-slate-400 mt-1">Try changing your location or method.</p>
               </div>
             )}
 
@@ -1323,67 +1379,69 @@ const SelectVehicle = () => {
                     setSelected(v.id);
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[24px] border-2 transition-all text-left relative overflow-hidden ${
+                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-[20px] transition-all text-left relative overflow-hidden ${
                   isSelected
                     ? isParcel
-                      ? 'bg-yellow-50/70 border-yellow-400 shadow-[0_12px_24px_-8px_rgba(250,204,21,0.25)]'
-                      : 'bg-orange-50/50 border-orange-500 shadow-[0_12px_24px_-8px_rgba(249,115,22,0.22)]'
+                      ? 'bg-yellow-50/40 border-[#f8e001] shadow-[0_4px_16px_rgba(248,224,1,0.2)] border-[1.5px]'
+                      : 'bg-orange-50/50 border-orange-500 shadow-[0_12px_24px_-8px_rgba(249,115,22,0.22)] border-2'
                     : isUnavailable
-                      ? 'bg-slate-100/60 border-transparent opacity-60'
-                      : 'bg-white border-slate-50 shadow-[0_2px_8px_rgba(15,23,42,0.02)] hover:border-slate-200'
+                      ? 'bg-slate-50 border-transparent opacity-60 border-[1.5px]'
+                      : isParcel 
+                        ? 'bg-white border-slate-100 shadow-[0_2px_8px_rgba(15,23,42,0.02)] border-[1.5px] hover:border-slate-200 hover:shadow-[0_4px_12px_rgba(15,23,42,0.04)]'
+                        : 'bg-white border-slate-50 shadow-[0_2px_8px_rgba(15,23,42,0.02)] border-2 hover:border-slate-200'
                 }`}
               >
-                {isSelected && (
+                {isSelected && !isParcel && (
                   <motion.div
                     layoutId="selection-glow"
-                    className={`absolute inset-0 bg-gradient-to-r ${isParcel ? 'from-yellow-50/0 via-yellow-50/30 to-yellow-50/0' : 'from-orange-50/0 via-orange-50/20 to-orange-50/0'} pointer-events-none`}
+                    className="absolute inset-0 bg-gradient-to-r from-orange-50/0 via-orange-50/20 to-orange-50/0 pointer-events-none"
                   />
                 )}
 
-                <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 transition-all duration-300 ${
-                  isSelected ? (isParcel ? 'bg-yellow-400 text-gray-900 shadow-md scale-110' : 'bg-white shadow-sm scale-110') : isUnavailable ? 'bg-slate-200' : 'bg-slate-50'
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+                  isSelected ? (isParcel ? 'bg-yellow-100 shadow-sm scale-105 border border-yellow-200' : 'bg-white shadow-sm scale-110') : isUnavailable ? 'bg-slate-100' : 'bg-slate-50/80 border border-slate-50'
                 }`}>
-                  <img src={getVehicleIcon(v)} alt={v.name} className="w-9 h-9 object-contain drop-shadow-sm" />
+                  <img src={getMapIconForVehicle(v.iconType)} alt={v.name} className={`w-9 h-9 object-contain drop-shadow-sm ${isUnavailable ? 'grayscale opacity-50' : ''}`} />
                 </div>
 
                 <div className="flex-1 min-w-0 z-10">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={`text-[13px] font-semibold leading-tight ${isUnavailable ? 'text-slate-500' : 'text-slate-900'}`}>
+                    <span className={`text-[13px] font-semibold leading-tight ${isUnavailable ? 'text-slate-500' : 'text-slate-800'}`}>
                       {v.name}
                     </span>
                     {isParcel ? (
-                      <div className="flex items-center gap-1 text-yellow-800 bg-yellow-100 px-1.5 py-0.5 rounded-md">
-                        <Package size={11} strokeWidth={2.2} />
-                        <span className="text-[9px] font-semibold">Max {v.parcelCapacity || 50} kg</span>
+                      <div className="flex items-center gap-1 text-slate-500 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide">
+                        <Package size={10} strokeWidth={2.2} />
+                        <span>Max {v.parcelCapacity || 50} kg</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 text-slate-400 bg-slate-50 px-1 py-0.5 rounded-md">
+                      <div className="flex items-center gap-1 text-slate-400 bg-slate-50 px-1 py-0.5 rounded-md text-[9px] font-bold">
                         <Users size={10} strokeWidth={3} />
-                        <span className="text-[9px] font-bold">{v.capacity}</span>
+                        <span>{v.capacity}</span>
                       </div>
                     )}
                     {badge && (
-                      <span className={`text-[7px] font-bold px-1 py-0.5 rounded-md border uppercase tracking-tighter ${
+                      <span className={`text-[7px] font-bold px-1 py-0.5 rounded-[4px] uppercase tracking-tighter ${
                         isUnavailable 
-                          ? 'bg-white text-slate-300 border-slate-100' 
+                          ? 'bg-slate-100 text-slate-400' 
                           : badge === 'FASTEST' 
-                            ? isParcel ? 'bg-yellow-400 text-gray-900 border-yellow-500' : 'bg-orange-500 text-white border-orange-400' 
-                            : isParcel ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-orange-50 text-orange-600 border-orange-100'
+                            ? isParcel ? 'bg-[#f8e001] text-slate-900 border-[#f8e001]' : 'bg-orange-500 text-white border-orange-400' 
+                            : isParcel ? 'bg-slate-100 text-slate-600' : 'bg-orange-50 text-orange-600 border-orange-100'
                       }`}>
                         {badge}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] font-normal text-slate-400 leading-tight truncate max-w-[160px]">
+                  <p className="text-[10px] font-normal text-slate-400 leading-tight truncate max-w-[160px] mt-0.5">
                     {isParcel ? (v.parcelSublabel || 'Fast & secure parcel courier') : v.sublabel}
                   </p>
-                  <div className="flex items-center gap-1.5 mt-1 border-t border-slate-50 pt-0.5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isUnavailable ? 'bg-slate-300' : isParcel ? 'bg-yellow-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
-                    <p className={`text-[9px] font-medium truncate flex-1 ${isUnavailable ? 'text-slate-400' : isParcel ? 'text-yellow-700 font-semibold' : 'text-slate-600'}`}>
-                      {isUnavailable ? 'Currently Offline' : isParcel ? `Partner arrives in ${availability.closestDriverEtaMinutes || 2} mins • Doorstep Pickup` : formatAvailabilityLine(availability)}
+                  <div className={`flex items-center gap-1.5 mt-1.5 ${isParcel ? '' : 'border-t border-slate-50 pt-0.5'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isUnavailable ? 'bg-slate-300' : isParcel ? 'bg-[#f8e001] animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
+                    <p className={`text-[9px] truncate flex-1 ${isUnavailable ? 'font-medium text-slate-400' : isParcel ? 'font-medium text-slate-500' : 'font-medium text-slate-600'}`}>
+                      {isUnavailable ? 'Currently Offline' : isParcel ? `Partner arrives in ${availability.closestDriverEtaMinutes || 2} mins` : formatAvailabilityLine(availability)}
                     </p>
                     {!isUnavailable && tripMetrics.distanceMeters > 0 && (
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter shrink-0 bg-slate-100 px-1 py-0.5 rounded">
+                      <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-tighter shrink-0 bg-slate-50 px-1 py-0.5 rounded">
                         {tripMetrics.durationMinutes || 1}m
                       </span>
                     )}
@@ -1395,17 +1453,17 @@ const SelectVehicle = () => {
                     <span className={`text-[15px] font-semibold tracking-tight block ${isUnavailable ? 'text-slate-300' : 'text-slate-900'}`}>
                       {isUnavailable ? 'N/A' : formatCurrency(v.price)}
                     </span>
-                    {!isUnavailable && <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">est.</span>}
+                    {!isUnavailable && <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-tighter opacity-70 block -mt-0.5">est.</span>}
                   </div>
                   {isSelected && (
                     <motion.div
                       layoutId="check-icon"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className={`w-5 h-5 rounded-full flex items-center justify-center shadow-sm ${isParcel ? 'bg-yellow-400' : 'bg-orange-500'}`}
+                      className={`w-[18px] h-[18px] rounded-full flex items-center justify-center mt-1 ${isParcel ? 'bg-[#f8e001]' : 'bg-orange-500 shadow-sm'}`}
                     >
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke={isParcel ? '#111827' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg width="9" height="7" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4L3.5 6.5L9 1" stroke={isParcel ? '#0f172a' : 'white'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </motion.div>
                   )}
@@ -1417,35 +1475,11 @@ const SelectVehicle = () => {
           <ScrollIndicator show={showScrollArrow} />
         </div>
 
-        <div className="shrink-0 border-t border-slate-100 bg-white/90 backdrop-blur-xl px-5 pb-6 pt-3.5 space-y-3 shadow-[0_-12px_40px_rgba(15,23,42,0.08)]">
-          {/* Payment Method Toggle */}
-          <div className="flex items-center gap-2 bg-slate-50 rounded-[16px] p-1 border border-slate-100">
-            {['Cash', 'Online'].map((method) => (
-              <button
-                key={method}
-                type="button"
-                onClick={() => setPaymentMethod(method)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[12px] text-[12px] font-semibold transition-all ${
-                  paymentMethod === method
-                    ? 'bg-white text-slate-900 shadow-sm border border-slate-100'
-                    : 'text-slate-400'
-                }`}
-              >
-                {method === 'Cash'
-                  ? <Banknote size={14} strokeWidth={2} />
-                  : <CreditCard size={14} strokeWidth={2} />}
-                {method}
-              </button>
-            ))}
-          </div>
-
+        <div className={`shrink-0 ${isParcel ? 'bg-white px-5 pb-6 pt-3 shadow-[0_-8px_30px_rgba(15,23,42,0.06)]' : 'border-t border-slate-100 bg-white/90 backdrop-blur-xl px-5 pb-6 pt-3.5 shadow-[0_-12px_40px_rgba(15,23,42,0.08)]'}`}>
           {isParcel && selectedVehicle && (
-            <div className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-yellow-50/80 border border-yellow-200 text-gray-900">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-yellow-600 shrink-0" strokeWidth={2.2} />
-                <span className="text-[11px] font-semibold">Verified Delivery Partner & Safe Handling</span>
-              </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider bg-yellow-400 px-2 py-0.5 rounded-md text-gray-900 shadow-2xs">Insured</span>
+            <div className="flex items-center justify-center gap-1.5 text-slate-500 pb-2">
+              <ShieldCheck size={13} className="text-emerald-500 shrink-0" strokeWidth={2.5} />
+              <span className="text-[10px] font-medium tracking-wide">Verified Partner & Safe Handling</span>
             </div>
           )}
 
@@ -1458,26 +1492,26 @@ const SelectVehicle = () => {
             whileTap={selectedVehicle && selectedAvailability.totalDrivers && !isProcessingPayment ? { scale: 0.98 } : undefined}
             disabled={!selectedVehicle || !selectedAvailability.totalDrivers || isProcessingPayment}
             onClick={handleBook}
-            className={`w-full py-4 rounded-[20px] text-[15px] font-semibold shadow-xl transition-all duration-300 uppercase tracking-tight flex items-center justify-center gap-3 ${
+            className={`w-full py-4 rounded-[20px] text-[14px] font-semibold transition-all duration-300 uppercase tracking-wide flex items-center justify-center gap-3 ${
               selectedVehicle && selectedAvailability.totalDrivers
                 ? isProcessingPayment
-                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                   : isParcel
-                    ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900 shadow-[0_12px_28px_-4px_rgba(250,204,21,0.4)] active:scale-[0.99]'
+                    ? 'bg-[#f8e001] hover:bg-[#e6d000] text-slate-900 shadow-[0_8px_20px_rgba(248,224,1,0.25)] active:scale-[0.99]'
                     : 'bg-[#f8e001] text-slate-900 shadow-[0_12px_28px_-4px_rgba(248,224,1,0.4)] active:shadow-none'
-                : 'bg-slate-200 text-slate-400 shadow-none cursor-not-allowed'
+                : 'bg-slate-100 text-slate-300 shadow-none cursor-not-allowed'
             }`}
           >
             {isProcessingPayment ? (
               <>
-                <LoaderCircle size={18} className="animate-spin text-slate-500" />
+                <LoaderCircle size={18} className="animate-spin text-slate-400" />
                 <span>Processing Payment...</span>
               </>
             ) : selectedVehicle ? (
               selectedAvailability.totalDrivers ? (
                 <>
                   <span>{isParcel ? `Confirm ${selectedVehicle.name} Delivery` : `Book ${selectedVehicle.name}`}</span>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isParcel ? 'bg-gray-900/30' : 'bg-slate-900/20'}`} />
+                  <div className={`w-1 h-1 rounded-full ${isParcel ? 'bg-slate-900/30' : 'bg-slate-900/20'}`} />
                   <span>{formatCurrency(selectedVehicle.price)}</span>
                 </>
               ) : (

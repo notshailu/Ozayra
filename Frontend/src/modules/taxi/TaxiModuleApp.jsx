@@ -15,6 +15,7 @@ const UserHome = lazy(() => import('./modules/user/pages/Home'));
 const Login = lazy(() => import('./modules/user/pages/auth/Login'));
 const VerifyOTP = lazy(() => import('./modules/user/pages/auth/VerifyOTP'));
 const Signup = lazy(() => import('./modules/user/pages/auth/Signup'));
+const SelectCurrentLocation = lazy(() => import('./modules/user/pages/SelectCurrentLocation'));
 
 // Ride Module Pages
 const SelectLocation = lazy(() => import('./modules/user/pages/ride/SelectLocation'));
@@ -248,6 +249,7 @@ function App() {
             <Route path="user/verify-otp" element={<TaxiUserAuthEntry />} />
             <Route path="user/signup" element={<TaxiUserAuthEntry />} />
             <Route path="user" element={<UserHome />} />
+            <Route path="user/select-current-location" element={<SelectCurrentLocation />} />
 
             <Route path="user/ride/select-location" element={<SelectLocation />} />
             <Route path="user/ride/select-vehicle" element={<SelectVehicle />} />

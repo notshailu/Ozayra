@@ -125,21 +125,12 @@ const DriverProfile = () => {
     });
 
     const sections = [
-        ...(isOwner ? [{
-            title: 'Fleet Management',
+        {
+            title: 'Your Account',
             items: [
-                { id: 'fleet', label: 'Manage Fleet', icon: <Car size={20} />, path: '/taxi/driver/vehicle-fleet' },
-                { id: 'drivers', label: 'Manage Drivers', icon: <UserPlus size={20} />, path: '/taxi/driver/manage-drivers' },
-            ]
-        }] : []),
-                {
-                    title: 'Your Account',
-                    items: [
                 { id: 'personal', label: 'Personal Information', sub: driverPhone, icon: <User size={20} />, path: '/taxi/driver/edit-profile' },
                 { id: 'wallet', label: 'Wallet', icon: <Wallet size={20} />, path: '/taxi/driver/wallet' },
-                ...(!isOwner ? [
-                    { id: 'vehicle', label: 'My Vehicle', icon: <Car size={20} />, path: '/taxi/driver/vehicle-fleet' },
-                ] : []),
+                { id: 'vehicle', label: 'My Vehicle', icon: <Car size={20} />, path: '/taxi/driver/vehicle-fleet' },
                 { id: 'docs', label: 'Documents', icon: <FileText size={20} />, path: '/taxi/driver/documents' },
                 { id: 'history', label: 'Ride History', icon: <History size={20} />, path: '/taxi/driver/history' },
                 { id: 'notifications', label: 'Notifications', icon: <Bell size={20} />, path: '/taxi/driver/notifications' },

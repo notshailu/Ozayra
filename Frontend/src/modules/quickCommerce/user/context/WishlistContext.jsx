@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+﻿import React, { createContext, useContext, useState, useEffect } from "react";
 import { customerApi } from "../services/customerApi";
 import { useAuth } from "@core/context/AuthContext";
 
@@ -135,7 +135,7 @@ export const WishlistProvider = ({ children }) => {
           try {
             localStorage.removeItem("recent_searches");
             localStorage.removeItem("search_history");
-            localStorage.removeItem("ishsys_recent_searches");
+            localStorage.removeItem("ozayra_recent_searches");
             localStorage.removeItem("user_recent_searches_v1");
           } catch (e) {
             // ignore cleanup errors

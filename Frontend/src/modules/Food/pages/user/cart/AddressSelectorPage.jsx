@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef, useCallback } from "react"
+﻿import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate, useLocation as useRouterLocation } from "react-router-dom"
 import { ChevronLeft, ChevronRight, Plus, MapPin, MoreHorizontal, Navigation, Home, Building2, Briefcase, Phone, X, Crosshair, Search, Trash2, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -420,7 +420,7 @@ export default function AddressSelectorPage() {
       const response = await fetch(url, { 
         headers: { 
           "Accept-Language": "en",
-          "User-Agent": "Ishsys-Food-App" 
+          "User-Agent": "Ozayra-Food-App" 
         } 
       })
       const json = await response.json()
@@ -678,7 +678,7 @@ export default function AddressSelectorPage() {
 
               <Label className="text-sm font-bold mb-2 block text-orange-600 dark:text-orange-400">Secondary Address (House No. / Flat / Floor)</Label>
               <Input 
-                placeholder="E.g. Flat 402, 4th Floor, Ishsys Building" 
+                placeholder="E.g. Flat 402, 4th Floor, Ozayra Building" 
                 value={addressFormData.additionalDetails} 
                 onChange={e => setAddressFormData({...addressFormData, additionalDetails: e.target.value})}
                 onFocus={() => scrollFieldIntoView("additionalDetails")}

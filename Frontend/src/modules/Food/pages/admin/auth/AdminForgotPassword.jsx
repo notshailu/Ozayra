@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+﻿import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@food/components/ui/button"
 import {
@@ -241,7 +241,7 @@ export default function AdminForgotPassword() {
                   />
                 ) : (
                   <span className="text-xs font-bold text-gray-900 truncate px-2">
-                    {displayCompanyName || "Ishsys"}
+                    {displayCompanyName || "Ozayra"}
                   </span>
                 )}
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDeliveryStore } from '@/modules/DeliveryV2/store/useDeliveryStore';
 import { useProximityCheck } from '@/modules/DeliveryV2/hooks/useProximityCheck';
@@ -631,7 +631,7 @@ export default function DeliveryHomeV2({ tab = 'feed' }) {
                 onClick={() => navigate('/delivery/profile')}
                 className={`w-10 h-10 rounded-full border-2 p-0.5 shadow-xl overflow-hidden cursor-pointer active:scale-95 transition-all ${isOnline ? 'border-green-500 shadow-green-500/20' : 'border-white/60 shadow-black/5'} bg-white/[0.03]`}
              >
-                <img src={profileImage || "https://i.ibb.co/3m2Yh7r/Ishsys-Brand-Image.png"} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                <img src={profileImage || "https://i.ibb.co/3m2Yh7r/Ozayra-Brand-Image.png"} alt="Profile" className="w-full h-full object-cover rounded-full" />
              </div>
              <button 
                onClick={async () => {

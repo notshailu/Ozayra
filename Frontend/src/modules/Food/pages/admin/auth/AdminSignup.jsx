@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+﻿import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { loadBusinessSettings, getCachedSettings } from "@common/utils/businessSettings"
 import { Button } from "@food/components/ui/button"
@@ -262,7 +262,7 @@ export default function AdminSignup() {
                   />
                 ) : (
                   <span className="text-xs font-bold text-gray-900 truncate px-2">
-                    {companyName || "Ishsys"}
+                    {companyName || "Ozayra"}
                   </span>
                 )}
               </div>

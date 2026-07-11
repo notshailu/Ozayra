@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import { QuickCategory } from './src/modules/quick-commerce/models/category.model.js';
 
 const toCategory = (category) => ({
@@ -44,7 +44,7 @@ const buildCategoryTree = (categories) => {
 
 async function testApiLogic() {
   try {
-    await mongoose.connect('mongodb+srv://Ishsys:Ishsys123@cluster0.jkxcmhk.mongodb.net/Ishsys-Master-Product');
+    await mongoose.connect('mongodb+srv://Ozayra:Ozayra123@cluster0.jkxcmhk.mongodb.net/Ozayra-Master-Product');
     const categories = await QuickCategory.find({}).sort({ sortOrder: 1, createdAt: -1 }).lean();
     
     let fullTree = buildCategoryTree(categories);

@@ -23,11 +23,7 @@ const labelClass = 'mb-2 block text-[12px] font-bold text-slate-700';
 
 const defaultFormData = {
   weight_range: '',
-  base_price: '',
-  base_distance: '',
-  price_per_distance: '',
   active: 1,
-  vehicle_types: [],
 };
 
 const unwrap = (response) => response?.data?.data || response?.data || response || {};
@@ -51,7 +47,6 @@ const WeightManagement = ({ mode }) => {
   const isEditor = mode === 'create' || mode === 'edit';
 
   const [ranges, setRanges] = useState([]);
-  const [vehicleOptions, setVehicleOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,43 +61,21 @@ const WeightManagement = ({ mode }) => {
       setErrorMessage('');
 
       try {
-        const [rangesResponse, vehiclesResponse] = await Promise.all([
-          api.get('/admin/types/weight-ranges'),
-          api.get('/admin/types/vehicle-types'),
-        ]);
+        const rangesResponse = await api.get('/admin/types/weight-ranges');
 
         if (!mounted) return;
 
         const rangesPayload = unwrap(rangesResponse);
         const results = Array.isArray(rangesPayload) ? rangesPayload : (rangesPayload?.results || []);
 
-        const vehiclesPayload = unwrap(vehiclesResponse);
-        const vehicleResults = Array.isArray(vehiclesPayload) ? vehiclesPayload : (vehiclesPayload?.results || vehiclesPayload?.vehicle_types || []);
-
-        const filteredVehicles = vehicleResults.filter(v => {
-          const type = String(v.transport_type || '').toLowerCase();
-          return type === 'delivery' || type === 'both';
-        });
-
         setRanges(results);
-        setVehicleOptions(filteredVehicles.map(v => ({
-          id: String(v._id || v.id),
-          name: v.name || 'Unknown Vehicle',
-          transport_type: v.transport_type || '',
-        })));
 
         if (mode === 'edit' && id) {
           const existing = results.find((item) => String(item.id || item._id) === String(id));
           if (existing) {
             setFormData({
               weight_range: existing.weight_range,
-              base_price: String(existing.base_price ?? ''),
-              base_distance: String(existing.base_distance ?? ''),
-              price_per_distance: String(existing.price_per_distance ?? ''),
               active: existing.active,
-              vehicle_types: Array.isArray(existing.vehicle_types) 
-                ? existing.vehicle_types.map(vt => vt.id || vt._id || vt) 
-                : [],
             });
           }
         } else if (mode === 'create') {
@@ -143,22 +116,6 @@ const WeightManagement = ({ mode }) => {
       setErrorMessage('Weight range description is required.');
       return;
     }
-    if (formData.base_price === '') {
-      setErrorMessage('Base price is required.');
-      return;
-    }
-    if (formData.base_distance === '') {
-      setErrorMessage('Base distance is required.');
-      return;
-    }
-    if (formData.price_per_distance === '') {
-      setErrorMessage('Price per Km is required.');
-      return;
-    }
-    if (!formData.vehicle_types.length) {
-      setErrorMessage('Select at least one supported vehicle type.');
-      return;
-    }
 
     setSaving(true);
     setErrorMessage('');
@@ -166,11 +123,10 @@ const WeightManagement = ({ mode }) => {
     try {
       const payload = {
         weight_range: formData.weight_range.trim(),
-        base_price: Number(formData.base_price),
-        base_distance: Number(formData.base_distance),
-        price_per_distance: Number(formData.price_per_distance),
+        base_price: 0,
+        base_distance: 0,
+        price_per_distance: 0,
         active: Number(formData.active),
-        vehicle_types: formData.vehicle_types,
       };
 
       if (id && mode === 'edit') {
@@ -262,10 +218,6 @@ const WeightManagement = ({ mode }) => {
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Weight Range</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Base Price</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Included Distance</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Price Per Km</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Supported Vehicles</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Status</th>
                   <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Action</th>
                 </tr>
@@ -273,11 +225,11 @@ const WeightManagement = ({ mode }) => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-20 text-center text-sm text-slate-400">Loading weight brackets...</td>
+                    <td colSpan={3} className="px-6 py-20 text-center text-sm text-slate-400">Loading weight brackets...</td>
                   </tr>
                 ) : !filteredRanges.length ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-20 text-center text-sm text-slate-400">No weight brackets found.</td>
+                    <td colSpan={3} className="px-6 py-20 text-center text-sm text-slate-400">No weight brackets found.</td>
                   </tr>
                 ) : filteredRanges.map((item) => (
                   <tr key={item.id} className="border-t border-slate-100">
@@ -289,22 +241,7 @@ const WeightManagement = ({ mode }) => {
                         <p className="text-sm font-semibold text-slate-900">{item.weight_range}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-5 font-medium text-slate-700">₹{item.base_price}</td>
-                    <td className="px-6 py-5 font-medium text-slate-700">{item.base_distance} Km</td>
-                    <td className="px-6 py-5 font-medium text-slate-700">₹{item.price_per_distance}/Km</td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-wrap gap-1.5 max-w-xs">
-                        {item.vehicle_types && item.vehicle_types.length > 0 ? (
-                          item.vehicle_types.map((vt) => (
-                            <span key={vt.id} className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
-                              {vt.name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs italic text-slate-400">No vehicles assigned</span>
-                        )}
-                      </div>
-                    </td>
+
                     <td className="px-6 py-5">
                       <StatusToggle active={item.active === 1} onToggle={() => handleToggleStatus(item)} />
                     </td>
@@ -390,93 +327,9 @@ const WeightManagement = ({ mode }) => {
             </div>
           </div>
 
-          <div>
-            <label className={labelClass}>Base Price (₹) *</label>
-            <div className="relative">
-              <DollarSign size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="number"
-                value={formData.base_price}
-                onChange={(e) => updateForm('base_price', e.target.value)}
-                className={inputClass + ' pl-10'}
-                placeholder="45"
-                required
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className={labelClass}>Included Distance (Km) *</label>
-            <div className="relative">
-              <Route size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="number"
-                value={formData.base_distance}
-                onChange={(e) => updateForm('base_distance', e.target.value)}
-                className={inputClass + ' pl-10'}
-                placeholder="2"
-                required
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className={labelClass}>Price Per Km (₹) *</label>
-            <div className="relative">
-              <DollarSign size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="number"
-                value={formData.price_per_distance}
-                onChange={(e) => updateForm('price_per_distance', e.target.value)}
-                className={inputClass + ' pl-10'}
-                placeholder="15"
-                required
-              />
-            </div>
-          </div>
 
-          <div className="lg:col-span-2">
-            <label className={labelClass}>Supported Vehicles *</label>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              {vehicleOptions.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {vehicleOptions.map((option) => {
-                    const checked = formData.vehicle_types.includes(option.id);
-                    return (
-                      <label
-                        key={option.id}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
-                          checked
-                            ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            setFormData((prev) => {
-                              const exists = prev.vehicle_types.includes(option.id);
-                              return {
-                                ...prev,
-                                vehicle_types: exists
-                                  ? prev.vehicle_types.filter((id) => id !== option.id)
-                                  : [...prev.vehicle_types, option.id],
-                              };
-                            });
-                          }}
-                          className="h-4 w-4 rounded border-slate-300"
-                        />
-                        <span>{option.name} {option.transport_type ? `(${option.transport_type})` : ''}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400">No vehicle types found.</p>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 border-t border-slate-100 bg-slate-50/50 p-6 lg:grid-cols-[1fr_auto] lg:items-center">

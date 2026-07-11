@@ -31,7 +31,6 @@ export const taxiAdminSidebarMenu = [
           { label: "Explorer Destinations", path: "/admin/taxi/pricing/explorer-destinations" },
           { label: "Vehicle Type", path: "/admin/taxi/pricing/vehicle-type" },
           { label: "Weight Management", path: "/admin/taxi/pricing/weight-management" },
-          { label: "Rental Packages", path: "/admin/taxi/pricing/rental-packages" },
           { label: "Taxi Commission", path: "/admin/taxi/pricing/taxi-commission" },
           { label: "Parcel Commission", path: "/admin/taxi/pricing/parcel-commission" },
           { label: "Goods Types", path: "/admin/taxi/pricing/goods-types" },
@@ -63,7 +62,6 @@ export const taxiAdminSidebarMenu = [
         subItems: [
           { label: "User List", path: "/admin/taxi/users" },
           { label: "Delete Requests", path: "/admin/taxi/users/delete-requests" },
-          { label: "Bulk Upload", path: "/admin/taxi/users/bulk-upload" },
         ],
       },
       { icon: "Wallet", label: "Wallet Payment", path: "/admin/taxi/wallet/payment", type: "link" },
@@ -103,9 +101,7 @@ export const taxiAdminSidebarMenu = [
           { label: "User Report", path: "/admin/taxi/reports/user" },
           { label: "Driver Report", path: "/admin/taxi/reports/driver" },
           { label: "Driver Duty", path: "/admin/taxi/reports/driver-duty" },
-          { label: "Owner Report", path: "/admin/taxi/reports/owner" },
           { label: "Finance Report", path: "/admin/taxi/reports/finance" },
-          { label: "Fleet Finance", path: "/admin/taxi/reports/fleet-finance" },
         ],
       },
       {
@@ -117,37 +113,6 @@ export const taxiAdminSidebarMenu = [
           { label: "All Tickets", path: "/admin/taxi/support/tickets" },
         ],
       },
-    ],
-  },
-  {
-    type: "section",
-    label: "OWNER MANAGEMENT",
-    items: [
-      { type: "link", label: "Owner Dashboard", path: "/admin/taxi/owners/dashboard", icon: "LayoutDashboard" },
-      { type: "link", label: "Pending Owners", path: "/admin/taxi/owners/pending", icon: "Clock" },
-      { type: "link", label: "Manage Owners", path: "/admin/taxi/owners", icon: "Briefcase" },
-      {
-        type: "expandable",
-        label: "Owner Wallet",
-        icon: "Wallet",
-        subItems: [
-          { label: "Withdrawal Requests", path: "/admin/taxi/owners/wallet/withdrawals" },
-        ],
-      },
-      {
-        type: "expandable",
-        label: "Fleet Management",
-        icon: "Car",
-        subItems: [
-          { label: "Fleet Drivers", path: "/admin/taxi/fleet/drivers" },
-          { label: "Pending Fleet Drivers", path: "/admin/taxi/fleet/blocked" },
-          { label: "Fleet Needed Document", path: "/admin/taxi/fleet/documents" },
-          { label: "Manage Fleet", path: "/admin/taxi/fleet/manage" },
-        ],
-      },
-      { type: "link", label: "Owner Needed Document", path: "/admin/taxi/owners/documents", icon: "FileText" },
-      { type: "link", label: "Deleted Owners", path: "/admin/taxi/owners/deleted", icon: "AlertTriangle" },
-      { type: "link", label: "Bookings", path: "/admin/taxi/owners/bookings", icon: "Calendar" },
     ],
   },
   {

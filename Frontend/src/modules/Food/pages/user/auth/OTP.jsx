@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+﻿import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import AnimatedPage from "@food/components/user/AnimatedPage"
@@ -549,7 +549,7 @@ export default function OTP() {
         {/* Footer info */}
         <div className="p-6 bg-gray-50 dark:bg-[#1f1f1f] text-center">
             <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold">
-                Ishsys Food Delivery
+                Ozayra Food Delivery
             </p>
         </div>
       </div>

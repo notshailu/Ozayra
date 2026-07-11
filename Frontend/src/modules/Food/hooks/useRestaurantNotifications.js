@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '@food/api/config';
 import { restaurantAPI } from '@food/api';
@@ -400,10 +400,10 @@ export const useRestaurantNotifications = () => {
       let suggestedBackendUrl = null;
       
       // Common patterns:
-      // - If frontend is on foods.ishsys.com, backend might be api.foods.ishsys.com or foods.ishsys.com
-      if (frontendHost.includes('foods.ishsys.com')) {
-        suggestedBackendUrl = `${frontendProtocol}//api.foods.ishsys.com/api`;
-      } else if (frontendHost.includes('ishsys.com')) {
+      // - If frontend is on foods.ozayra.com, backend might be api.foods.ozayra.com or foods.ozayra.com
+      if (frontendHost.includes('foods.ozayra.com')) {
+        suggestedBackendUrl = `${frontendProtocol}//api.foods.ozayra.com/api`;
+      } else if (frontendHost.includes('ozayra.com')) {
         suggestedBackendUrl = `${frontendProtocol}//api.${frontendHost}/api`;
       }
       

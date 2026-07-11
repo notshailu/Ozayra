@@ -302,9 +302,27 @@ export const useQuickHomeData = ({ currentLocation }) => {
 
     const headerId = activeCategory._id;
 
+    // Synchronously restore from cache or clear/fallback immediately to eliminate asynchronous lag
+    if (globalQuickHomeCache.headerSections.has(headerId)) {
+      setHeaderSections(globalQuickHomeCache.headerSections.get(headerId));
+    } else {
+      setHeaderSections([]);
+    }
+
+    if (globalQuickHomeCache.categoryProducts.has(headerId)) {
+      setCategoryProducts(globalQuickHomeCache.categoryProducts.get(headerId));
+    } else {
+      setCategoryProducts(null); // Triggers immediate fallback to instant client-side filtering
+    }
+
+    if (globalQuickHomeCache.headerHeroConfigs.has(headerId)) {
+      setHeroConfig(globalQuickHomeCache.headerHeroConfigs.get(headerId));
+    } else {
+      setHeroConfig(globalQuickHomeCache.data?.heroConfig || { banners: { items: [] }, categoryIds: [] });
+    }
+
     const fetchHeroConfig = async () => {
       if (globalQuickHomeCache.headerHeroConfigs.has(headerId)) {
-        setHeroConfig(globalQuickHomeCache.headerHeroConfigs.get(headerId));
         return;
       }
       try {
@@ -328,28 +346,26 @@ export const useQuickHomeData = ({ currentLocation }) => {
 
     const fetchHeader = async () => {
       if (globalQuickHomeCache.headerSections.has(headerId)) {
-        setHeaderSections(globalQuickHomeCache.headerSections.get(headerId));
-      } else {
-        setLoadingHeaderSections(true);
-        try {
-          const res = await customerApi.getExperienceSections({ pageType: "header", headerId });
-          if (res.data.success) {
-            const raw = res.data.result || res.data.results || res.data;
-            const sections = Array.isArray(raw) ? raw : [];
-            setHeaderSections(sections);
-            globalQuickHomeCache.headerSections.set(headerId, sections);
-          }
-        } catch (e) {
-          console.error("Error fetching header sections:", e);
-        } finally {
-          setLoadingHeaderSections(false);
+        return;
+      }
+      setLoadingHeaderSections(true);
+      try {
+        const res = await customerApi.getExperienceSections({ pageType: "header", headerId });
+        if (res.data.success) {
+          const raw = res.data.result || res.data.results || res.data;
+          const sections = Array.isArray(raw) ? raw : [];
+          setHeaderSections(sections);
+          globalQuickHomeCache.headerSections.set(headerId, sections);
         }
+      } catch (e) {
+        console.error("Error fetching header sections:", e);
+      } finally {
+        setLoadingHeaderSections(false);
       }
     };
 
     const fetchCategoryProducts = async () => {
       if (globalQuickHomeCache.categoryProducts.has(headerId)) {
-        setCategoryProducts(globalQuickHomeCache.categoryProducts.get(headerId));
         return;
       }
       try {

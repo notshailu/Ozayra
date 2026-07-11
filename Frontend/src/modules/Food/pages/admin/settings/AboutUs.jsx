@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+﻿import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import api, { adminAPI } from "@food/api"
 import { API_ENDPOINTS } from "@food/api/config"
@@ -48,7 +48,7 @@ export default function AboutUs() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [aboutData, setAboutData] = useState({
-    appName: 'Ishsys Food',
+    appName: 'Ozayra Food',
     version: '1.0.0',
     description: '',
     logo: '',

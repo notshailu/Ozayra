@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react"
+﻿import { useState, useMemo, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Search, 
@@ -546,7 +546,7 @@ export default function HubMenu() {
             let uploadResponse
             try {
               uploadResponse = await uploadAPI.uploadMedia(file, {
-                folder: 'ishsys/restaurant/addons'
+                folder: 'ozayra/restaurant/addons'
               })
             } catch (folderUploadError) {
               // Fallback: retry without folder in case provider/account rejects custom folder.

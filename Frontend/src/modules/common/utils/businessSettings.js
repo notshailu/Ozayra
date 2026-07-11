@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Business Settings Utility
  * Handles loading and updating business settings (favicon, title, logo)
  */
@@ -145,7 +145,7 @@ export const getCachedSettings = () => {
  */
 export const getCompanyName = () => {
   const settings = getCachedSettings();
-  return settings?.companyName || "Ishsys";
+  return settings?.companyName || "Ozayra";
 };
 
 /**
@@ -154,8 +154,8 @@ export const getCompanyName = () => {
 export const getCompanyNameAsync = async () => {
   try {
     const settings = await loadBusinessSettings();
-    return settings?.companyName || "Ishsys";
+    return settings?.companyName || "Ozayra";
   } catch (error) {
-    return "Ishsys";
+    return "Ozayra";
   }
 };

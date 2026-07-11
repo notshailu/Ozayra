@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   ChevronRight,
   Loader2,
@@ -207,7 +207,7 @@ const MailSettings = () => {
                           className={inputClass}
                           value={settings.mail_from_address || ''}
                           onChange={(e) => updateField('mail_from_address', e.target.value)}
-                          placeholder="noreply@ishsys.com"
+                          placeholder="noreply@ozayra.com"
                           required
                          />
                       </div>
@@ -217,7 +217,7 @@ const MailSettings = () => {
                           className={inputClass}
                           value={settings.mail_from_name || ''}
                           onChange={(e) => updateField('mail_from_name', e.target.value)}
-                          placeholder="Ishsys Admin"
+                          placeholder="Ozayra Admin"
                           required
                          />
                       </div>

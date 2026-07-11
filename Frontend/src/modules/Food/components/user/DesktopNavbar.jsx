@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom"
+﻿import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState, useRef } from "react"
 import { ChevronDown, ShoppingCart, Wallet, Search, Mic } from "lucide-react"
 import { Button } from "@food/components/ui/button"
@@ -186,7 +186,7 @@ export default function DesktopNavbar({ showLogo = true }) {
                                         />
                                     ) : (
                                         <span className="text-xl font-bold text-gray-900 dark:text-white">
-                                          {companyName || "Ishsys"}
+                                          {companyName || "Ozayra"}
                                         </span>
                                     )}
                                 </Link>

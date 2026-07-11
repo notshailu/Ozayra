@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = 'z:/projects/ishsys-zomato/Frontend/src/modules/Food/pages/user/Home.jsx';
+﻿const fs = require('fs');
+const path = 'z:/projects/ozayra-zomato/Frontend/src/modules/Food/pages/user/Home.jsx';
 let content = fs.readFileSync(path, 'utf8');
 const searchString = '{/* Border Glow Effect */}';
 const replacement = `{/* Border Glow Effect */}

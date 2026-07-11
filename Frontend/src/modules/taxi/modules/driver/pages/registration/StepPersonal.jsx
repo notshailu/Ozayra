@@ -96,6 +96,7 @@ const StepPersonal = () => {
     // Step 3: Vehicle/Company State
     const [locations, setLocations] = useState([]);
     const [locationsLoading, setLocationsLoading] = useState(true);
+    const vehicleImageRef = useRef(null);
     const [vehicleForm, setVehicleForm] = useState({
         registerFor: session.registerFor || 'taxi',
         locationId: session.locationId || '',
@@ -256,10 +257,25 @@ const StepPersonal = () => {
                 iconType = 'auto';
             }
             
+            // Determine map image
+            const val = (iconName || name).toLowerCase();
+            let mapImage = '/4_Taxi.png';
+            if (val.includes('bike')) mapImage = '/1_Bike.png';
+            else if (val.includes('auto')) mapImage = '/2_AutoRickshaw.png';
+            else if (val.includes('ehc')) mapImage = '/ehcv.png';
+            else if (val.includes('hcv')) mapImage = '/hcv.png';
+            else if (val.includes('lcv')) mapImage = '/LCV.png';
+            else if (val.includes('mcv')) mapImage = '/mcv.png';
+            else if (val.includes('truck')) mapImage = '/truck.png';
+            else if (val.includes('lux')) mapImage = '/Luxury.png';
+            else if (val.includes('premium')) mapImage = '/Premium.png';
+            else if (val.includes('suv')) mapImage = '/SUV.png';
+
             return {
                 id: item._id || item.id,
                 label: item.name,
-                icon: iconType
+                icon: iconType,
+                image: mapImage
             };
         });
     }, [dbVehicleTypes, vehicleForm.registerFor]);
@@ -386,6 +402,7 @@ const StepPersonal = () => {
                 city: isOwner ? vehicleForm.city : selectedServiceLocation?.name || selectedServiceLocation?.service_location_name || vehicleForm.city,
                 postalCode: vehicleForm.postalCode,
                 taxNumber: vehicleForm.taxNumber,
+                vehicleImage: vehicleForm.vehicleImage,
             });
 
             saveDriverRegistrationSession({
@@ -404,6 +421,27 @@ const StepPersonal = () => {
     // Step 4 Document Upload helper
     const openPicker = (key) => {
         inputRefs.current[key]?.click();
+    };
+
+    const handleVehicleImageChange = async (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setError('Please upload an image file');
+            return;
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        setVehicleForm(p => ({ ...p, vehicleImagePreview: previewUrl }));
+        
+        try {
+            const dataUrl = await fileToDataUrl(file);
+            setVehicleForm(p => ({ ...p, vehicleImage: dataUrl }));
+        } catch (err) {
+            setError('Error reading file');
+        }
     };
 
     const handleFileChange = async (key, event) => {
@@ -1034,9 +1072,13 @@ const StepPersonal = () => {
                                                                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-300 ${
                                                                              active ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-400'
                                                                          }`}>
-                                                                            {getVehicleIconComponent(type.icon, active)}
+                                                                            {type.image ? (
+                                                                                <img src={type.image} alt={type.label} className="w-full h-full object-contain p-0.5" />
+                                                                            ) : (
+                                                                                getVehicleIconComponent(type.icon, active)
+                                                                            )}
                                                                          </div>
-                                                                         <span className="text-[10px] font-black uppercase tracking-wider leading-none">{type.label}</span>
+                                                                         <span className="text-[10px] font-black uppercase tracking-wider leading-none text-center">{type.label}</span>
                                                                          {active && (
                                                                              <div className="absolute top-1 right-1.5 text-white">
                                                                                  <Check size={8} strokeWidth={4} />
@@ -1065,7 +1107,7 @@ const StepPersonal = () => {
                                                 {vehicleForm.vehicleTypeId && (
                                                     <div className="grid grid-cols-2 gap-3.5 animate-fadeIn">
                                                         <div className="group relative bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm focus-within:border-slate-800 focus-within:ring-2 focus-within:ring-slate-900/5 transition-all duration-300">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Make</label>
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Brand</label>
                                                             <input 
                                                                 value={vehicleForm.make}
                                                                 onChange={(e) => setVehicleForm(p => ({ ...p, make: e.target.value }))}
@@ -1114,6 +1156,40 @@ const StepPersonal = () => {
                                                                 placeholder="MP 09 AB 1234"
                                                                 className="w-full bg-transparent border-none p-0 text-[13.5px] font-black text-slate-900 focus:outline-none focus:ring-0 placeholder:text-slate-300 uppercase tracking-widest"
                                                             />
+                                                        </div>
+
+                                                        {/* Vehicle Image Upload via Camera */}
+                                                        <div 
+                                                            onClick={() => vehicleImageRef.current?.click()}
+                                                            className={`group relative bg-white border rounded-2xl p-3.5 shadow-sm transition-all duration-300 col-span-2 flex flex-col items-center justify-center cursor-pointer min-h-[140px] ${
+                                                                vehicleForm.vehicleImagePreview ? 'border-slate-200' : 'border-dashed border-slate-200 hover:border-slate-350'
+                                                            }`}
+                                                        >
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2 pointer-events-none">Vehicle Photo (Camera Only)</label>
+                                                            <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                capture="environment" 
+                                                                className="hidden" 
+                                                                ref={vehicleImageRef}
+                                                                onChange={handleVehicleImageChange}
+                                                            />
+                                                            {vehicleForm.vehicleImagePreview ? (
+                                                                <>
+                                                                    <img src={vehicleForm.vehicleImagePreview} alt="Vehicle" className="absolute inset-0 h-full w-full object-cover rounded-2xl opacity-90 transition-transform duration-500 group-hover:scale-[1.02]" />
+                                                                    <div className="absolute inset-0 bg-black/10 rounded-2xl group-hover:bg-black/25 transition-colors duration-300" />
+                                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-2 flex items-center justify-center gap-1.5 text-[9px] font-black text-white uppercase tracking-widest rounded-b-2xl transform translate-y-1 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                                        <Camera size={11} /> Replace Photo
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center gap-2 text-center pointer-events-none">
+                                                                    <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-sm border border-slate-100/50">
+                                                                        <Camera size={18} />
+                                                                    </div>
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Tap to capture</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}

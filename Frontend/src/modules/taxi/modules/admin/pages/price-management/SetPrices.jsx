@@ -53,9 +53,9 @@ const initialFormState = {
   service_location_id: '',
   transport_type: '',
   vehicle_type: '',
-  payment_type: ['cash'],
+  payment_type: ['cash', 'online', 'wallet'],
   admin_commision_type: '1',
-  admin_commision: '',
+  admin_commision: 0,
   admin_commission_type_from_driver: '1',
   admin_commission_from_driver: '',
   admin_commission_type_for_owner: '1',
@@ -110,6 +110,7 @@ const SetPrices = ({ mode, filterType }) => {
   
   const [zones, setZones] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [weightRanges, setWeightRanges] = useState([]);
   const { transportTypes } = useTaxiTransportTypes();
 
   const [formData, setFormData] = useState({
@@ -159,14 +160,15 @@ const SetPrices = ({ mode, filterType }) => {
     setLoading(true);
     try {
       const auth = { 'Authorization': `Bearer ${token}` };
-      const [prizesRes, zonesRes, vehiclesRes] = await Promise.all([
+      const [prizesRes, zonesRes, vehiclesRes, weightRangesRes] = await Promise.all([
         fetch(`${baseUrl}/types/set-prices`, { headers: auth }),
         fetch(`${baseUrl}/zones`, { headers: auth }),
-        fetch(`${baseUrl}/types/vehicle-types`, { headers: auth })
+        fetch(`${baseUrl}/types/vehicle-types`, { headers: auth }),
+        fetch(`${baseUrl}/types/weight-ranges`, { headers: auth })
       ]);
 
-      const [prizesData, zonesData, vehiclesData] = await Promise.all([
-        prizesRes.json(), zonesRes.json(), vehiclesRes.json()
+      const [prizesData, zonesData, vehiclesData, weightRangesData] = await Promise.all([
+        prizesRes.json(), zonesRes.json(), vehiclesRes.json(), weightRangesRes.json()
       ]);
 
       if (prizesData.success) {
@@ -181,6 +183,9 @@ const SetPrices = ({ mode, filterType }) => {
       
       const vItems = vehiclesData.results || vehiclesData.data?.vehicle_types || JSON.parse(JSON.stringify(vehiclesData.data?.results || []));
       setVehicleTypes(Array.isArray(vItems) ? vItems : []);
+
+      const wrItems = weightRangesData.results || weightRangesData.data?.results || (Array.isArray(weightRangesData) ? weightRangesData : []);
+      setWeightRanges(Array.isArray(wrItems) ? wrItems : []);
       
     } catch (error) { 
       console.error("Fetch Data Error:", error);
@@ -195,12 +200,31 @@ const SetPrices = ({ mode, filterType }) => {
     try {
       const method = editingId ? 'PATCH' : 'POST';
       const url = editingId ? `${baseUrl}/types/set-prices/${editingId}` : `${baseUrl}/types/set-prices`;
+      
+      const submitData = { ...formData };
+      if (filterType === 'delivery') {
+        submitData.enable_airport_ride = false;
+        submitData.airport_surge = 0;
+        submitData.support_airport_fee = 0;
+        submitData.enable_outstation_ride = false;
+        submitData.outstation_base_price = 0;
+        submitData.outstation_base_distance = 0;
+        submitData.outstation_price_per_distance = 0;
+        submitData.outstation_time_price = 0;
+        submitData.waiting_charge = 0;
+        submitData.free_waiting_before = 0;
+        submitData.free_waiting_after = 0;
+        submitData.time_price = 0;
+        submitData.admin_commission_type_for_owner = 1;
+        submitData.admin_commission_for_owner = 0;
+      }
+
       const res = await fetch(url, {
         method,
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          payment_type: Array.isArray(formData.payment_type) ? formData.payment_type.join(',') : formData.payment_type
+          ...submitData,
+          payment_type: Array.isArray(submitData.payment_type) ? submitData.payment_type.join(',') : submitData.payment_type
         })
       });
       const data = await res.json();
@@ -419,38 +443,20 @@ const SetPrices = ({ mode, filterType }) => {
                         <div className="relative">
                            <select required className={inputClass + " appearance-none cursor-pointer"} value={formData.vehicle_type} onChange={e => setFormData(p=>({...p, vehicle_type: e.target.value}))}>
                               <option value="">Select Vehicle Type</option>
-                              {vehicleTypes.map(v => <option key={v._id || v.id} value={v._id || v.id}>{v.name}</option>)}
+                              {vehicleTypes
+                                .filter(v => {
+                                  const t = formData.transport_type;
+                                  if (t === 'delivery') return v.transport_type === 'delivery' || v.transport_type === 'both' || v.transport_type === 'all';
+                                  if (t === 'taxi') return v.transport_type === 'taxi' || v.transport_type === 'both' || v.transport_type === 'all';
+                                  return true;
+                                })
+                                .map(v => <option key={v._id || v.id} value={v._id || v.id}>{v.name}</option>)}
                            </select>
                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         </div>
                      </div>
-                     <div>
-                        <label className={labelClass}>Payment Type <span className="text-rose-500">*</span></label>
-                        <div className="relative">
-                           <select required className={inputClass + " appearance-none cursor-pointer"} value={Array.isArray(formData.payment_type) ? (formData.payment_type[0] || 'cash') : (formData.payment_type || 'cash')} onChange={e => setFormData(p=>({...p, payment_type: [e.target.value]}))}>
-                              <option value="">Select Payment Type</option>
-                              <option value="cash">Cash</option>
-                              <option value="online">Online</option>
-                              <option value="wallet">Wallet</option>
-                           </select>
-                           <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
-                     </div>
-                     <div>
-                        <label className={labelClass}>Admin Commission Type From Customer <span className="text-rose-500">*</span></label>
-                        <div className="relative">
-                           <select required className={inputClass + " appearance-none cursor-pointer"} value={formData.admin_commision_type} onChange={e => setFormData(p=>({...p, admin_commision_type: e.target.value}))}>
-                              <option value="">Select Type</option>
-                              <option value="1">Percentage</option>
-                              <option value="2">Fixed</option>
-                           </select>
-                           <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
-                     </div>
-                     <div>
-                        <label className={labelClass}>Admin Commission From Customer <span className="text-rose-500">*</span></label>
-                        <input type="number" required className={inputClass} placeholder="Enter Admin Commission From Customer" value={formData.admin_commision} onChange={e => setFormData(p=>({...p, admin_commision: e.target.value}))} />
-                     </div>
+
+
                      <div>
                         <label className={labelClass}>Admin Commission Type From Driver <span className="text-rose-500">*</span></label>
                         <div className="relative">
@@ -466,21 +472,27 @@ const SetPrices = ({ mode, filterType }) => {
                         <label className={labelClass}>Admin Commission From Driver <span className="text-rose-500">*</span></label>
                         <input type="number" required className={inputClass} placeholder="Enter Admin Commission From Driver" value={formData.admin_commission_from_driver} onChange={e => setFormData(p=>({...p, admin_commission_from_driver: e.target.value}))} />
                      </div>
-                     <div>
-                        <label className={labelClass}>Admin Commission Type From Owner <span className="text-rose-500">*</span></label>
-                        <div className="relative">
-                           <select required className={inputClass + " appearance-none cursor-pointer"} value={formData.admin_commission_type_for_owner} onChange={e => setFormData(p=>({...p, admin_commission_type_for_owner: e.target.value}))}>
-                              <option value="">Select Type</option>
-                              <option value="1">Percentage</option>
-                              <option value="2">Fixed</option>
-                           </select>
-                           <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
-                     </div>
-                     <div>
-                        <label className={labelClass}>Admin Commission From Owner <span className="text-rose-500">*</span></label>
-                        <input type="number" required className={inputClass} placeholder="Enter Admin Commission From Owner" value={formData.admin_commission_for_owner} onChange={e => setFormData(p=>({...p, admin_commission_for_owner: e.target.value}))} />
-                     </div>
+
+                     {filterType !== 'delivery' && (
+                        <>
+                          <div>
+                             <label className={labelClass}>Admin Commission Type From Owner <span className="text-rose-500">*</span></label>
+                             <div className="relative">
+                                <select required className={inputClass + " appearance-none cursor-pointer"} value={formData.admin_commission_type_for_owner} onChange={e => setFormData(p=>({...p, admin_commission_type_for_owner: e.target.value}))}>
+                                   <option value="">Select Type</option>
+                                   <option value="1">Percentage</option>
+                                   <option value="2">Fixed</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                             </div>
+                          </div>
+                          <div>
+                             <label className={labelClass}>Admin Commission From Owner <span className="text-rose-500">*</span></label>
+                             <input type="number" required className={inputClass} placeholder="Enter Admin Commission From Owner" value={formData.admin_commission_for_owner} onChange={e => setFormData(p=>({...p, admin_commission_for_owner: e.target.value}))} />
+                          </div>
+                        </>
+                      )}
+                      
                      <div>
                         <label className={labelClass}>Service Tax (%) <span className="text-rose-500">*</span></label>
                         <input type="number" required className={inputClass} placeholder="Enter Service Tax (%)" value={formData.service_tax} onChange={e => setFormData(p=>({...p, service_tax: e.target.value}))} />
@@ -501,79 +513,84 @@ const SetPrices = ({ mode, filterType }) => {
                         <label className={labelClass}>Price Per Distance <span className="text-rose-500">*</span></label>
                         <input type="number" required className={inputClass} placeholder="Enter Price Per Distance" value={formData.price_per_distance} onChange={e => setFormData(p=>({...p, price_per_distance: e.target.value}))} />
                      </div>
-                     <div>
-                        <label className={labelClass}>Time Price in Mintue <span className="text-rose-500">*</span></label>
-                        <input type="number" required className={inputClass} placeholder="Enter Time Price" value={formData.time_price} onChange={e => setFormData(p=>({...p, time_price: e.target.value}))} />
-                     </div>
-                     <div>
-                        <label className={labelClass}>Waiting Charge <span className="text-rose-500">*</span></label>
-                        <input type="number" required className={inputClass} placeholder="Enter Waiting Charge" value={formData.waiting_charge} onChange={e => setFormData(p=>({...p, waiting_charge: e.target.value}))} />
-                     </div>
-                     <div>
-                        <label className={labelClass}>Free Waiting Time In Minutes Before Start A Ride <span className="text-rose-500">*</span></label>
-                        <input type="number" required className={inputClass} placeholder="Free Waiting Time In Minutes Before Start A Ride" value={formData.free_waiting_before} onChange={e => setFormData(p=>({...p, free_waiting_before: e.target.value}))} />
-                     </div>
-
-                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-12">
-                        <div>
-                           <label className={labelClass}>Free Waiting Time In Minutes After Start A Ride <span className="text-rose-500">*</span></label>
-                           <input type="number" required className={inputClass} placeholder="Free Waiting Time In Minutes After Start A Ride" value={formData.free_waiting_after} onChange={e => setFormData(p=>({...p, free_waiting_after: e.target.value}))} />
-                        </div>
-                     </div>
-
-                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-12 pt-4">
-                        <div className="flex items-center gap-2 pt-2 ml-1">
-                           <input type="checkbox" className="w-4 h-4 rounded border-gray-300 pointer-events-auto" checked={formData.enable_airport_ride} onChange={e => setFormData(p=>({...p, enable_airport_ride: e.target.checked}))} />
-                           <span className="text-[13px] font-semibold text-gray-700">Enable Airport Ride</span>
-                        </div>
-                     </div>
-
-                     {formData.enable_airport_ride && (
-                        <div className="md:col-span-2 space-y-6 pt-6 border-t border-gray-100 mt-4">
-                           <h2 className="text-base font-bold text-[#1E293B] uppercase tracking-wider">Airport Ride</h2>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                     
+                     {filterType !== 'delivery' && (
+                        <>
+                           <div>
+                              <label className={labelClass}>Time Price in Mintue <span className="text-rose-500">*</span></label>
+                              <input type="number" required className={inputClass} placeholder="Enter Time Price" value={formData.time_price} onChange={e => setFormData(p=>({...p, time_price: e.target.value}))} />
+                           </div>
+                           <div>
+                              <label className={labelClass}>Waiting Charge <span className="text-rose-500">*</span></label>
+                              <input type="number" required className={inputClass} placeholder="Enter Waiting Charge" value={formData.waiting_charge} onChange={e => setFormData(p=>({...p, waiting_charge: e.target.value}))} />
+                           </div>
+                           <div>
+                              <label className={labelClass}>Free Waiting Time In Minutes Before Start A Ride <span className="text-rose-500">*</span></label>
+                              <input type="number" required className={inputClass} placeholder="Free Waiting Time In Minutes Before Start A Ride" value={formData.free_waiting_before} onChange={e => setFormData(p=>({...p, free_waiting_before: e.target.value}))} />
+                           </div>
+      
+                           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-12">
                               <div>
-                                 <label className={labelClass}>Airport Surge Fee <span className="text-rose-500">*</span></label>
-                                 <input type="number" required={formData.enable_airport_ride} className={inputClass} placeholder="Enter Airport Surge Fee" value={formData.airport_surge} onChange={e => setFormData(p=>({...p, airport_surge: e.target.value}))} />
-                              </div>
-                              <div>
-                                 <label className={labelClass}>Support Airport Fee <span className="text-rose-500">*</span></label>
-                                 <input type="number" required={formData.enable_airport_ride} className={inputClass} placeholder="Enter Support Airport Fee" value={formData.support_airport_fee} onChange={e => setFormData(p=>({...p, support_airport_fee: e.target.value}))} />
+                                 <label className={labelClass}>Free Waiting Time In Minutes After Start A Ride <span className="text-rose-500">*</span></label>
+                                 <input type="number" required className={inputClass} placeholder="Free Waiting Time In Minutes After Start A Ride" value={formData.free_waiting_after} onChange={e => setFormData(p=>({...p, free_waiting_after: e.target.value}))} />
                               </div>
                            </div>
-                        </div>
-                     )}
 
-                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-12">
-                        <div className="flex items-center gap-2 pt-2 ml-1">
-                           <input type="checkbox" className="w-4 h-4 rounded border-gray-300 pointer-events-auto" checked={formData.enable_outstation_ride} onChange={e => setFormData(p=>({...p, enable_outstation_ride: e.target.checked}))} />
-                           <span className="text-[13px] font-semibold text-gray-700">Enable Outstation Ride</span>
-                        </div>
-                     </div>
-
-                     {formData.enable_outstation_ride && (
-                        <div className="md:col-span-2 space-y-6 pt-6 border-t border-gray-100 mt-4">
-                           <h2 className="text-base font-bold text-[#1E293B] uppercase tracking-wider">Outstation</h2>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                              <div>
-                                 <label className={labelClass}>Base Price <span className="text-rose-500">*</span></label>
-                                 <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Base Price" value={formData.outstation_base_price} onChange={e => setFormData(p=>({...p, outstation_base_price: e.target.value}))} />
-                              </div>
-                              <div>
-                                 <label className={labelClass}>Base Distance <span className="text-rose-500">*(Kilometers)</span></label>
-                                 <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Base Distance" value={formData.outstation_base_distance} onChange={e => setFormData(p=>({...p, outstation_base_distance: e.target.value}))} />
-                              </div>
-                              <div>
-                                 <label className={labelClass}>Price Per Distance <span className="text-rose-500">*(Kilometers)</span></label>
-                                 <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Price Per Distance" value={formData.outstation_price_per_distance} onChange={e => setFormData(p=>({...p, outstation_price_per_distance: e.target.value}))} />
-                              </div>
-                              <div>
-                                 <label className={labelClass}>Time Price in Mintue <span className="text-rose-500">*</span></label>
-                                 <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Time Price" value={formData.outstation_time_price} onChange={e => setFormData(p=>({...p, outstation_time_price: e.target.value}))} />
+                           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-12 pt-4">
+                              <div className="flex items-center gap-2 pt-2 ml-1">
+                                 <input type="checkbox" className="w-4 h-4 rounded border-gray-300 pointer-events-auto" checked={formData.enable_airport_ride} onChange={e => setFormData(p=>({...p, enable_airport_ride: e.target.checked}))} />
+                                 <span className="text-[13px] font-semibold text-gray-700">Enable Airport Ride</span>
                               </div>
                            </div>
-                        </div>
-                     )}
+      
+                           {formData.enable_airport_ride && (
+                              <div className="md:col-span-2 space-y-6 pt-6 border-t border-gray-100 mt-4">
+                                 <h2 className="text-base font-bold text-[#1E293B] uppercase tracking-wider">Airport Ride</h2>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                                    <div>
+                                       <label className={labelClass}>Airport Surge Fee <span className="text-rose-500">*</span></label>
+                                       <input type="number" required={formData.enable_airport_ride} className={inputClass} placeholder="Enter Airport Surge Fee" value={formData.airport_surge} onChange={e => setFormData(p=>({...p, airport_surge: e.target.value}))} />
+                                    </div>
+                                    <div>
+                                       <label className={labelClass}>Support Airport Fee <span className="text-rose-500">*</span></label>
+                                       <input type="number" required={formData.enable_airport_ride} className={inputClass} placeholder="Enter Support Airport Fee" value={formData.support_airport_fee} onChange={e => setFormData(p=>({...p, support_airport_fee: e.target.value}))} />
+                                    </div>
+                                 </div>
+                              </div>
+                           )}
+      
+                           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-12">
+                              <div className="flex items-center gap-2 pt-2 ml-1">
+                                 <input type="checkbox" className="w-4 h-4 rounded border-gray-300 pointer-events-auto" checked={formData.enable_outstation_ride} onChange={e => setFormData(p=>({...p, enable_outstation_ride: e.target.checked}))} />
+                                 <span className="text-[13px] font-semibold text-gray-700">Enable Outstation Ride</span>
+                              </div>
+                           </div>
+      
+                           {formData.enable_outstation_ride && (
+                              <div className="md:col-span-2 space-y-6 pt-6 border-t border-gray-100 mt-4">
+                                 <h2 className="text-base font-bold text-[#1E293B] uppercase tracking-wider">Outstation</h2>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                                    <div>
+                                       <label className={labelClass}>Base Price <span className="text-rose-500">*</span></label>
+                                       <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Base Price" value={formData.outstation_base_price} onChange={e => setFormData(p=>({...p, outstation_base_price: e.target.value}))} />
+                                    </div>
+                                    <div>
+                                       <label className={labelClass}>Base Distance <span className="text-rose-500">*(Kilometers)</span></label>
+                                       <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Base Distance" value={formData.outstation_base_distance} onChange={e => setFormData(p=>({...p, outstation_base_distance: e.target.value}))} />
+                                    </div>
+                                    <div>
+                                       <label className={labelClass}>Price Per Distance <span className="text-rose-500">*(Kilometers)</span></label>
+                                       <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Price Per Distance" value={formData.outstation_price_per_distance} onChange={e => setFormData(p=>({...p, outstation_price_per_distance: e.target.value}))} />
+                                    </div>
+                                    <div>
+                                       <label className={labelClass}>Time Price in Mintue <span className="text-rose-500">*</span></label>
+                                       <input type="number" required={formData.enable_outstation_ride} className={inputClass} placeholder="Enter Time Price" value={formData.outstation_time_price} onChange={e => setFormData(p=>({...p, outstation_time_price: e.target.value}))} />
+                                    </div>
+                                 </div>
+                              </div>
+                           )}
+                        </>
+                      )}
                   </div>
 
                   {/* Section: Parcel Weight Pricing (Only for Delivery) */}
@@ -622,19 +639,24 @@ const SetPrices = ({ mode, filterType }) => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 pr-8">
                                        <div>
-                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Weight Range (e.g. Under 5kg)</label>
-                                          <input
-                                             type="text"
+                                          <label className="block text-[11px] font-bold text-slate-500 mb-1">Weight Range</label>
+                                          <select
                                              required
-                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                             className="w-full border border-gray-200 rounded px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer"
                                              value={bracket.weight_range}
                                              onChange={e => {
                                                 const ranges = [...formData.parcel_weight_ranges];
                                                 ranges[index].weight_range = e.target.value;
                                                 setFormData(p => ({ ...p, parcel_weight_ranges: ranges }));
                                              }}
-                                             placeholder="Under 5kg"
-                                          />
+                                          >
+                                             <option value="">Select Weight Range</option>
+                                             {weightRanges.map(wr => (
+                                                <option key={wr._id || wr.id} value={wr.weight_range}>
+                                                   {wr.weight_range}
+                                                </option>
+                                             ))}
+                                          </select>
                                        </div>
                                        <div>
                                           <label className="block text-[11px] font-bold text-slate-500 mb-1">Base Price (₹)</label>
