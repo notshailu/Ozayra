@@ -723,11 +723,13 @@ export async function registerWebPushForCurrentModule(pathname = window.location
         scope: registration.scope,
         moduleName,
       });
+      const readyRegistration = await navigator.serviceWorker.ready;
+      
       const messaging = getMessaging(app);
 
       const token = await getToken(messaging, {
         vapidKey: firebasePublicEnv.vapidKey,
-        serviceWorkerRegistration: registration,
+        serviceWorkerRegistration: readyRegistration,
       });
 
       if (!token) return;

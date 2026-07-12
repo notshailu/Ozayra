@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { adminService } from '../../services/adminService';
 import AdminPageHeader from '../../components/ui/AdminPageHeader';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const inputClass =
   'h-[46px] w-full rounded border border-gray-300 bg-white px-4 text-sm text-gray-950 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500';
@@ -90,14 +91,17 @@ const FleetDriverCreate = () => {
     }));
   };
 
-  const handleProfileChange = (event) => {
+  const handleProfileChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setProfileName(file.name);
-    const reader = new FileReader();
-    reader.onloadend = () => setField('profile_picture', reader.result);
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressToWebPDataURL(file);
+      setField('profile_picture', dataUrl || '');
+    } catch (err) {
+      console.error('Image compression failed', err);
+    }
   };
 
   const handleSubmit = async (event) => {

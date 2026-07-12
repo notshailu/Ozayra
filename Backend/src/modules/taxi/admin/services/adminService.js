@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { ApiError } from '../../../../utils/ApiError.js';
+import { sendDriverApprovalEmail } from '../../../../utils/email.js';
 import { createDefaultAdminState } from '../data/defaultAdminState.js';
 import { Admin } from '../models/Admin.js';
 import { User } from '../../user/models/User.js';
@@ -2491,6 +2492,9 @@ export const createDriver = async (payload = {}) => {
 };
 
 export const updateDriver = async (id, payload) => {
+  const existingDriver = await Driver.findById(id).lean();
+  if (!existingDriver) throw new ApiError(404, 'Driver not found');
+
   const update = {
     ...payload,
   };
@@ -2510,7 +2514,14 @@ export const updateDriver = async (id, payload) => {
   }
 
   const driver = await Driver.findByIdAndUpdate(id, update, { new: true });
-  if (!driver) throw new ApiError(404, 'Driver not found');
+  
+  const wasApproved = existingDriver.status === 'approved' || existingDriver.approve === true;
+  const isApproved = driver.status === 'approved' || driver.approve === true;
+  
+  if (!wasApproved && isApproved && driver.email) {
+      sendDriverApprovalEmail(driver.email, driver.name).catch(err => console.error('Failed to send driver approval email:', err));
+  }
+
   return serializeDriver(driver);
 };
 

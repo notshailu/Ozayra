@@ -69,8 +69,7 @@ const RideComplete = () => {
 
   const driverImage = driver.profileImage || '';
   const vehicleLabel = driver.vehicle || driver.vehicleType || (serviceType === 'parcel' ? 'Delivery' : 'Taxi');
-  const hasVehiclePhoto = isLikelyVehiclePhoto(driver.vehicleImage) && !vehicleImageBroken;
-  const vehicleVisual = hasVehiclePhoto ? driver.vehicleImage : getVehicleIcon(serviceType, driver);
+  const vehicleVisual = getVehicleIcon(serviceType, driver);
   const totalBill = fare + Number(selectedTip || 0);
   const isOnlinePayment = String(paymentMethod).toLowerCase() === 'online' || String(paymentMethod).toLowerCase() === 'online payment';
   const showPayButton = isOnlinePayment && paymentStatus !== 'paid';

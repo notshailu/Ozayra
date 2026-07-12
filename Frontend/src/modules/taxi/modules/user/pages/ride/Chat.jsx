@@ -15,8 +15,8 @@ const Chat = () => {
   const supportRole = routeRole === 'driver' ? 'driver' : 'user';
   const hasLiveToken = Boolean(
     supportRole === 'driver'
-      ? localStorage.getItem('driverToken') || localStorage.getItem('token')
-      : localStorage.getItem('userToken') || localStorage.getItem('token'),
+      ? localStorage.getItem('driverToken') || localStorage.getItem('auth_driver') || localStorage.getItem('token')
+      : localStorage.getItem('userToken') || localStorage.getItem('auth_user') || localStorage.getItem('token'),
   );
   const bottomRef = useRef(null);
 
@@ -33,10 +33,13 @@ const Chat = () => {
     const fetchActiveRide = async () => {
       try {
         const token = supportRole === 'driver' 
-          ? localStorage.getItem('driverToken') || localStorage.getItem('token') 
-          : localStorage.getItem('userToken') || localStorage.getItem('token');
+          ? localStorage.getItem('driverToken') || localStorage.getItem('auth_driver') || localStorage.getItem('token') 
+          : localStorage.getItem('userToken') || localStorage.getItem('auth_user') || localStorage.getItem('token');
           
-        if (!token) return;
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
         const response = await api.get('/rides/active/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -150,6 +153,7 @@ const Chat = () => {
   const otherName = isAdminChat ? 'Rydon24 Support' : (supportRole === 'driver' ? (activeRide?.user?.name || 'Passenger') : (activeRide?.driver?.name || 'Driver'));
   const otherSub = isAdminChat ? 'Active now' : (supportRole === 'driver' ? 'Passenger · Active now' : 'Driver · Active now');
   const otherPhone = isAdminChat ? null : (supportRole === 'driver' ? activeRide?.user?.phone : activeRide?.driver?.phone);
+  const otherImage = isAdminChat ? null : (supportRole === 'driver' ? (activeRide?.user?.profileImage || activeRide?.user?.avatar) : (activeRide?.driver?.profileImage || activeRide?.driver?.avatar));
 
   return (
     <div className="h-[100dvh] bg-slate-50 max-w-lg mx-auto flex flex-col font-sans relative overflow-hidden">
@@ -165,7 +169,7 @@ const Chat = () => {
             {isAdminChat ? (
               <Headset size={18} className="text-orange-500" strokeWidth={2} />
             ) : (
-              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(otherName)}&background=f1f5f9&color=0f172a`} alt="Avatar" className="w-full h-full object-cover" />
+              <img src={otherImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherName)}&background=f1f5f9&color=0f172a`} alt="Avatar" className="w-full h-full object-cover" />
             )}
           </div>
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />

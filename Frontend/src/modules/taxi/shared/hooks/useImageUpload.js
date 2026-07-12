@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { uploadService } from '../services/uploadService';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 import toast from 'react-hot-toast';
 
 /**
@@ -26,24 +27,19 @@ export const useImageUpload = (options = {}) => {
       return;
     }
 
-    // 2. Set local preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result);
+    // 2. Set local preview using raw file for immediate feedback
+    const previewReader = new FileReader();
+    previewReader.onloadend = () => {
+      setPreview(previewReader.result);
     };
-    reader.readAsDataURL(file);
+    previewReader.readAsDataURL(file);
 
-    // 3. Upload to Cloudinary (WebP converted by backend)
+    // 3. Compress to WebP and Upload to Backend
     try {
       setUploading(true);
       
-      // Convert to base64 for the current backend implementation
-      const base64 = await new Promise((resolve) => {
-        const r = new FileReader();
-        r.onloadend = () => resolve(r.result);
-        r.readAsDataURL(file);
-      });
-
+      const base64 = await compressToWebPDataURL(file);
+      
       const result = await uploadService.uploadImage(base64, folder);
       
       const url = result.secureUrl || result.url;

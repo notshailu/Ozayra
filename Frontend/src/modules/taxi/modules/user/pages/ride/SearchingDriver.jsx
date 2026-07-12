@@ -75,7 +75,7 @@ const DriverCard = ({ driver, banner, bannerGradient, children }) => (
       <div className="flex items-center gap-3">
         <div className="relative shrink-0">
           <div className="w-11 h-11 rounded-[13px] bg-slate-100 overflow-hidden border border-slate-100">
-            <img src={`https://ui-avatars.com/api/?name=${driver.name.replace(' ','+')}&background=f1f5f9&color=0f172a`}
+            <img src={driver.profileImage || driver.profile_picture || driver.photo || driver.user?.profileImage || driver.user?.profile_picture || driver.user?.photo || driver.profilePic || `https://ui-avatars.com/api/?name=${driver.name.replace(' ','+')}&background=f1f5f9&color=0f172a`}
               className="w-full h-full object-cover" alt="Driver" />
           </div>
           <div className="absolute -bottom-1 -right-1 bg-yellow-400 px-1 py-0.5 rounded-[6px] border-2 border-white flex items-center gap-0.5 shadow-sm">
@@ -190,16 +190,10 @@ const SearchingDriver = () => {
   }, [driver]);
 
   useEffect(() => {
-    if (requestStartedRef.current) {
-      return undefined;
-    }
-
     if (!selectedVehicleTypeId) {
       setSearchStatus('Vehicle type missing. Please select a vehicle again.');
       return undefined;
     }
-
-    requestStartedRef.current = true;
 
     const onRideSearchUpdate = ({ matchedDrivers, radius }) => {
       const radiusKm = radius ? (Number(radius) / 1000).toFixed(1) : '';
@@ -304,15 +298,24 @@ const SearchingDriver = () => {
       setSearchStatus(message || 'Could not request ride.');
     };
 
+    const onRideCreated = ({ rideId }) => {
+      activeRideIdRef.current = String(rideId || '');
+      setSearchStatus('Booking created. Searching nearby drivers...');
+    };
+
     socketService.on('rideSearchUpdate', onRideSearchUpdate);
     socketService.on('rideAccepted', onRideAccepted);
     socketService.on('ride:state', onRideState);
     socketService.on('ride:status:updated', onRideStatusUpdated);
     socketService.on('rideCancelled', onRideCancelled);
     socketService.on('errorMessage', onError);
+    socketService.on('rideCreated', onRideCreated);
 
-    (async () => {
-      try {
+    if (!requestStartedRef.current) {
+      requestStartedRef.current = true;
+
+      (async () => {
+        try {
         let userToken = getLocalUserToken();
 
         if (!userToken) {
@@ -327,48 +330,32 @@ const SearchingDriver = () => {
             localStorage.setItem('userInfo', JSON.stringify(loginPayload.user || {}));
           }
         }
-        const rideRequestConfig = userToken
-          ? {
-              headers: {
-                Authorization: `Bearer ${userToken}`,
-              },
-            }
-          : {};
-
         let rideId = routeState.rideId;
+        const socket = socketService.connect({ role: 'user', token: userToken });
 
         if (rideId) {
           activeRideIdRef.current = String(rideId);
-          const socket = socketService.connect({ role: 'user', token: userToken });
           if (socket) {
             socketService.emit('joinRide', { rideId });
             socketService.emit('ride:join', { rideId });
           }
           setSearchStatus('Payment verified. Searching nearby drivers...');
         } else {
-          const response = await api.post('/rides', {
-            pickup: routeState.pickupCoords || [75.9048, 22.7039],
-            drop: routeState.dropCoords || [75.8937, 22.7533],
-            pickupAddress: routeState.pickup || '',
-            dropAddress: routeState.drop || '',
-            fare: routeState.fare || routeState.vehicle?.price || 22,
-            estimatedDistanceMeters: routeState.estimatedDistanceMeters || 0,
-            estimatedDurationMinutes: routeState.estimatedDurationMinutes || 0,
-            vehicleTypeId: selectedVehicleTypeId,
-            vehicleIconType: routeState.vehicleIconType || routeState.vehicle?.iconType,
-            paymentMethod: routeState.paymentMethod || 'Cash',
-            otp,
-          }, rideRequestConfig);
-
-          const payload = unwrap(response);
-          rideId = payload?.rideId || payload?.realtime?.rideId || payload?.ride?._id || payload?._id || payload?.id;
-          activeRideIdRef.current = String(rideId || '');
-
-          const socket = socketService.connect({ role: 'user', token: userToken });
-
-          if (socket && rideId) {
-            socketService.emit('joinRide', { rideId });
-            socketService.emit('ride:join', { rideId });
+          setSearchStatus('Creating booking...');
+          if (socket) {
+             socketService.emit('requestRide', {
+               pickup: routeState.pickupCoords || [75.9048, 22.7039],
+               drop: routeState.dropCoords || [75.8937, 22.7533],
+               pickupAddress: routeState.pickup || '',
+               dropAddress: routeState.drop || '',
+               fare: routeState.fare || routeState.vehicle?.price || 22,
+               estimatedDistanceMeters: routeState.estimatedDistanceMeters || 0,
+               estimatedDurationMinutes: routeState.estimatedDurationMinutes || 0,
+               vehicleTypeId: selectedVehicleTypeId,
+               vehicleIconType: routeState.vehicleIconType || routeState.vehicle?.iconType,
+               paymentMethod: routeState.paymentMethod || 'Cash',
+               otp,
+             });
           }
         }
 
@@ -380,7 +367,8 @@ const SearchingDriver = () => {
               return;
             }
 
-            const isThisRide = String(activeRide.rideId || '') === normalizedRideId;
+            const currentRideId = String(activeRideIdRef.current || '');
+            const isThisRide = currentRideId && String(activeRide.rideId || '') === currentRideId;
             const isAcceptedRide = ['accepted', 'arriving', 'started', 'ongoing'].includes(String(activeRide.status || activeRide.liveStatus || '').toLowerCase());
 
             if (isThisRide && isAcceptedRide) {
@@ -399,11 +387,12 @@ const SearchingDriver = () => {
         activeRidePollRef.current = setInterval(pollActiveRide, 5000);
         pollActiveRide();
 
-        setSearchStatus('Booking created. Searching nearby drivers...');
+        // Fallback polling setup
       } catch (error) {
         setSearchStatus(error?.message || 'Could not create ride request.');
       }
     })();
+    }
 
     return () => {
       clearTimeout(timerRef.current);
@@ -414,6 +403,7 @@ const SearchingDriver = () => {
       socketService.off('ride:status:updated', onRideStatusUpdated);
       socketService.off('rideCancelled', onRideCancelled);
       socketService.off('errorMessage', onError);
+      socketService.off('rideCreated', onRideCreated);
     };
   }, [navigate, otp, routePrefix, routeState, selectedVehicleTypeId]);
 

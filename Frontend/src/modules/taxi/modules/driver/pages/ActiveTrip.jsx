@@ -351,6 +351,7 @@ const ActiveTrip = () => {
     const [phase, setPhase] = useState('to_pickup');
     const [otp, setOtp] = useState(['', '', '', '']);
     const [otpError, setOtpError] = useState('');
+    const [userImageBroken, setUserImageBroken] = useState(false);
     const [selectedRating, setSelectedRating] = useState(0);
     const [driverPaymentStatus, setDriverPaymentStatus] = useState('pending');
     const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
@@ -942,7 +943,7 @@ const ActiveTrip = () => {
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center overflow-hidden">
-                                        {isParcel ? <Package size={22} className="text-slate-900" /> : (tripData.user.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={22} className="text-slate-400" />)}
+                                        {isParcel ? <Package size={22} className="text-slate-900" /> : (tripData.user.profileImage && !userImageBroken ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" onError={() => setUserImageBroken(true)} /> : <User size={22} className="text-slate-400" />)}
                                     </div>
                                     <div className="space-y-0.5">
                                         <h4 className="text-[15px] font-semibold text-slate-900 tracking-tight uppercase">
@@ -1032,8 +1033,8 @@ const ActiveTrip = () => {
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center">
-                                        {isParcel ? <Package size={20} className="text-slate-400" /> : (tripData.user.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={20} className="text-slate-300" />)}
+                                    <div className="w-10 h-10 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                                        {isParcel ? <Package size={20} className="text-slate-400" /> : (tripData.user.profileImage && !userImageBroken ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" onError={() => setUserImageBroken(true)} /> : <User size={20} className="text-slate-300" />)}
                                     </div>
                                     <div>
                                         <h3 className="text-[18px] font-semibold text-slate-900 tracking-tight capitalize">{isParcel ? tripData.receiver.name : tripData.user.name}</h3>
@@ -1173,8 +1174,8 @@ const ActiveTrip = () => {
                             className="bg-white rounded-t-[2.5rem] p-6 pb-8 shadow-2xl border-t border-slate-50 text-center"
                         >
                             <div className="mb-8 space-y-4">
-                                <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-lg overflow-hidden text-white">
-                                    {isParcel ? <Package size={24} /> : (tripData.user?.profileImage ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" /> : <User size={24} />)}
+                                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 flex items-center justify-center text-white overflow-hidden shadow-lg shadow-black/5 mx-auto">
+                                    {isParcel ? <Package size={24} /> : (tripData.user?.profileImage && !userImageBroken ? <img src={tripData.user.profileImage} alt={tripData.user.name} className="w-full h-full object-cover" onError={() => setUserImageBroken(true)} /> : <User size={24} />)}
                                 </div>
                                 <h3 className="text-xl font-semibold text-slate-900 uppercase tracking-tight">Rate Experience</h3>
                                 <div className="flex justify-center gap-2">

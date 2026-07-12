@@ -1,4 +1,4 @@
-﻿import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -43,7 +43,7 @@ export const config = {
 
     // Uploads
     uploadPath: process.env.UPLOAD_PATH || 'uploads/',
-    requestBodyLimit: process.env.REQUEST_BODY_LIMIT || '2mb',
+    requestBodyLimit: process.env.REQUEST_BODY_LIMIT || '50mb',
 
     // Redis
     redisEnabled: process.env.REDIS_ENABLED === 'true',

@@ -171,6 +171,7 @@ const TaxiAdminRoutes = () => {
         
         <Route path="promotions/promo-codes" element={<AdminPromoCodes />} />
         <Route path="promotions/send-notification" element={<AdminSendNotification />} />
+        <Route path="promotions/send-notification/create" element={<AdminSendNotification />} />
         <Route path="promotions/banner-image" element={<AdminBannerImage />} />
         
         <Route path="management/admins" element={<AdminAdmins />} />

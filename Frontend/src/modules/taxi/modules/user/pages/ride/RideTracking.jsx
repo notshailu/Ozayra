@@ -82,6 +82,7 @@ const RideTracking = () => {
   const lastFittedRouteSignatureRef = useRef('');
   const initialMapCenterRef = useRef(null);
   const [vehicleImageBroken, setVehicleImageBroken] = useState(false);
+  const [driverImageBroken, setDriverImageBroken] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const storedRide = useMemo(() => getCurrentRide(), []);
@@ -125,7 +126,7 @@ const RideTracking = () => {
   const driver = rideRealtime?.driver || fallbackDriver;
   const vehicleIcon = getTrackingVehicleIcon(state, driver);
   const vehicleLabel = driver.vehicle || driver.vehicleType || (serviceType === 'parcel' ? 'Parcel' : 'Taxi');
-  const driverImage = driver.profileImage || driver.profile_picture || driver.photo || driver.user?.profileImage || driver.user?.profile_picture || driver.user?.photo || driver.profilePic || 'https://randomuser.me/api/portraits/men/32.jpg';
+  const driverImage = driver.profileImage || driver.profile_picture || driver.photo || driver.user?.profileImage || driver.user?.profile_picture || driver.user?.photo || driver.profilePic || '';
   const vehicleImage = driver.vehicleImage || driver.vehicle_image || '';
   const hasVehiclePhoto = isLikelyVehiclePhoto(vehicleImage) && !vehicleImageBroken;
   const driverSubtitle = tripStatus === 'started'
@@ -159,7 +160,8 @@ const RideTracking = () => {
 
   useEffect(() => {
     setVehicleImageBroken(false);
-  }, [vehicleImage]);
+    setDriverImageBroken(false);
+  }, [vehicleImage, driverImage]);
 
   const exitTracking = useCallback(
     () => {
@@ -652,8 +654,8 @@ const RideTracking = () => {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="w-14 h-14 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm">
-                  {driverImage ? (
-                    <img src={driverImage} className="w-full h-full object-cover" alt="Driver" />
+                  {driverImage && !driverImageBroken ? (
+                    <img src={driverImage} className="w-full h-full object-cover" alt="Driver" onError={() => setDriverImageBroken(true)} />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-[#FACC15] text-[18px] font-bold text-slate-900">
                       {getInitials(driver.name)}
@@ -684,11 +686,7 @@ const RideTracking = () => {
           <div className="py-4 flex items-center justify-between border-b border-slate-100">
             <div className="flex items-center gap-3">
                <div className="w-12 h-12 rounded-[12px] bg-slate-50 flex items-center justify-center border border-slate-100">
-                  {hasVehiclePhoto ? (
-                    <img src={vehicleImage} className="w-full h-full object-contain rounded-[12px]" onError={() => setVehicleImageBroken(true)} />
-                  ) : (
-                    <img src={vehicleIcon} className="w-10 h-10 object-contain drop-shadow-sm" />
-                  )}
+                  <img src={vehicleIcon} className="w-10 h-10 object-contain drop-shadow-sm" alt={vehicleLabel} />
                </div>
                <div>
                   <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">{vehicleLabel}</p>

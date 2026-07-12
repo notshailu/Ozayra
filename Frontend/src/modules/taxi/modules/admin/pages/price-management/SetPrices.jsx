@@ -109,6 +109,7 @@ const SetPrices = ({ mode, filterType }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [zones, setZones] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [weightRanges, setWeightRanges] = useState([]);
   const { transportTypes } = useTaxiTransportTypes();
@@ -160,15 +161,16 @@ const SetPrices = ({ mode, filterType }) => {
     setLoading(true);
     try {
       const auth = { 'Authorization': `Bearer ${token}` };
-      const [prizesRes, zonesRes, vehiclesRes, weightRangesRes] = await Promise.all([
+      const [prizesRes, zonesRes, vehiclesRes, weightRangesRes, locsRes] = await Promise.all([
         fetch(`${baseUrl}/types/set-prices`, { headers: auth }),
         fetch(`${baseUrl}/zones`, { headers: auth }),
         fetch(`${baseUrl}/types/vehicle-types`, { headers: auth }),
-        fetch(`${baseUrl}/types/weight-ranges`, { headers: auth })
+        fetch(`${baseUrl}/types/weight-ranges`, { headers: auth }),
+        fetch(`${baseUrl}/service-locations`, { headers: auth })
       ]);
 
-      const [prizesData, zonesData, vehiclesData, weightRangesData] = await Promise.all([
-        prizesRes.json(), zonesRes.json(), vehiclesRes.json(), weightRangesRes.json()
+      const [prizesData, zonesData, vehiclesData, weightRangesData, locsData] = await Promise.all([
+        prizesRes.json(), zonesRes.json(), vehiclesRes.json(), weightRangesRes.json(), locsRes.json()
       ]);
 
       if (prizesData.success) {
@@ -186,6 +188,9 @@ const SetPrices = ({ mode, filterType }) => {
 
       const wrItems = weightRangesData.results || weightRangesData.data?.results || (Array.isArray(weightRangesData) ? weightRangesData : []);
       setWeightRanges(Array.isArray(wrItems) ? wrItems : []);
+
+      const locItems = locsData.results || locsData.data?.results || locsData.data || [];
+      setLocations(Array.isArray(locItems) ? locItems : []);
       
     } catch (error) { 
       console.error("Fetch Data Error:", error);
@@ -398,7 +403,7 @@ const SetPrices = ({ mode, filterType }) => {
                <form onSubmit={handleSave} className="space-y-10">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                      {/* Column System */}
-                     <div>
+                      <div>
                         <label className={labelClass}>Zone <span className="text-rose-500">*</span></label>
                         <div className="relative">
                            <select 
@@ -411,12 +416,27 @@ const SetPrices = ({ mode, filterType }) => {
                                  setFormData(p => ({
                                     ...p, 
                                     zone_id: val,
-                                    service_location_id: matched?.service_location_id || ''
+                                    service_location_id: matched?.service_location_id || p.service_location_id || ''
                                  }));
                               }}
                            >
                               <option value="">Select Zone</option>
                               {zones.map(z => <option key={z._id || z.id} value={z._id || z.id}>{z.name}</option>)}
+                           </select>
+                           <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
+                     </div>
+                     <div>
+                        <label className={labelClass}>Service Location <span className="text-rose-500">*</span></label>
+                        <div className="relative">
+                           <select 
+                              required 
+                              className={inputClass + " appearance-none cursor-pointer"} 
+                              value={formData.service_location_id} 
+                              onChange={e => setFormData(p => ({ ...p, service_location_id: e.target.value }))}
+                           >
+                              <option value="">Select Service Location</option>
+                              {locations.map(l => <option key={l._id || l.id} value={l._id || l.id}>{l.name}</option>)}
                            </select>
                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         </div>

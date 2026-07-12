@@ -169,7 +169,7 @@ export const getHomeData = async (req, res) => {
     banners: {
       items: [
         {
-          imageUrl: '/assets/ExperienceBanner.png',
+          imageUrl: '',
           title: '',
           subtitle: '',
           linkType: 'none',

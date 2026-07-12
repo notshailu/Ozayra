@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Upload, Plus, Trash2, Edit2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const StatusToggle = ({ active, onToggle }) => (
   <button
@@ -34,13 +35,16 @@ const Preferences = () => {
 
   useEffect(() => { fetchPreferences(); }, []);
 
-  const handleIconChange = (e) => {
+  const handleIconChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setFormData(prev => ({ ...prev, icon: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => setIconPreview(reader.result);
-      reader.readAsDataURL(file);
+      try {
+        const dataUrl = await compressToWebPDataURL(file);
+        setIconPreview(dataUrl);
+      } catch (err) {
+        console.error('Image compression failed', err);
+      }
     }
   };
 

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import AuthLayout from '../../components/AuthLayout';
 import { User, Mail, Camera, Smartphone } from 'lucide-react';
 import { userAuthService } from '../../services/authService';
-import { compressImage } from '@/shared/utils/imageCompression';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const Signup = () => {
   const location = useLocation();
@@ -28,14 +28,6 @@ const Signup = () => {
     return formData.profileImage || '';
   }, [formData.profileImage]);
 
-  const readFileAsDataUrl = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(new Error('Failed to read image'));
-      reader.readAsDataURL(file);
-    });
-
   const handlePickPhoto = () => {
     setPhotoError('');
     fileInputRef.current?.click();
@@ -49,8 +41,7 @@ const Signup = () => {
     setPhotoUploading(true);
 
     try {
-      const compressed = await compressImage(file);
-      const dataUrl = await readFileAsDataUrl(compressed);
+      const dataUrl = await compressToWebPDataURL(file);
       const uploadPayload = await userAuthService.uploadProfileImage(dataUrl);
       const secureUrl = uploadPayload?.data?.secureUrl || '';
 

@@ -26,6 +26,7 @@ import {
   getDocumentPreviewUrl,
   normalizeDriverDocumentTemplates,
 } from '../../utils/documentTemplates';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const unwrap = (response) => response?.data?.data || response?.data || response;
 
@@ -41,13 +42,7 @@ const normalizeDocument = (doc) => {
   };
 };
 
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
+const fileToDataUrl = async (file) => compressToWebPDataURL(file);
 
 const StepPersonal = () => {
     const navigate = useNavigate();
@@ -86,9 +81,7 @@ const StepPersonal = () => {
         fullName: session.fullName || '',
         email: session.email || '',
         gender: session.gender || '',
-        password: ''
     });
-    const [showPassword, setShowPassword] = useState(false);
 
     // Step 2: Referral State
     const [referralCode, setReferralCode] = useState(session.referralCode || '');
@@ -309,14 +302,13 @@ const StepPersonal = () => {
 
     // Save Step 1: Personal Information
     const handleSavePersonal = async () => {
-        if (!personalForm.fullName || !personalForm.email || !personalForm.gender || !personalForm.password) {
+        if (!personalForm.fullName || !personalForm.email || !personalForm.gender) {
             setError('Please fill all required details');
             return;
         }
         setLoading(true);
         setError('');
         try {
-            const { password: _password, ...safePersonalForm } = personalForm;
             const response = await saveDriverPersonalDetails({
                 registrationId,
                 phone,
@@ -327,7 +319,7 @@ const StepPersonal = () => {
                 registrationId,
                 phone,
                 role,
-                ...safePersonalForm,
+                ...personalForm,
                 personalSession: response?.data?.session || null,
             });
             goToStep(2);
@@ -575,7 +567,6 @@ const StepPersonal = () => {
     // Client-side validations
     const isNameValid = personalForm.fullName.trim().split(/\s+/).filter(Boolean).length >= 1 && personalForm.fullName.trim().length >= 2;
     const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalForm.email);
-    const isPasswordValid = personalForm.password.length >= 6;
 
     return (
         <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-white to-slate-100/40 font-sans p-5 pt-8 select-none overflow-x-hidden pb-32">
@@ -639,18 +630,22 @@ const StepPersonal = () => {
 
                             <div className="space-y-4">
                                 {/* Full Name Field */}
-                                <div className="group relative bg-white border border-slate-100 rounded-2xl p-3 flex items-center gap-3.5 shadow-sm focus-within:border-slate-800 focus-within:ring-2 focus-within:ring-slate-900/5 transition-all duration-300">
-                                    <div className="w-10 h-10 bg-slate-50 group-focus-within:bg-slate-950 group-focus-within:text-white rounded-xl flex items-center justify-center text-slate-400 transition-colors duration-300">
+                                <div 
+                                    onClick={() => document.getElementById('fullName')?.focus()}
+                                    className="group relative bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3.5 shadow-sm hover:border-slate-300 focus-within:border-black focus-within:ring-2 focus-within:ring-black/5 transition-all duration-300 cursor-text"
+                                >
+                                    <div className="w-10 h-10 bg-slate-50 group-focus-within:bg-black group-focus-within:text-white rounded-xl flex items-center justify-center text-slate-400 transition-colors duration-300">
                                         <User size={18} />
                                     </div>
                                     <div className="flex-1 space-y-0.5">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Full Name</label>
+                                        <label htmlFor="fullName" className="text-[9px] font-black text-slate-400 uppercase tracking-widest block cursor-pointer">Full Name</label>
                                         <input 
+                                            id="fullName"
                                             value={personalForm.fullName}
                                             onChange={(e) => setPersonalForm(p => ({ ...p, fullName: e.target.value }))}
-                                            placeholder="John Doe"
+                                            placeholder="Enter your full name"
                                             autoComplete="name"
-                                            className="w-full bg-transparent border-none p-0 text-[14px] font-bold text-slate-900 focus:outline-none focus:ring-0 placeholder:text-slate-300"
+                                            className="w-full bg-transparent border-none p-0 text-[15px] font-bold text-black focus:outline-none focus:ring-0 placeholder:text-slate-300"
                                         />
                                     </div>
                                     {personalForm.fullName && (
@@ -670,14 +665,14 @@ const StepPersonal = () => {
                                 </div>
 
                                 {/* Mobile Number Badge (Security check) */}
-                                <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-inner">
+                                <div className="bg-white border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-sm">
                                     <div className="flex items-center gap-3.5">
                                         <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
                                             <Smartphone size={18} />
                                         </div>
                                         <div className="space-y-0.5">
                                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Mobile Number</label>
-                                            <p className="text-[14px] font-black text-slate-900">+91 {phone}</p>
+                                            <p className="text-[15px] font-black text-black">+91 {phone}</p>
                                         </div>
                                     </div>
                                     <div className="bg-emerald-100/60 text-emerald-800 text-[8px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -686,19 +681,23 @@ const StepPersonal = () => {
                                 </div>
 
                                 {/* Email Field */}
-                                <div className="group relative bg-white border border-slate-100 rounded-2xl p-3 flex items-center gap-3.5 shadow-sm focus-within:border-slate-800 focus-within:ring-2 focus-within:ring-slate-900/5 transition-all duration-300">
-                                    <div className="w-10 h-10 bg-slate-50 group-focus-within:bg-slate-950 group-focus-within:text-white rounded-xl flex items-center justify-center text-slate-400 transition-colors duration-300">
+                                <div 
+                                    onClick={() => document.getElementById('email')?.focus()}
+                                    className="group relative bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3.5 shadow-sm hover:border-slate-300 focus-within:border-black focus-within:ring-2 focus-within:ring-black/5 transition-all duration-300 cursor-text"
+                                >
+                                    <div className="w-10 h-10 bg-slate-50 group-focus-within:bg-black group-focus-within:text-white rounded-xl flex items-center justify-center text-slate-400 transition-colors duration-300">
                                         <Mail size={18} />
                                     </div>
                                     <div className="flex-1 space-y-0.5">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Email Address</label>
+                                        <label htmlFor="email" className="text-[9px] font-black text-slate-400 uppercase tracking-widest block cursor-pointer">Email Address</label>
                                         <input 
+                                            id="email"
                                             type="email"
                                             value={personalForm.email}
                                             onChange={(e) => setPersonalForm(p => ({ ...p, email: e.target.value }))}
-                                            placeholder="john@redigo.in"
+                                            placeholder="e.g. name@example.com"
                                             autoComplete="email"
-                                            className="w-full bg-transparent border-none p-0 text-[14px] font-bold text-slate-900 focus:outline-none focus:ring-0 placeholder:text-slate-300"
+                                            className="w-full bg-transparent border-none p-0 text-[15px] font-bold text-black focus:outline-none focus:ring-0 placeholder:text-slate-300"
                                         />
                                     </div>
                                     {personalForm.email && (
@@ -746,44 +745,15 @@ const StepPersonal = () => {
                                     </div>
                                 </div>
 
-                                {/* Password Field */}
-                                <div className="group relative bg-white border border-slate-100 rounded-2xl p-3 flex items-center gap-3.5 shadow-sm focus-within:border-slate-800 focus-within:ring-2 focus-within:ring-slate-900/5 transition-all duration-300">
-                                    <div className="w-10 h-10 bg-slate-50 group-focus-within:bg-slate-950 group-focus-within:text-white rounded-xl flex items-center justify-center text-slate-400 transition-colors duration-300">
-                                        <Lock size={18} />
-                                    </div>
-                                    <div className="flex-1 space-y-0.5">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Password</label>
-                                        <input 
-                                            type={showPassword ? "text" : "password"}
-                                            value={personalForm.password}
-                                            onChange={(e) => setPersonalForm(p => ({ ...p, password: e.target.value }))}
-                                            placeholder="Min. 6 characters"
-                                            autoComplete="new-password"
-                                            className="w-full bg-transparent border-none p-0 text-[14px] font-bold text-slate-900 focus:outline-none focus:ring-0 placeholder:text-slate-300"
-                                        />
-                                    </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setShowPassword(p => !p)}
-                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
-                                    >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                    {isPasswordValid && (
-                                        <div className="text-emerald-500 pr-1">
-                                            <CheckCircle2 size={16} fill="currentColor" className="text-white" />
-                                        </div>
-                                    )}
-                                </div>
                             </div>
 
                             {/* Floating glassmorphic action bar */}
                             <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent max-w-sm mx-auto z-45">
                                 <button 
                                     onClick={handleSavePersonal}
-                                    disabled={loading || !(isNameValid && isEmailValid && personalForm.gender && isPasswordValid)}
+                                    disabled={loading || !(isNameValid && isEmailValid && personalForm.gender)}
                                     className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 text-[13px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-[0.98] ${
-                                        isNameValid && isEmailValid && personalForm.gender && isPasswordValid
+                                        isNameValid && isEmailValid && personalForm.gender
                                         ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20 shadow-md' 
                                         : 'bg-slate-200 text-slate-400 cursor-not-allowed pointer-events-none'
                                     }`}
@@ -1165,7 +1135,10 @@ const StepPersonal = () => {
                                                                 vehicleForm.vehicleImagePreview ? 'border-slate-200' : 'border-dashed border-slate-200 hover:border-slate-350'
                                                             }`}
                                                         >
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2 pointer-events-none">Vehicle Photo (Camera Only)</label>
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1 pointer-events-none">Vehicle Photo (Camera Only)</label>
+                                                            <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md mb-2 text-center pointer-events-none">
+                                                                * Make sure the bike/vehicle number is clearly visible in the photo
+                                                            </span>
                                                             <input 
                                                                 type="file" 
                                                                 accept="image/*" 
@@ -1187,7 +1160,10 @@ const StepPersonal = () => {
                                                                     <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-sm border border-slate-100/50">
                                                                         <Camera size={18} />
                                                                     </div>
-                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Tap to capture</span>
+                                                                    <div className="flex flex-col items-center gap-1">
+                                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Tap to capture</span>
+                                                                        <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider text-center max-w-[180px] leading-tight">Vehicle number plate must be clearly visible</span>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </div>

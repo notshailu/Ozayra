@@ -592,6 +592,7 @@ export const listRideHistoryForIdentity = async ({ role, entityId, limit = 50 })
     .sort({ createdAt: -1 })
     .limit(safeLimit)
     .populate('deliveryId')
+    .populate('userId', 'name phone profileImage')
     .populate('driverId', 'name phone profileImage vehicleType vehicleIconType vehicleNumber vehicleColor vehicleMake vehicleModel vehicleImage rating')
     .lean();
 
@@ -621,6 +622,7 @@ export const listRideHistoryForIdentity = async ({ role, entityId, limit = 50 })
     feedback: ride.feedback || null,
     createdAt: ride.createdAt,
     updatedAt: ride.updatedAt,
+    user: ride.userId || null,
     driver: ride.driverId || null,
   }));
 };

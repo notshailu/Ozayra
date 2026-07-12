@@ -169,14 +169,16 @@ const OTPVerification = () => {
             </header>
 
             <main className="space-y-5 max-w-sm mx-auto">
-                <div className="space-y-1.5 text-center">
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none uppercase">
-                        Verify {role === 'owner' ? 'Owner' : 'Mobile'}
+                <div className="space-y-2 text-center">
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Verify your number
                     </h1>
-                    <p className="text-[11px] font-bold text-slate-400 opacity-80 uppercase tracking-widest leading-relaxed">Identity Check for +91 {phone}</p>
+                    <p className="text-sm font-medium text-slate-500">
+                        Code sent to +91 {phone}
+                    </p>
                 </div>
 
-                    <div className="flex justify-between gap-1.5 py-4">
+                    <div className="flex justify-center gap-3 py-6">
                     {otp.map((digit, index) => (
                         <input
                             key={index}
@@ -186,7 +188,7 @@ const OTPVerification = () => {
                             value={digit}
                             onChange={(e) => handleChange(index, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(index, e)}
-                            className="w-11 h-14 bg-slate-50 rounded-xl text-center text-xl font-black text-slate-900 transition-all caret-taxi-primary focus:outline-none focus:ring-0"
+                            className="w-12 h-14 border border-slate-200 bg-transparent rounded-lg text-center text-xl font-semibold text-slate-900 transition-all focus:border-black focus:ring-1 focus:ring-black outline-none"
                         />
                     ))}
                     </div>
@@ -197,16 +199,16 @@ const OTPVerification = () => {
                         </p>
                     )}
 
-                <div className="text-center space-y-4 mt-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                <div className="text-center space-y-6 mt-4">
+                    <p className="text-sm font-medium text-slate-500">
                         {timer > 0 ? (
-                            `Resend Code in ${timer}s`
+                            `Resend code in ${timer}s`
                         ) : (
                             <span
-                                className="text-slate-900 underline underline-offset-4 decoration-slate-200 cursor-pointer"
+                                className="text-black font-semibold cursor-pointer"
                                 onClick={handleResend}
                             >
-                                Resend Now
+                                Resend Code
                             </span>
                         )}
                     </p>
@@ -214,20 +216,12 @@ const OTPVerification = () => {
                     <button 
                         onClick={handleVerify}
                         disabled={loading || otp.join('').length !== 4}
-                        className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 text-[13px] font-black uppercase tracking-widest shadow-lg transition-all ${
-                            otp.join('').length === 4 ? 'bg-slate-900 text-white shadow-slate-900/10' : 'bg-slate-100 text-slate-300 pointer-events-none'
+                        className={`w-full h-12 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all ${
+                            otp.join('').length === 4 ? 'bg-black text-white hover:bg-slate-800' : 'bg-slate-100 text-slate-400 pointer-events-none'
                         }`}
                     >
-                        {loading ? 'Verifying...' : 'Verify & Join'} <CheckCircle2 size={16} strokeWidth={3} />
+                        {loading ? 'Verifying...' : 'Verify & Continue'}
                     </button>
-                </div>
-
-                <div className="pt-10 flex flex-col items-center gap-3 opacity-20 grayscale pointer-events-none">
-                   <div className="flex items-center gap-2">
-                      <ShieldAlert size={12} className="text-rose-500" />
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Security Checkpoint</p>
-                   </div>
-                   <div className="h-0.5 w-10 bg-slate-100 rounded-full" />
                 </div>
             </main>
         </div>

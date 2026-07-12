@@ -33,6 +33,11 @@ export const addSocketSubscriptions = (socket, { role, entityId }) => {
 
   if (role === 'driver') {
     socket.join(getDriverRoom(entityId));
+    return;
+  }
+
+  if (role === 'admin' || role === 'super-admin') {
+    socket.join('admin_room');
   }
 };
 
@@ -426,6 +431,14 @@ const dispatchAttempt = async (rideId, attemptIndex = 0) => {
 
 export const startDispatchFlow = async (ride) => {
   stopDispatchFlow(ride._id);
+  
+  // Notify admin room of new ride request
+  emitToRoom('admin_room', 'newRideRequest', { 
+    rideId: String(ride._id),
+    status: ride.status,
+    serviceType: ride.serviceType
+  });
+
   await dispatchAttempt(ride._id, 0);
 };
 

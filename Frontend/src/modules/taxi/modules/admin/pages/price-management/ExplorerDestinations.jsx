@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { useAppGoogleMapsLoader } from '../../utils/googleMaps';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const inputClass = "w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors";
 const labelClass = "block text-xs font-semibold text-gray-500 mb-1.5";
@@ -45,13 +46,7 @@ const defaultFormData = {
   status: 'active',
 };
 
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+const fileToDataUrl = async (file) => compressToWebPDataURL(file);
 
 const ExplorerDestinations = ({ mode: initialMode = "list" }) => {
   const navigate = useNavigate();

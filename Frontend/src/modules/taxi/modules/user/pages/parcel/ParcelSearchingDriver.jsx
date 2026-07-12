@@ -118,7 +118,7 @@ const DriverCard = ({ driver, banner, bannerGradient, children }) => (
       <div className="flex items-center gap-3">
         <div className="relative shrink-0">
           <div className="w-11 h-11 rounded-[13px] bg-slate-100 overflow-hidden border border-slate-100">
-            <img src={`https://ui-avatars.com/api/?name=${driver.name.replace(' ', '+')}&background=f1f5f9&color=0f172a`} className="w-full h-full object-cover" alt="Driver" />
+            <img src={driver.profileImage || driver.profile_picture || driver.photo || driver.user?.profileImage || driver.user?.profile_picture || driver.user?.photo || driver.profilePic || `https://ui-avatars.com/api/?name=${driver.name.replace(' ', '+')}&background=f1f5f9&color=0f172a`} className="w-full h-full object-cover" alt="Driver" />
           </div>
           <div className="absolute -bottom-1 -right-1 bg-yellow-400 px-1 py-0.5 rounded-[6px] border-2 border-white flex items-center gap-0.5 shadow-sm">
             <Star size={8} className="text-slate-900 fill-slate-900" />

@@ -300,26 +300,33 @@ const DriverLayout = () => {
 
                 if (currentJob?.rideId) {
                     const currentType = normalizeJobType(currentJob);
-                    navigate('/taxi/driver/active-trip', {
-                        replace: true,
-                        state: {
-                            type: currentType,
-                            rideId: currentJob.rideId,
-                            request: {
+                    
+                    const isAllowedActiveRidePath = currentPath.includes('/active-trip') || 
+                                                    currentPath.includes('/ride/chat') || 
+                                                    currentPath.includes('/security');
+                                                    
+                    if (!isAllowedActiveRidePath) {
+                        navigate('/taxi/driver/active-trip', {
+                            replace: true,
+                            state: {
                                 type: currentType,
-                                title: getJobTitle(currentType),
-                                fare: `Rs ${currentJob.fare || 0}`,
-                                payment: currentJob.paymentMethod || 'Cash',
-                                pickup: currentJob.pickupAddress || formatPoint(currentJob.pickupLocation, 'Pickup Location'),
-                                drop: currentJob.dropAddress || formatPoint(currentJob.dropLocation, 'Drop Location'),
-                                distance: formatTripDistance(currentJob),
-                                requestId: currentJob.rideId,
                                 rideId: currentJob.rideId,
-                                raw: currentJob,
+                                request: {
+                                    type: currentType,
+                                    title: getJobTitle(currentType),
+                                    fare: `Rs ${currentJob.fare || 0}`,
+                                    payment: currentJob.paymentMethod || 'Cash',
+                                    pickup: currentJob.pickupAddress || formatPoint(currentJob.pickupLocation, 'Pickup Location'),
+                                    drop: currentJob.dropAddress || formatPoint(currentJob.dropLocation, 'Drop Location'),
+                                    distance: formatTripDistance(currentJob),
+                                    requestId: currentJob.rideId,
+                                    rideId: currentJob.rideId,
+                                    raw: currentJob,
+                                },
+                                currentDriverCoords: driverCoordsRef.current || currentJob.lastDriverLocation?.coordinates || null,
                             },
-                            currentDriverCoords: driverCoordsRef.current || currentJob.lastDriverLocation?.coordinates || null,
-                        },
-                    });
+                        });
+                    }
                 }
             } catch (error) {
                 if (!active) {

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const Motion = motion;
 const LIST_PATH = '/admin/promotions/banner-image';
@@ -129,12 +130,7 @@ const BannerImage = () => {
       let imageData = formData.use_url ? formData.image_url.trim() : '';
 
       if (!formData.use_url && formData.image instanceof File) {
-        imageData = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(formData.image);
-        });
+        imageData = await compressToWebPDataURL(formData.image);
       }
 
       const payload = {

@@ -263,15 +263,17 @@ export const saveDriverPersonalDetails = async ({ registrationId, phone, fullNam
     throw new ApiError(400, 'Verify OTP before continuing');
   }
 
-  if (!fullName || !email || !gender || !password) {
-    throw new ApiError(400, 'fullName, email, gender and password are required');
+  if (!fullName || !email || !gender) {
+    throw new ApiError(400, 'fullName, email, and gender are required');
   }
+
+  const effectivePassword = password || crypto.randomBytes(16).toString('hex');
 
   session.personal = {
     fullName: String(fullName).trim(),
     email: String(email).trim().toLowerCase(),
     gender: String(gender).trim(),
-    passwordHash: await hashPassword(password),
+    passwordHash: await hashPassword(effectivePassword),
   };
   session.status = 'personal_saved';
   await session.save();

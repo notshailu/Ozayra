@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../../../shared/api/axiosInstance';
 import { adminService } from '../../services/adminService';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-orange-300 focus:ring-2 focus:ring-orange-100';
 const labelClass = 'mb-2 block text-[12px] font-bold text-slate-700';
@@ -47,13 +48,9 @@ const formatGoodsTypeForDisplay = (value) => {
   return items.length ? items.join(', ') : 'Universal';
 };
 
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Failed to read icon file'));
-    reader.readAsDataURL(file);
-  });
+const readFileAsDataUrl = async (file) => {
+  return await compressToWebPDataURL(file);
+};
 
 const normalizeVehicleOption = (vehicle = {}) => {
   const id = String(vehicle._id || vehicle.id || vehicle.name || vehicle.vehicle_type || '');

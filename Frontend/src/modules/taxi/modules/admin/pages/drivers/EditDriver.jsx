@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTaxiTransportTypes } from '../../../../shared/hooks/useTaxiTransportTypes';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const EditDriver = () => {
   const navigate = useNavigate();
@@ -143,14 +144,15 @@ const EditDriver = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const dataUrl = await compressToWebPDataURL(file);
+        setImagePreview(dataUrl);
+      } catch (err) {
+        setError('Failed to process image');
+      }
     }
   };
 

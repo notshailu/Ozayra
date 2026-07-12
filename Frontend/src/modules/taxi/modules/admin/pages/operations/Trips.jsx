@@ -2,6 +2,7 @@ import React from 'react';
 import { Filter, MoreVertical, Search, Loader2, ChevronRight, Menu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { adminService } from '../../services/adminService';
+import { socketService } from '../../../../shared/api/socket';
 
 const STATUS_STYLES = {
   CANCELLED: 'bg-orange-500 text-white',
@@ -77,6 +78,17 @@ const Trips = () => {
 
   React.useEffect(() => {
     loadRows();
+    
+    const handleNewRideRequest = () => {
+      // Reload rows when a new ride request is broadcasted
+      loadRows();
+    };
+
+    socketService.on('newRideRequest', handleNewRideRequest);
+
+    return () => {
+      socketService.off('newRideRequest', handleNewRideRequest);
+    };
   }, [loadRows]);
 
   return (

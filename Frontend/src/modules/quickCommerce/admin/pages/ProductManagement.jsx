@@ -27,7 +27,7 @@ import Modal from '@shared/components/ui/Modal';
 import Pagination from '@shared/components/ui/Pagination';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { convertToWebP } from '@/shared/utils/imageUploadUtils';
+import { convertToWebP } from '@shared/utils/imageUploadUtils';
 
 const ProductManagement = () => {
     const [products, setProducts] = useState([]);

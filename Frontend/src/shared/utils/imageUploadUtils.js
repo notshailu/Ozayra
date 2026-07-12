@@ -24,3 +24,21 @@ export const handleImageSelect = async (event, callback) => {
     callback(compressed);
   }
 };
+
+/**
+ * Compresses an image to WebP format and returns a base64 Data URL.
+ * Ideal for components using FileReader before sending to backend.
+ * @param {File} file - Original image file
+ * @returns {Promise<string>} - Base64 Data URL string of the compressed WebP image
+ */
+export const compressToWebPDataURL = async (file) => {
+  if (!file) return null;
+  const compressedFile = await convertToWebP(file);
+  
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(compressedFile);
+  });
+};

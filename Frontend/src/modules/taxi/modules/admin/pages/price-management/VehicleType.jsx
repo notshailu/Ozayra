@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../../../shared/api/axiosInstance';
 import { useTaxiTransportTypes } from '../../../../shared/hooks/useTaxiTransportTypes';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 import CarIcon from '../../../../assets/icons/car.webp';
 import BikeIcon from '../../../../assets/icons/bike.webp';
@@ -92,13 +93,7 @@ const normalizeVehicle = (item = {}) => ({
   id: String(item?._id || item?.id || ''),
 });
 
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+const fileToDataUrl = async (file) => compressToWebPDataURL(file);
 
 const StatusToggle = ({ active, onToggle }) => (
   <button

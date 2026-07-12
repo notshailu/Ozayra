@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight, MapPin, Search, Navigation, Wallet } from 'lucide-react';
@@ -501,7 +501,9 @@ const Home = () => {
                       streetViewControl: false,
                       fullscreenControl: false,
                       mapTypeControl: false,
-                      gestureHandling: 'greedy',
+                      gestureHandling: 'none',
+                      scrollwheel: false,
+                      disableDoubleClickZoom: true,
                     }}
                     onDragStart={handleMapDragStart}
                     onDragEnd={handleMapDragEnd}
@@ -541,7 +543,7 @@ const Home = () => {
               </motion.button>
             </div>
 
-          <div className="absolute inset-0 z-10 overflow-y-auto scroll-smooth pb-24 no-scrollbar pointer-events-none" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden scroll-smooth pb-24 no-scrollbar pointer-events-none" style={{ WebkitOverflowScrolling: 'touch' }}>
             {/* Transparent spacer to expose the map */}
             <div className="h-[344px] w-full shrink-0" />
             

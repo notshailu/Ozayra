@@ -147,6 +147,7 @@ export const getMyActiveRide = async (req, res) => {
 };
 
 export const listMyRides = async (req, res) => {
+  console.log("DEBUG_listMyRides: auth=", req.auth, "query=", req.query, "url=", req.originalUrl);
   const rides = await listRideHistoryForIdentity({
     role: req.auth.role,
     entityId: req.auth.sub,

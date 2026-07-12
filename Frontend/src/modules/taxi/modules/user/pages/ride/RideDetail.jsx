@@ -132,6 +132,7 @@ const RideDetail = () => {
       endTime: ride?.completedAt || timeSource,
       statusLabel: status.charAt(0).toUpperCase() + status.slice(1),
       driverName: isDriverApp ? (user.name || 'Customer') : (driver.name || 'Captain'),
+      driverImage: isDriverApp ? (user.profileImage || user.profile_picture || user.photo || user.avatar) : (driver.profileImage || driver.profile_picture || driver.photo || driver.user?.profileImage || driver.user?.profile_picture || driver.user?.photo || driver.profilePic),
       rating: isDriverApp ? (user.rating || '5.0') : (driver.rating || '4.9'),
       plate: isDriverApp ? (user.phone || 'Verified') : (driver.vehicleNumber || 'Assigned'),
       vehicle: driver.vehicleType || ride?.vehicleIconType || 'Taxi',
@@ -234,7 +235,7 @@ const RideDetail = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <img
-                  src={`https://ui-avatars.com/api/?name=${String(details.driverName).replace(' ', '+')}&background=F1F5F9&color=0F172A`}
+                  src={details.driverImage || `https://ui-avatars.com/api/?name=${String(details.driverName).replace(' ', '+')}&background=F1F5F9&color=0F172A`}
                   className="w-12 h-12 rounded-full border border-slate-100"
                   alt={details.driverName}
                 />

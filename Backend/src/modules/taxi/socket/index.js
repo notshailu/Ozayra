@@ -144,7 +144,7 @@ export const registerTaxiSocketHandlers = (io) => {
 
     socket.on(
       'requestRide',
-      onAsync(socket, async ({ pickup, drop, fare, estimatedDistanceMeters, estimatedDurationMinutes, vehicleTypeId, vehicleIconType, paymentMethod, serviceType, intercity, otp }) => {
+      onAsync(socket, async ({ pickup, drop, pickupAddress, dropAddress, fare, estimatedDistanceMeters, estimatedDurationMinutes, vehicleTypeId, vehicleIconType, paymentMethod, serviceType, intercity, promo_code, service_location_id, transport_type, otp }) => {
         if (identity.role !== 'user') {
           return;
         }
@@ -154,6 +154,8 @@ export const registerTaxiSocketHandlers = (io) => {
           userId: identity.sub,
           pickupCoords: normalizePoint(pickup, 'pickup'),
           dropCoords: normalizePoint(drop, 'drop'),
+          pickupAddress,
+          dropAddress,
           fare: Number(fare || 0),
           estimatedDistanceMeters: Number(estimatedDistanceMeters || 0),
           estimatedDurationMinutes: Number(estimatedDurationMinutes || 0),
@@ -162,6 +164,9 @@ export const registerTaxiSocketHandlers = (io) => {
           paymentMethod,
           serviceType,
           intercity,
+          promo_code,
+          service_location_id,
+          transport_type,
           otp,
         });
 

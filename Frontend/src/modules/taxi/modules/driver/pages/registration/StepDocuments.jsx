@@ -14,6 +14,7 @@ import {
   getDocumentPreviewUrl,
   normalizeDriverDocumentTemplates,
 } from '../../utils/documentTemplates';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 const unwrap = (response) => response?.data?.data || response?.data || response;
 
@@ -37,13 +38,7 @@ const normalizeDocument = (doc) => {
   };
 };
 
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
+const fileToDataUrl = async (file) => compressToWebPDataURL(file);
 
 const StepDocuments = () => {
   const navigate = useNavigate();

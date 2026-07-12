@@ -24,6 +24,7 @@ import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { clearModuleAuth, clearAuthData } from "@food/utils/auth"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { convertBase64ToFile, isFlutterBridgeAvailable, openCamera } from "@food/utils/imageUploadUtils"
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils'
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -86,17 +87,13 @@ const isUploadableFile = (value) => {
 
 const normalizePhoneDigits = (value) => String(value || "").replace(/\D/g, "").slice(-15)
 
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    try {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = () => reject(new Error("Failed to read image"))
-      reader.readAsDataURL(file)
-    } catch (error) {
-      reject(error)
-    }
-  })
+const fileToDataUrl = async (file) => {
+  try {
+    return await compressToWebPDataURL(file);
+  } catch (error) {
+    throw error;
+  }
+}
 
 const serializeDraftImage = async (value, fallbackPrefix) => {
   if (!value) return null

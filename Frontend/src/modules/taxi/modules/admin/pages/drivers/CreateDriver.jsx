@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronRight, Loader2, Menu, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTaxiTransportTypes } from '../../../../shared/hooks/useTaxiTransportTypes';
+import { compressToWebPDataURL } from '@shared/utils/imageUploadUtils';
 
 import { adminService } from '../../services/adminService';
 
@@ -200,17 +201,18 @@ const CreateDriver = () => {
     }));
   };
 
-  const handleProfileChange = (event) => {
+  const handleProfileChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setProfileName(file.name);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setField('profile_picture', String(reader.result || ''));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressToWebPDataURL(file);
+      setField('profile_picture', dataUrl || '');
+    } catch (err) {
+      setError('Failed to process image');
+    }
   };
 
   const handleSubmit = async (event) => {

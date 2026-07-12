@@ -262,8 +262,7 @@ const MainLocationHeader = ({
     }
   }, [showCategories, externalCategories.length]);
 
-  const categories = (externalCategories.length > 0 ? externalCategories : internalCategories)
-    .filter(cat => !serviceTabs.some(tab => tab.name.toLowerCase() === cat.name?.toLowerCase()));
+  const categories = (externalCategories.length > 0 ? externalCategories : internalCategories);
 
   // Search Logic
   const handleSearchClick = () => {
