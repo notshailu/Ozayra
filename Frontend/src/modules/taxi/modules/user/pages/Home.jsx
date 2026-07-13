@@ -162,6 +162,14 @@ const Home = () => {
   const [inZone, setInZone] = useState(true);
   const [checkingZone, setCheckingZone] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [isNavigatingToLocation, setIsNavigatingToLocation] = useState(false);
+
+  const handleLocationClick = () => {
+    setIsNavigatingToLocation(true);
+    setTimeout(() => {
+      navigate('/taxi/user/ride/select-location');
+    }, 250);
+  };
 
   useEffect(() => {
     const prompted = localStorage.getItem('ozayra:location-prompted');
@@ -556,7 +564,7 @@ const Home = () => {
               <div className="sticky top-0 z-30 bg-white pt-2 pb-3">
                 {/* Where to Search Bar */}
                 <div 
-                  onClick={() => navigate('/taxi/user/ride/select-location')}
+                  onClick={handleLocationClick}
                   className="mx-5 flex items-center gap-3.5 cursor-pointer bg-slate-50 hover:bg-slate-100/50 border border-slate-100 rounded-full px-5 py-4 shadow-[inset_0_2px_4_rgba(0,0,0,0.01)] transition-all"
                 >
                   <Search size={20} className="text-slate-700" strokeWidth={2.8} />
@@ -727,6 +735,16 @@ const Home = () => {
               </button>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isNavigatingToLocation && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 z-[200] bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_38%,#EEF2F7_100%)] max-w-lg mx-auto pointer-events-none"
+          />
         )}
       </AnimatePresence>
     </div>
