@@ -406,7 +406,7 @@ export default function HomeHeader({
             <div className="flex flex-col pt-0.5">
               {/* Small "Blinkit in" text */}
               <span className="text-[11px] font-extrabold text-slate-900 mb-[2px] tracking-tight">
-                Blinkit in
+                Ozayra
               </span>
               
               {/* Large "12 minutes" + Pill */}
@@ -414,12 +414,6 @@ export default function HomeHeader({
                 <span className="text-[28px] font-black text-slate-900 tracking-tighter leading-none -mt-1 block">
                   12 minutes
                 </span>
-                
-                {/* Distance Pill */}
-                <div className="flex items-center gap-1 bg-white/60 backdrop-blur-md px-1.5 py-0.5 rounded-md text-[#087878] mb-0.5 shadow-sm border border-white/20">
-                  <ShoppingCart className="h-[11px] w-[11px]" strokeWidth={2.5} />
-                  <span className="text-[9px] font-extrabold tracking-tight">990 m away</span>
-                </div>
               </div>
 
               {/* Location row */}
