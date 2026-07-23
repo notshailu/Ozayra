@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation as useRouterLocation, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import { useCart } from "../context/CartContext";
@@ -36,6 +36,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@shared/components/ui/Toast";
 import { useSettings } from "@core/context/SettingsContext";
 import SlideToPay from "../components/shared/SlideToPay";
+import { initRazorpayPayment } from "@food/utils/razorpay";
 import { getCachedGeocode, setCachedGeocode } from "@/core/utils/geocodeCache";
 import {
   getOrderSocket,
@@ -421,7 +422,7 @@ const CheckoutPage = () => {
   }, []);
 
   const timeSlots = [
-    { id: "now", label: "Now", sublabel: "10-15 min" },
+    { id: "now", label: "Now", sublabel: currentLocation?.time || "10-15 min" },
     { id: "30min", label: "30 min", sublabel: "Standard" },
     { id: "1hour", label: "1 hour", sublabel: "Scheduled" },
     { id: "2hours", label: "2 hours", sublabel: "Scheduled" },
@@ -1275,6 +1276,78 @@ const CheckoutPage = () => {
         const order = response.data.result;
         const placedOrderId =
           order?.orderId || order?.orderNumber || order?.id || order?._id || "";
+
+        const razorpayData = response.data.razorpay;
+        if (selectedPayment === "online" && razorpayData) {
+          try {
+            await initRazorpayPayment({
+              key: razorpayData.key,
+              amount: razorpayData.amount,
+              currency: razorpayData.currency || "INR",
+              order_id: razorpayData.orderId,
+              name: "Ozayra Quick Commerce",
+              description: `Payment for Quick Commerce Order #${placedOrderId}`,
+              prefill: {
+                name: user?.name || "",
+                email: user?.email || "",
+                contact: user?.phone || currentAddress?.phone || ""
+              },
+              handler: async (paymentResponse) => {
+                setIsPlacingOrder(true);
+                try {
+                  const verifyRes = await customerApi.verifyPayment({
+                    orderId: placedOrderId,
+                    razorpayOrderId: paymentResponse.razorpay_order_id,
+                    razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                    razorpaySignature: paymentResponse.razorpay_signature
+                  });
+                  
+                  if (verifyRes.data.success) {
+                    clearCart();
+                    try {
+                      if (typeof window !== "undefined") {
+                        window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+                        window.localStorage.removeItem(RECIPIENT_STORAGE_KEY);
+                      }
+                    } catch {}
+                    
+                    showToast("Payment successful! Order confirmed.", "success");
+                    setOrderId(placedOrderId);
+                    setShowSuccess(true);
+                    
+                    if (postOrderNavigateRef.current) {
+                      clearTimeout(postOrderNavigateRef.current);
+                    }
+                    postOrderNavigateRef.current = setTimeout(() => {
+                      postOrderNavigateRef.current = null;
+                      navigate(getQuickOrderDetailPath(placedOrderId || order?._id || order?.id));
+                    }, 1200);
+                  } else {
+                    showToast("Payment verification failed. Please try again.", "error");
+                  }
+                } catch (verifyErr) {
+                  showToast(verifyErr?.response?.data?.message || verifyErr?.message || "Failed to verify payment", "error");
+                } finally {
+                  setIsPlacingOrder(false);
+                }
+              },
+              onError: (err) => {
+                showToast(err?.description || "Payment failed or cancelled", "error");
+                setIsPlacingOrder(false);
+              },
+              onClose: () => {
+                showToast("Payment window closed", "info");
+                setIsPlacingOrder(false);
+              }
+            });
+            return;
+          } catch (razorpayErr) {
+            showToast("Failed to initialize payment gateway", "error");
+            setIsPlacingOrder(false);
+            return;
+          }
+        }
+
         clearCart();
         try {
           if (typeof window !== "undefined") {
@@ -1466,87 +1539,95 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f1e8] pb-32 font-sans">
-      {/* Premium Header - Curved on mobile, integrated on desktop */}
-      <div className="bg-gradient-to-br from-[#0a5f17] via-[#0b721b] to-[#084a12] pt-6 pb-12 md:pb-24 relative z-10 shadow-lg md:rounded-b-[4rem] rounded-b-[2rem] overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] -mr-32 -mt-64 pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-green-400/10 rounded-full blur-[80px] pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] pb-32 font-sans font-outfit relative overflow-hidden">
+      {/* Decorative blurred blobs */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-200/10 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="absolute top-1/4 -left-20 w-[300px] h-[300px] bg-amber-200/10 rounded-full blur-[80px] pointer-events-none -z-10" />
+      <div className="absolute bottom-10 right-10 w-[350px] h-[350px] bg-emerald-100/10 rounded-full blur-[90px] pointer-events-none -z-10" />
 
-        {/* Header Content */}
-        <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl transition-all active:scale-95">
-              <ChevronLeft size={28} className="text-white" />
-            </button>
+      {/* Google Outfit Typography */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+          .font-outfit {
+            font-family: 'Outfit', sans-serif !important;
+          }
+        `
+      }} />
 
-            <div className="flex flex-col items-center">
-              <h1 className="text-xl md:text-3xl font-[1000] text-white tracking-tight uppercase">
-                Checkout
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="h-1.5 w-1.5 bg-green-400 rounded-full animate-pulse" />
-                <p className="text-green-100/90 text-[10px] md:text-xs font-black tracking-[0.2em] uppercase">
-                  {cartCount} {cartCount === 1 ? "Item" : "Items"} in cart
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleShare}
-              className="h-12 px-4 flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl transition-all active:scale-95">
-              <Share2 size={20} className="text-white" />
-              <span className="text-xs font-black text-white uppercase tracking-widest hidden sm:block">
-                Share
-              </span>
-            </button>
+      {/* Redesigned Minimal Sticky Header */}
+      <header className="sticky top-0 z-30 px-4 py-3.5 flex items-center justify-between border-b border-slate-100 bg-white/90 backdrop-blur-md shadow-sm shadow-slate-100/5">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-1.5 hover:bg-slate-50 text-slate-650 rounded-full transition-colors active:scale-95"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <div className="flex flex-col">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              Checkout
+            </span>
+            <h1 className="text-sm font-extrabold text-slate-800 tracking-tight mt-0.5">
+              {cartCount} {cartCount === 1 ? "Item" : "Items"} in Cart
+            </h1>
           </div>
         </div>
-      </div>
+        <button
+          onClick={handleShare}
+          className="p-1.5 hover:bg-slate-50 text-slate-650 rounded-full transition-colors active:scale-95"
+        >
+          <Share2 size={18} />
+        </button>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-12 md:-mt-16 lg:-mt-20 relative z-20">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 relative z-10">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
           {/* Left Column: Delivery & Items */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-6 pb-8">
-            {/* Delivery Time Banner */}
-            <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 mt-3 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-green-50 dark:bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                  <Clock size={24} className="text-[#0c831f]" />
+          <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+            
+            {/* Delivery Time Banner (Glassmorphism & Pulse glow) */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-emerald-50 via-green-50/40 to-emerald-50/20 border border-emerald-100/80 rounded-3xl p-5 shadow-sm shadow-emerald-100/10">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-100/20 rounded-full blur-xl pointer-events-none" />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="h-11 w-11 rounded-2xl bg-[#0c831f] text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-500/20 relative">
+                  <Clock size={20} className="animate-pulse" />
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 border-2 border-white rounded-full animate-ping" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-800 text-lg">
-                    Delivery in 12-15 mins
+                  <h3 className="font-extrabold text-slate-800 text-sm tracking-tight">
+                    Superfast Delivery in <span className="text-emerald-600 font-black">{currentLocation?.time || "12-15 mins"}</span>
                   </h3>
-                  <p className="text-sm text-slate-500">
-                    Shipment of {cartCount} items
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    Shipment of {cartCount} {cartCount === 1 ? "item" : "items"} via Ozayra Quick partner
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Delivery Address Section - New UI */}
-            <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 transition-colors">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs text-slate-500 font-medium">
-                  Ordering for someone else?
-                </span>
+            {/* Delivery Address Card */}
+            <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-100/90 relative overflow-hidden transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-[4px] h-full bg-[#0c831f]" />
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                  Delivery Address
+                </h3>
                 <button
                   onClick={() => setShowRecipientForm(!showRecipientForm)}
-                  className="text-[#0c831f] text-xs font-bold hover:underline">
+                  className="text-[#0c831f] text-xs font-bold hover:underline"
+                >
                   {showRecipientForm
                     ? "Close"
                     : savedRecipient
                       ? "Change details"
-                      : "Add details"}
+                      : "Order for someone else?"}
                 </button>
               </div>
 
               {savedRecipient && !showRecipientForm && (
-                <div className="mb-4 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-start justify-between">
+                <div className="mb-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-start justify-between">
                   <div className="flex gap-3">
-                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-[#0c831f] flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-[#0c831f] flex-shrink-0">
                       <Contact2 size={18} />
                     </div>
                     <div>
@@ -1558,10 +1639,8 @@ const CheckoutPage = () => {
                       </p>
                       <p className="text-xs text-slate-500 leading-tight">
                         {savedRecipient.completeAddress}
-                        {savedRecipient.landmark &&
-                          `, ${savedRecipient.landmark}`}
-                        {savedRecipient.pincode &&
-                          ` - ${savedRecipient.pincode}`}
+                        {savedRecipient.landmark && `, ${savedRecipient.landmark}`}
+                        {savedRecipient.pincode && ` - ${savedRecipient.pincode}`}
                       </p>
                     </div>
                   </div>
@@ -1572,11 +1651,10 @@ const CheckoutPage = () => {
                         if (typeof window !== "undefined") {
                           window.localStorage.removeItem(RECIPIENT_STORAGE_KEY);
                         }
-                      } catch {
-                        // ignore storage errors
-                      }
+                      } catch {}
                     }}
-                    className="text-red-500 text-xs font-bold hover:underline">
+                    className="text-red-505 text-xs font-bold hover:underline"
+                  >
                     Remove
                   </button>
                 </div>
@@ -1589,8 +1667,9 @@ const CheckoutPage = () => {
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="overflow-hidden mb-4">
-                    <div className="bg-[#f8f9fb] dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-white/5 space-y-4">
+                    className="overflow-hidden mb-4"
+                  >
+                    <div className="bg-[#f8f9fb] rounded-2xl p-4 border border-slate-100 space-y-4">
                       <div>
                         <h4 className="text-sm font-bold text-slate-800 mb-3">
                           Enter delivery address details
@@ -1604,7 +1683,7 @@ const CheckoutPage = () => {
                                 setRecipientData({ ...recipientData, completeAddress: e.target.value });
                                 if (recipientErrors.completeAddress) setRecipientErrors((prev) => ({ ...prev, completeAddress: "" }));
                               }}
-                              className={`h-12 rounded-xl text-sm ${recipientErrors.completeAddress ? "border-rose-400 focus:ring-rose-400 focus:border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
+                              className={`h-11 rounded-xl text-sm ${recipientErrors.completeAddress ? "border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
                             />
                             {recipientErrors.completeAddress && (
                               <p className="text-xs text-rose-500 mt-1 ml-1">{recipientErrors.completeAddress}</p>
@@ -1614,7 +1693,7 @@ const CheckoutPage = () => {
                             placeholder="Find landmark (optional)"
                             value={recipientData.landmark}
                             onChange={(e) => setRecipientData({ ...recipientData, landmark: e.target.value })}
-                            className="h-12 rounded-xl border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f] text-sm"
+                            className="h-11 rounded-xl border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f] text-sm"
                           />
                           <div>
                             <Input
@@ -1628,7 +1707,7 @@ const CheckoutPage = () => {
                                 setRecipientData({ ...recipientData, pincode: val });
                                 if (recipientErrors.pincode) setRecipientErrors((prev) => ({ ...prev, pincode: "" }));
                               }}
-                              className={`h-12 rounded-xl text-sm ${recipientErrors.pincode ? "border-rose-400 focus:ring-rose-400 focus:border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
+                              className={`h-11 rounded-xl text-sm ${recipientErrors.pincode ? "border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
                             />
                             {recipientErrors.pincode && (
                               <p className="text-xs text-rose-500 mt-1 ml-1">{recipientErrors.pincode}</p>
@@ -1642,8 +1721,7 @@ const CheckoutPage = () => {
                           Enter receiver details
                         </h4>
                         <p className="text-[10px] text-slate-400 mb-3 font-medium">
-                          We'll contact receiver to get the exact delivery
-                          address
+                          We'll contact receiver to get the exact delivery address
                         </p>
                         <div className="space-y-3">
                           <div>
@@ -1655,7 +1733,7 @@ const CheckoutPage = () => {
                                 setRecipientData({ ...recipientData, name: val });
                                 if (recipientErrors.name) setRecipientErrors((prev) => ({ ...prev, name: "" }));
                               }}
-                              className={`h-12 rounded-xl text-sm ${recipientErrors.name ? "border-rose-400 focus:ring-rose-400 focus:border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
+                              className={`h-11 rounded-xl text-sm ${recipientErrors.name ? "border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
                             />
                             {recipientErrors.name && (
                               <p className="text-xs text-rose-500 mt-1 ml-1">{recipientErrors.name}</p>
@@ -1674,7 +1752,7 @@ const CheckoutPage = () => {
                                   setRecipientData({ ...recipientData, phone: val });
                                   if (recipientErrors.phone) setRecipientErrors((prev) => ({ ...prev, phone: "" }));
                                 }}
-                                className={`h-12 rounded-xl text-sm pr-10 ${recipientErrors.phone ? "border-rose-400 focus:ring-rose-400 focus:border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
+                                className={`h-11 rounded-xl text-sm pr-10 ${recipientErrors.phone ? "border-rose-400" : "border-slate-200 focus:ring-[#0c831f] focus:border-[#0c831f]"}`}
                               />
                               <button
                                 type="button"
@@ -1688,9 +1766,7 @@ const CheckoutPage = () => {
                                         setRecipientData((prev) => ({ ...prev, phone: raw }));
                                         if (recipientErrors.phone) setRecipientErrors((prev) => ({ ...prev, phone: "" }));
                                       }
-                                    } catch {
-                                      // user cancelled or permission denied
-                                    }
+                                    } catch {}
                                   } else {
                                     document.querySelector("input[placeholder=\"Receiver's phone number*\"]")?.focus();
                                   }
@@ -1709,243 +1785,230 @@ const CheckoutPage = () => {
 
                       <Button
                         onClick={handleSaveRecipient}
-                        className="w-full h-12 bg-[#2d8618] hover:bg-[#236b11] text-white font-bold rounded-xl">
-                        Save address
+                        className="w-full h-11 bg-[#2d8618] hover:bg-[#236b11] text-white font-bold rounded-xl"
+                      >
+                        Save Address
                       </Button>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="mb-3">
-                <h3 className="font-black text-slate-800 text-base">
-                  Delivery Address
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Select or edit your saved address
-                </p>
-              </div>
 
-              {/* Address Card */}
-              <div className="border rounded-xl p-3 mb-3 relative cursor-pointer transition-all border-[#0c831f] bg-green-50/50 dark:bg-emerald-950/20">
-                <div className="flex items-start gap-3">
-                  {/* Radio/Check Button */}
-                  <div className="mt-1">
-                    <div className="h-5 w-5 rounded-full bg-[#0c831f] flex items-center justify-center">
-                      <Check size={12} className="text-white stroke-[4]" />
-                    </div>
+              {/* Main Selected Address Box */}
+              <div className="bg-[#f8fafc] rounded-2xl p-4.5 border border-slate-100/90 flex items-start justify-between gap-4">
+                <div className="flex gap-3">
+                  <div className="p-2 h-9.5 w-9.5 rounded-xl bg-emerald-50 text-[#0c831f] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MapPin size={18} />
                   </div>
-
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-bold text-slate-800 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-extrabold uppercase tracking-widest bg-emerald-100 text-[#0c831f] px-1.5 py-0.5 rounded-md">
+                        {currentAddress.type || "Home"}
+                      </span>
+                      <h4 className="font-bold text-slate-800 text-sm truncate">
                         {displayName}
                       </h4>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEditAddress();
-                          }}
-                          className="text-slate-500 text-xs font-bold hover:underline">
-                          Edit
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsAddressModalOpen(true);
-                          }}
-                          className="text-[#0c831f] text-xs font-bold hover:underline">
-                          Change
-                        </button>
-                      </div>
                     </div>
-                    {displayPhone ? (
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {displayPhone && (
+                      <p className="text-xs text-slate-500 font-medium mt-1">
                         {displayPhone}
                       </p>
-                    ) : null}
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    )}
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed break-words">
                       {displayAddress}
                     </p>
                   </div>
                 </div>
+                <button
+                  onClick={handleOpenEditAddress}
+                  className="text-slate-400 hover:text-slate-600 text-xs font-bold shrink-0 self-start mt-1"
+                >
+                  Edit
+                </button>
               </div>
 
-              {/* Use current location button */}
-              <button
-                type="button"
-                onClick={handleUseCurrentLiveLocation}
-                disabled={isFetchingLocation}
-                className="mt-3 w-full py-2.5 rounded-2xl border border-dashed border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
-                {isFetchingLocation
-                  ? "Detecting live location..."
-                  : "Use current live location"}
-              </button>
-              {/* Manual address info banner */}
-              <motion.div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 flex items-center gap-3 shadow-sm">
-                <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center shadow-emerald-500/40 shadow-md">
-                  <Check size={16} className="text-white stroke-[3]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[13px] font-semibold text-emerald-900">
-                    Delivery address confirmed
-                  </p>
-                  <p className="text-[11px] font-medium text-emerald-800/80">
-                    We&apos;ll deliver to the address you&apos;ve entered above.
-                  </p>
-                </div>
-              </motion.div>
-            </motion.div>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <button
+                  onClick={() => setIsAddressModalOpen(true)}
+                  className="py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-350 transition-colors text-center"
+                >
+                  Change Address
+                </button>
+                <button
+                  onClick={handleUseCurrentLiveLocation}
+                  disabled={isFetchingLocation}
+                  className="py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-350 transition-colors text-center"
+                >
+                  {isFetchingLocation ? "Detecting..." : "Use Live Location"}
+                </button>
+              </div>
+            </div>
 
-            {/* Cart Items */}
-            <motion.div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
-              {displayCartItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-start gap-3 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
-                  <div className="h-20 w-20 rounded-xl overflow-hidden bg-slate-50 flex-shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-800 mb-1">
-                      {item.name}
-                    </h4>
-                    <p className="text-xs text-slate-500 mb-2">75 g</p>
-                    <button
-                      onClick={() => handleMoveToWishlist(item)}
-                      className="text-xs text-slate-500 underline hover:text-[#0c831f] transition-colors">
-                      Move to wishlist
-                    </button>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-2 bg-[#0c831f] rounded-lg px-2 py-1">
-                      <button
-                        onClick={() =>
-                          item.quantity > 1
-                            ? updateQuantity(item.id, -1)
-                            : removeFromCart(item.id)
-                        }
-                        className="text-white p-1 hover:bg-white/20 rounded transition-colors">
-                        <Minus size={14} strokeWidth={3} />
-                      </button>
-                      <span className="text-white font-bold min-w-[20px] text-center">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="text-white p-1 hover:bg-white/20 rounded transition-colors">
-                        <Plus size={14} strokeWidth={3} />
-                      </button>
+            {/* Cart Items (Redesigned matching Cart list style) */}
+            <div className="bg-white rounded-3xl border border-slate-100/90 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-6">
+              <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider mb-5">
+                Items in Shipment
+              </h3>
+              <div className="divide-y divide-slate-100">
+                {cart.map((item) => (
+                  <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex gap-4">
+                    <div className="h-16 w-16 rounded-xl border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0 shadow-sm">
+                      <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                     </div>
-                    <p className="text-base font-black text-slate-800">
-                      ₹{item.price * item.quantity}
-                    </p>
+                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                      <div>
+                        <h4 className="font-bold text-slate-850 text-sm leading-tight truncate">
+                          {item.name}
+                        </h4>
+                        <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                          {item.weight || "1 unit"}
+                        </p>
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => handleMoveToWishlist(item)}
+                          className="text-[10px] text-slate-400 hover:text-[#0c831f] underline font-medium"
+                        >
+                          Move to wishlist
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end justify-between py-0.5">
+                      <div className="flex items-center border border-slate-200 rounded-full h-8 overflow-hidden bg-slate-50/50 p-0.5 shadow-inner">
+                        <button
+                          onClick={() => item.quantity > 1 ? updateQuantity(item.id, -1) : removeFromCart(item.id)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-800 transition-all active:scale-90"
+                        >
+                          <Minus size={11} strokeWidth={2.5} />
+                        </button>
+                        <span className="px-2 text-xs font-extrabold text-slate-800 min-w-[18px] text-center select-none font-outfit">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-800 transition-all active:scale-90"
+                        >
+                          <Plus size={11} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                      <p className="text-sm font-extrabold text-slate-850 font-outfit mt-1">
+                        ₹{item.price * item.quantity}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </motion.div>
+                ))}
+              </div>
+            </div>
 
-            {/* Your Wishlist */}
+            {/* Wishlist Carousel */}
             {wishlist.filter((item) => item.name).length > 0 && (
-              <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 transition-colors">
-                <h3 className="font-black text-slate-800 text-lg mb-4">
-                  Your wishlist
+              <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-100/90 transition-colors">
+                <h3 className="font-extrabold text-slate-850 text-xs uppercase tracking-wider mb-4">
+                  From Your Wishlist
                 </h3>
                 <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 snap-x">
                   {wishlist
                     .filter((item) => item.name)
                     .map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex-shrink-0 w-[140px] snap-start">
+                      <div key={item.id} className="flex-shrink-0 w-[140px] snap-start">
                         <ProductCard product={item} compact={true} />
                       </div>
                     ))}
                 </div>
-              </motion.div>
+              </div>
             )}
 
-            {/* You might also like */}
+            {/* Recommendations Carousel */}
             {recommendedProducts.length > 0 && (
-              <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 transition-colors">
-                <h3 className="font-black text-slate-800 text-lg mb-4">
-                  You might also like
+              <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-100/90 transition-colors">
+                <h3 className="font-extrabold text-slate-850 text-xs uppercase tracking-wider mb-4">
+                  You Might Also Like
                 </h3>
                 <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 snap-x">
                   {recommendedProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex-shrink-0 w-[140px] snap-start">
+                    <div key={product.id} className="flex-shrink-0 w-[140px] snap-start">
                       <ProductCard product={product} compact={true} />
                     </div>
                   ))}
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
 
-          {/* Right Column: Order Summary & Payment - Sticky on Desktop */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-8 pb-32 lg:pb-8">
-            {/* Summary Backdrop for desktop */}
-            <div className="hidden lg:block absolute inset-0 -m-4 bg-[#fcf9f2] rounded-[2.5rem] -z-10 shadow-inner group-hover:shadow-2xl transition-all duration-500" />
-            <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 transition-colors">
+          {/* Right Column: Order Summary & Coupons */}
+          <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-[80px] pb-8">
+            
+            {/* Coupons Section (Ticket design) */}
+            <div className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-100/90 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-[4px] h-full bg-[#0c831f]" />
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Tag size={20} className="text-orange-500" />
-                  <h3 className="font-black text-slate-800">
-                    Available Coupons
+                  <div className="p-1.5 rounded-lg bg-emerald-50 text-[#0c831f]">
+                    <Tag size={16} />
+                  </div>
+                  <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                    Coupons
                   </h3>
                 </div>
                 <button
                   onClick={() => setIsCouponModalOpen(true)}
-                  className="text-[#0c831f] text-sm font-bold hover:underline">
+                  className="text-[#0c831f] text-xs font-bold hover:underline"
+                >
                   See All
                 </button>
               </div>
-              <div className="space-y-3">
-                {coupons.map((coupon) => (
-                  <div
-                    key={coupon.code}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-slate-800 dark:to-slate-900 rounded-xl border border-orange-100 dark:border-white/5">
-                    <div className="flex-1">
-                      <p className="font-black text-slate-800 text-sm">
-                        {coupon.code}
-                      </p>
-                      <p className="text-xs text-slate-600">
-                        {coupon.description}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleApplyCoupon(coupon)}
-                      className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${
-                        selectedCoupon?.code === coupon.code
-                          ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                          : "bg-[#0c831f] text-white hover:bg-[#0b721b]"
-                      }`}
-                      disabled={selectedCoupon?.code === coupon.code}>
-                      {selectedCoupon?.code === coupon.code
-                        ? "Applied"
-                        : "Apply"}
-                    </button>
+
+              {selectedCoupon ? (
+                <div className="relative overflow-hidden flex items-center justify-between p-3.5 bg-emerald-50/50 border border-dashed border-emerald-250 rounded-xl">
+                  {/* Ticket punches */}
+                  <div className="absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-4 bg-slate-50 border border-slate-100 rounded-full" />
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-4 bg-slate-50 border border-slate-100 rounded-full" />
+                  
+                  <div className="min-w-0 flex-1 px-2">
+                    <p className="font-bold text-emerald-800 text-xs uppercase tracking-widest">
+                      {selectedCoupon.code} Applied
+                    </p>
+                    <p className="text-[10px] text-emerald-705 mt-0.5 truncate font-medium">
+                      Saved ₹{discountAmount} on this order
+                    </p>
                   </div>
-                ))}
-              </div>
-            </motion.div>
+                  <button
+                    onClick={() => setSelectedCoupon(null)}
+                    className="text-red-500 hover:text-red-700 text-xs font-bold shrink-0 z-10 px-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : coupons.length > 0 ? (
+                <div 
+                  className="relative overflow-hidden flex items-center justify-between p-3.5 border border-dashed border-slate-200 rounded-xl hover:bg-slate-50/50 transition-colors cursor-pointer" 
+                  onClick={() => setIsCouponModalOpen(true)}
+                >
+                  <div className="absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-4 bg-slate-50 border border-slate-100 rounded-full" />
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-4 bg-slate-50 border border-slate-100 rounded-full" />
+                  
+                  <span className="text-xs text-slate-500 font-medium pl-2">Apply coupon to save money</span>
+                  <ChevronRight size={16} className="text-slate-400" />
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">No coupons available for this order.</p>
+              )}
+            </div>
 
             {/* Tip for Partner */}
-            <motion.div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-4 border border-pink-100 dark:border-white/5">
-              <div className="flex items-center gap-2 mb-3">
-                <Heart size={18} className="text-pink-500 fill-pink-500" />
-                <h3 className="font-black text-slate-800">
-                  Tip your delivery partner
+            <div className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-100/90 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-[4px] h-full bg-rose-500" />
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="p-1.5 rounded-lg bg-rose-50 text-rose-500">
+                  <Heart size={16} className="fill-rose-500" />
+                </div>
+                <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                  Tip your partner
                 </h3>
               </div>
-              <p className="text-xs text-slate-600 mb-3">
-                100% of the tip goes to them
+              <p className="text-xs text-slate-400 mb-4">
+                100% of the tip goes to your delivery partner
               </p>
               <div className="grid grid-cols-4 gap-2 mb-3">
                 {tipAmounts.map((tip) => (
@@ -1955,11 +2018,12 @@ const CheckoutPage = () => {
                       setSelectedTip(tip.value);
                       setCustomTip("");
                     }}
-                    className={`py-2 rounded-xl border-2 transition-all font-bold text-sm ${
+                    className={`py-2 rounded-xl border transition-all font-bold text-xs ${
                       selectedTip === tip.value && !customTip
-                        ? "border-pink-500 bg-pink-100 text-pink-700"
-                        : "border-pink-200 bg-white text-slate-700 hover:border-pink-300"
-                    }`}>
+                        ? "border-rose-500 bg-rose-50/30 text-rose-600 shadow-sm"
+                        : "border-slate-100 bg-slate-50/50 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
                     {tip.label}
                   </button>
                 ))}
@@ -1975,7 +2039,7 @@ const CheckoutPage = () => {
                     setCustomTip(val);
                     setSelectedTip(val ? Number(val) : 0);
                   }}
-                  className="w-full h-10 rounded-xl border-2 border-pink-200 bg-white px-3 text-sm font-bold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-pink-400 transition-colors"
+                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-rose-350 transition-colors"
                 />
                 {customTip && (
                   <button
@@ -1986,224 +2050,165 @@ const CheckoutPage = () => {
                   </button>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Payment Method */}
-            <motion.div className="bg-white dark:bg-card rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-white/5 transition-colors">
-              <h3 className="font-black text-slate-800 mb-4">Payment Method</h3>
-              <div className="space-y-2">
+            <div className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-100/90 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-[4px] h-full bg-[#0c831f]" />
+              <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider mb-4">
+                Payment Method
+              </h3>
+              <div className="space-y-2.5">
                 {paymentMethods.map((method) => {
                   const Icon = method.icon;
+                  const isSelected = selectedPayment === method.id;
                   return (
                     <button
                       key={method.id}
                       onClick={() => setSelectedPayment(method.id)}
-                      className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${
-                        selectedPayment === method.id
-                          ? "border-[#0c831f] bg-green-50"
-                          : "border-slate-200 bg-white hover:border-slate-300"
-                      }`}>
-                      <div
-                        className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                          selectedPayment === method.id
-                            ? "bg-green-100"
-                            : "bg-slate-100"
-                        }`}>
-                        <Icon
-                          size={18}
-                          className={
-                            selectedPayment === method.id
-                              ? "text-[#0c831f]"
-                              : "text-slate-600"
-                          }
-                        />
+                      className={`w-full p-3.5 rounded-xl border transition-all flex items-center gap-3.5 text-left ${
+                        isSelected
+                          ? "border-[#0c831f] bg-green-50/10 shadow-sm"
+                          : "border-slate-100 bg-white hover:border-slate-200"
+                      }`}
+                    >
+                      <div className={`h-9 w-9 rounded-full flex items-center justify-center ${isSelected ? "bg-green-100 text-[#0c831f]" : "bg-slate-50 text-slate-500"}`}>
+                        <Icon size={16} />
                       </div>
-                      <div className="flex-1 text-left">
-                        <p
-                          className={`font-bold text-sm ${selectedPayment === method.id ? "text-[#0c831f]" : "text-slate-800"}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-bold text-xs ${isSelected ? "text-green-800" : "text-slate-700"}`}>
                           {method.label}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-[10px] text-slate-400 mt-0.5">
                           {method.sublabel}
                         </p>
                       </div>
-                      <div
-                        className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                          selectedPayment === method.id
-                            ? "border-[#0c831f]"
-                            : "border-slate-300"
-                        }`}>
-                        {selectedPayment === method.id && (
-                          <div className="h-3 w-3 rounded-full bg-[#0c831f]" />
-                        )}
+                      <div className={`h-[18px] w-[18px] rounded-full border flex items-center justify-center ${isSelected ? "border-[#0c831f] bg-[#0c831f]" : "border-slate-300"}`}>
+                        {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                       </div>
                     </button>
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
 
-            {/* Bill Details */}
-            <motion.div className="bg-white dark:bg-card rounded-[2rem] p-6 shadow-xl shadow-gray-200/50 dark:shadow-none border border-slate-100 dark:border-white/5 transition-colors">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="h-10 w-10 rounded-2xl bg-green-50 dark:bg-emerald-500/10 flex items-center justify-center">
-                  <Clipboard size={20} className="text-[#0c831f]" />
+            {/* Order Summary & Pricing Details */}
+            <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-100/90 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-[4px] h-full bg-slate-800" />
+              <div className="flex items-center gap-2 mb-5">
+                <div className="p-1.5 rounded-lg bg-slate-50 text-slate-700">
+                  <Clipboard size={16} />
                 </div>
-                <h3 className="font-[1000] text-slate-800 text-xl tracking-tight uppercase">
-                  Order Summary
+                <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                  Bill Details
                 </h3>
               </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
-                    Item Total
-                  </span>
+              <div className="space-y-3.5 text-xs text-slate-500 font-medium">
+                <div className="flex items-center justify-between">
+                  <span>Items Total</span>
                   <div className="flex items-baseline gap-2">
-                    {originalItemsTotal > discountedItemsTotal ? (
-                      <span className="text-sm font-bold text-slate-400 line-through">
-                        ₹{originalItemsTotal}
-                      </span>
-                    ) : null}
-                    <span className="font-black text-slate-800">
-                    ₹{discountedItemsTotal}
-                  </span>
+                    {originalItemsTotal > discountedItemsTotal && (
+                      <span className="text-[10px] text-slate-400 line-through">₹{originalItemsTotal}</span>
+                    )}
+                    <span className="font-bold text-slate-800">₹{discountedItemsTotal}</span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
-                    Delivery Fee
-                  </span>
-                  <span className="font-black text-slate-800">₹{deliveryFee}</span>
-                </div>                {pricingPreview &&
-                  typeof pricingPreview.distanceKmActual === "number" &&
-                  typeof pricingPreview.distanceKmRounded === "number" && (
-                    <div className="px-2 -mt-3 flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                      <span>
-                        Distance: {pricingPreview.distanceKmActual.toFixed(2)} km
-                        {pricingPreview.distanceKmRounded
-                          ? ` (billed ${pricingPreview.distanceKmRounded.toFixed(2)} km)`
-                          : ""}
-                      </span>
-                      <span className="uppercase tracking-wider">
-                        {pricingPreview?.snapshots?.deliverySettings?.deliveryPricingMode ||
-                          pricingPreview?.snapshots?.deliverySettings?.pricingMode ||
-                          ""}
-                      </span>
-                    </div>
-                  )}
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
-                    Handling Fee
-                  </span>
-                  <span className="font-black text-slate-800">
-                    ₹{handlingFee}
+                <div className="flex items-center justify-between">
+                  <span>Delivery Charge</span>
+                  <span className="font-bold text-slate-800">
+                    {deliveryFee === 0 ? <span className="text-emerald-600 font-extrabold uppercase tracking-wide text-[10px]">Free</span> : `₹${deliveryFee}`}
                   </span>
                 </div>
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
-                    Platform fee
-                  </span>
-                  <span className="font-black text-slate-800">₹{platformFee}</span>
+                <div className="flex items-center justify-between">
+                  <span>Handling Charge</span>
+                  <span className="font-bold text-slate-800">₹{handlingFee}</span>
                 </div>
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
-                    GST
-                  </span>
-                  <span className="font-black text-slate-800">₹{gstAmount}</span>
+                <div className="flex items-center justify-between">
+                  <span>Platform Fee</span>
+                  <span className="font-bold text-slate-800">₹{platformFee}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>GST & Taxes</span>
+                  <span className="font-bold text-slate-800">₹{gstAmount}</span>
                 </div>
 
                 {selectedCoupon && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex justify-between items-center px-3 py-2 bg-green-50 rounded-xl border border-green-100">
-                    <span className="text-[#0c831f] font-black text-xs flex items-center gap-2 uppercase tracking-wider">
-                      <Tag size={14} />
-                      Coupon Reserved
-                    </span>
-                    <span className="font-black text-[#0c831f]">
-                      -₹{discountAmount}
-                    </span>
-                  </motion.div>
+                  <div className="flex justify-between items-center text-emerald-600 font-bold bg-emerald-50/50 p-2.5 rounded-xl border border-dashed border-emerald-200">
+                    <span>Coupon Discount</span>
+                    <span>-₹{discountAmount}</span>
+                  </div>
                 )}
 
                 {selectedTip > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex justify-between items-center px-3 py-2 bg-pink-50 rounded-xl border border-pink-100">
-                    <span className="text-pink-600 font-bold text-xs flex items-center gap-2">
-                      <Heart size={14} className="fill-pink-500" />
-                      Delivery Partner Tip
-                    </span>
-                    <span className="font-black text-pink-600">
-                      +₹{selectedTip}
-                    </span>
-                  </motion.div>
+                  <div className="flex justify-between items-center text-rose-500 font-bold bg-rose-50/50 p-2.5 rounded-xl border border-dashed border-rose-200">
+                    <span>Rider Tip</span>
+                    <span>+₹{selectedTip}</span>
+                  </div>
                 )}
 
-                <div className="mt-4 pt-6 border-t-2 border-dashed border-slate-100">
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex flex-col">
-                      <span className="font-[1000] text-slate-800 text-lg uppercase tracking-tight">
-                        To Pay
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-                        Safe & Secure Payment
-                      </span>
-                    </div>
-                    <span className="font-[1000] text-[#0c831f] text-3xl tracking-tighter italic">
-                      {isPreviewLoading ? "Calculating..." : `₹${totalAmount}`}
-                    </span>
-                  </div>
-
-                  {/* Desktop Integrated Slide to Pay / Place Order */}
-                  <div className="hidden lg:block">
-                    {selectedPayment === "cash" ? (
-                      <button
-                        onClick={handlePlaceOrder}
-                        disabled={isPlacingOrder || isPreviewLoading || !pricingPreview}
-                        className="w-full py-4 rounded-2xl bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black text-lg tracking-wide transition-colors">
-                        {isPlacingOrder ? "Placing Order..." : `Place Order | ₹${totalAmount}`}
-                      </button>
-                    ) : (
-                      <SlideToPay
-                        amount={totalAmount}
-                        onSuccess={handlePlaceOrder}
-                        isLoading={isPlacingOrder || isPreviewLoading || !pricingPreview}
-                        text="Order Now"
-                      />
-                    )}
-                    <p className="text-center text-[10px] text-slate-400 font-bold mt-4 uppercase tracking-[0.1em]">
-                      🔒 SSL encrypted secure checkout
-                    </p>
+                <div className="border-t border-slate-100 pt-5 mt-3">
+                  <div className="flex items-center justify-between text-sm font-bold text-slate-800">
+                    <span className="font-extrabold uppercase tracking-wide">To Pay</span>
+                    <span className="text-xl text-slate-900 font-black font-outfit">₹{totalAmount}</span>
                   </div>
                 </div>
+
+                {/* Desktop Action Button / SlideToPay */}
+                <div className="hidden lg:block pt-5 border-t border-slate-50 mt-4">
+                  {selectedPayment === "cash" ? (
+                    <button
+                      onClick={handlePlaceOrder}
+                      disabled={isPlacingOrder || isPreviewLoading || !pricingPreview}
+                      className="w-full py-4 rounded-xl bg-[#0c831f] hover:bg-[#0b721b] text-white font-extrabold text-sm tracking-wide shadow-md transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {isPlacingOrder ? "Placing Order..." : `Place Order | ₹${totalAmount}`}
+                    </button>
+                  ) : (
+                    <SlideToPay
+                      amount={totalAmount}
+                      onSuccess={handlePlaceOrder}
+                      isLoading={isPlacingOrder || isPreviewLoading || !pricingPreview}
+                      text="Slide to Pay"
+                    />
+                  )}
+                  <p className="text-center text-[9px] text-slate-400 font-bold mt-4 uppercase tracking-widest">
+                    🔒 Secure 256-bit SSL checkout
+                  </p>
+                </div>
               </div>
-            </motion.div>
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* Sticky Footer - Mobile Only */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-card border-t border-slate-200 dark:border-white/10 px-4 py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-50 rounded-t-3xl transition-colors">
-        <div className="max-w-4xl mx-auto">
-          {selectedPayment === "cash" ? (
-            <button
-              onClick={handlePlaceOrder}
-              disabled={isPlacingOrder || isPreviewLoading || !pricingPreview}
-              className="w-full py-4 rounded-2xl bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black text-lg tracking-wide transition-colors">
-              {isPlacingOrder ? "Placing Order..." : `Place Order | ₹${totalAmount}`}
-            </button>
-          ) : (
-            <SlideToPay
-              amount={totalAmount}
-              onSuccess={handlePlaceOrder}
-              isLoading={isPlacingOrder || isPreviewLoading || !pricingPreview}
-              text="Slide to Pay"
-            />
-          )}
+      {/* Sticky Mobile Footer */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-150 px-4 py-4 shadow-[0_-8px_30px_rgba(0,0,0,0.05)] z-50 rounded-t-3xl">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">To Pay</p>
+            <span className="text-2xl font-extrabold text-slate-900 leading-none font-outfit">
+              ₹{totalAmount}
+            </span>
+          </div>
+          <div className="flex-1 max-w-[240px]">
+            {selectedPayment === "cash" ? (
+              <button
+                onClick={handlePlaceOrder}
+                disabled={isPlacingOrder || isPreviewLoading || !pricingPreview}
+                className="w-full py-3 h-12 flex items-center justify-center rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-sm tracking-wide transition-colors"
+              >
+                {isPlacingOrder ? "Placing..." : `Place Order`}
+              </button>
+            ) : (
+              <SlideToPay
+                amount={totalAmount}
+                onSuccess={handlePlaceOrder}
+                isLoading={isPlacingOrder || isPreviewLoading || !pricingPreview}
+                text="Slide to Pay"
+              />
+            )}
+          </div>
         </div>
       </div>
 

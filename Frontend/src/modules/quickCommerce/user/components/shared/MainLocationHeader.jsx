@@ -7,6 +7,7 @@ import { useLocation } from "../../context/LocationContext";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import { useCart } from "../../context/CartContext";
 import { useSettings } from "@core/context/SettingsContext";
+import { useAuth } from "@core/context/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   buildHeaderGradient,
@@ -19,6 +20,7 @@ import {
   getQuickHomePath,
   getQuickSearchPath,
   getQuickWishlistPath,
+  getQuickProfilePath,
 } from "../../utils/routes";
 import LogoImage from "@/assets/Logo.webp";
 import shoppingCartAnimation from "@/assets/lottie/shopping-cart.json";
@@ -56,6 +58,9 @@ import MicIcon from "@mui/icons-material/Mic";
 import ChevronDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import FavoriteBorderOutlinedIcon from "@mui/icons-material/FavoriteBorderOutlined";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import PersonIcon from "@mui/icons-material/Person";
+import StorefrontIcon from "@mui/icons-material/Storefront";
 
 const ICON_COMPONENTS = {
   electronics: DevicesIcon,
@@ -114,7 +119,7 @@ function CategoryNavColumn({
   categoryAccent,
   onCategorySelect,
 }) {
-  const iconColor = "#ffffff";
+  const iconColor = categoryAccent;
   const colRef = useRef(null);
   const labelRef = useRef(null);
   const [lr, setLr] = useState({ l: 22, r: 78 });
@@ -184,7 +189,7 @@ function CategoryNavColumn({
             isActive ? "font-black" : "font-semibold",
           )}
           style={{
-            color: "#ffffff",
+            color: categoryAccent,
             opacity: isActive ? 1 : 0.94,
           }}>
           {cat.name}
@@ -232,6 +237,7 @@ const MainLocationHeader = ({
   const { isOpen: isProductDetailOpen } = useProductDetail();
   const { cartCount } = useCart();
   const { settings } = useSettings();
+  const { user } = useAuth();
   const appName = settings?.appName || "App";
   const logoUrl = settings?.logoUrl || LogoImage;
   const navigate = useNavigate();
@@ -240,6 +246,7 @@ const MainLocationHeader = ({
   const homePath = getQuickHomePath(routerLocation.pathname);
   const searchPath = getQuickSearchPath(routerLocation.pathname);
   const wishlistPath = getQuickWishlistPath();
+  const profilePath = getQuickProfilePath();
 
   const [internalCategories, setInternalCategories] = useState([]);
 
@@ -400,8 +407,16 @@ const MainLocationHeader = ({
       : buildHeaderGradient(baseHeaderColor)
     : "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)";
   const searchBarBg = buildSearchBarBackgroundColor(baseHeaderColor || "#1e293b");
-  const categoryAccent = "#ffffff";
-
+  const isLightColor = (hex) => {
+    if (!hex) return false;
+    const normalized = hex.replace("#", "");
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return false;
+    const r = parseInt(normalized.slice(0, 2), 16);
+    const g = parseInt(normalized.slice(2, 4), 16);
+    const b = parseInt(normalized.slice(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 155;
+  };
+  const categoryAccent = isLightColor(baseHeaderColor) ? "#0f172a" : "#ffffff";
   useEffect(() => {
     const c = buildMiniCartColor(baseHeaderColor || "#1e293b");
     document.documentElement.style.setProperty("--customer-mini-cart-color", c);
@@ -432,6 +447,7 @@ const MainLocationHeader = ({
             borderBottomRightRadius: headerRoundness,
             opacity: bgOpacity,
             backgroundImage: headerGradient,
+            fontFamily: "'Okra', 'Outfit', sans-serif",
           }}
           className={cn(
             "px-4 transition-all duration-300",
@@ -570,48 +586,69 @@ const MainLocationHeader = ({
                 display: displayContent,
                 overflow: "hidden",
               }}
-              className="relative z-10">
-              <div className="mb-1">
-                <span className="inline-flex items-center rounded-full border border-black/10 bg-white/18 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-900 backdrop-blur-sm">
-                  {appName}
+              className="relative z-10 flex items-start justify-between">
+              
+              {/* Left Section (Blinkit exact layout) */}
+              <div className="flex flex-col pt-0.5">
+                {/* Small "Blinkit in" text */}
+                <span className="text-[11px] font-extrabold text-slate-900 mb-[2px] tracking-tight">
+                  {appName} in
                 </span>
-              </div>
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <AccessTimeIcon sx={{ fontSize: 16, color: "#111827" }} />
-                    <span className="text-base font-bold text-slate-900 tracking-tight leading-none">
-                      {currentLocation.time}
-                    </span>
-                  </div>
-                  <button
+                
+                {/* Large "12 minutes" + Pill */}
+                <div className="flex items-end gap-2 mb-1.5">
+                  <span className="text-[28px] font-black text-slate-900 tracking-tighter leading-none -mt-1 block">
+                    {currentLocation.time || "12 minutes"}
+                  </span>
+                  
+
+                </div>
+
+                {/* Location row */}
+                <button
                     type="button"
                     data-lenis-prevent
                     data-lenis-prevent-touch
                     onClick={() => {
                       setIsLocationOpen(true);
                     }}
-                    className="flex items-center gap-1 text-slate-800 cursor-pointer group active:scale-95 transition-transform border-0 bg-transparent p-0 text-left">
-                    <LocationOnIcon sx={{ fontSize: 14, color: "#111827" }} />
-                    <div className="text-[10px] font-medium leading-tight max-w-[280px] truncate">
-                      {isFetchingLocation
-                        ? "Detecting location..."
-                        : currentLocation.name}
-                    </div>
-                    <ChevronDownIcon
-                      sx={{ fontSize: 12, opacity: 0.5, color: "#111827" }}
-                    />
-                  </button>
-                </div>
+                    className="flex items-center gap-0.5 text-slate-800 cursor-pointer group active:scale-95 transition-transform border-0 bg-transparent p-0 text-left">
+                  <div className="text-[12px] font-medium leading-tight max-w-[250px] truncate flex items-center gap-1">
+                    <span className="font-extrabold uppercase tracking-wide text-slate-900">{currentLocation.type || "HOME"}</span> 
+                    <span className="opacity-80 text-[11px]">- {isFetchingLocation ? "Detecting location..." : currentLocation.name}</span>
+                  </div>
+                  <ChevronDownIcon
+                    sx={{ fontSize: 16, color: "#111827", mt: "1px" }}
+                  />
+                </button>
               </div>
+
+              {/* Right Section (Icons) */}
+              <div className="flex items-center gap-3 pt-1 shrink-0 pl-2">
+                 {/* Wallet Icon (₹0) */}
+                 <div 
+                    onClick={() => navigate(getQuickWalletPath())}
+                    className="flex flex-col items-center justify-center bg-white rounded-[14px] shadow-sm min-w-[38px] h-[38px] cursor-pointer">
+                    <AccountBalanceWalletIcon sx={{ fontSize: 17, color: "#b48c1e", mt: "2px" }} />
+                    <span className="text-[9px] font-black mt-[1px] leading-none text-slate-900">₹{(user?.walletBalance || 0).toLocaleString('en-IN')}</span>
+                 </div>
+                 
+                 {/* Profile Icon */}
+                 <div 
+                    onClick={() => navigate(profilePath)}
+                    className="flex items-center justify-center bg-white rounded-[14px] shadow-sm w-[38px] h-[38px] cursor-pointer active:scale-95 transition-transform">
+                    <div className="bg-slate-900 rounded-full w-[22px] h-[22px] flex items-center justify-center overflow-hidden">
+                        <PersonIcon sx={{ fontSize: 19, color: "white", mt: "4px" }} />
+                    </div>
+                 </div>
+              </div>
+
             </motion.div>
           </div>}
 
-          {/* Top Search removed from here and moved to categories section below */}
-
-          {showCategories && categories.length > 0 && (
+          {/* Top Search integrated into Header */}
+          {showSearchBar && (
             <div className="relative z-10 space-y-1 pt-0">
-              {/* Compact Search Bar integrated into Categories Section */}
               <div className="px-4 md:px-0 md:max-w-2xl md:mx-auto py-2">
                 <motion.div
                   onClick={handleSearchClick}
@@ -630,7 +667,11 @@ const MainLocationHeader = ({
                   </div>
                 </motion.div>
               </div>
+            </div>
+          )}
 
+          {showCategories && (
+            <div className="relative z-10 space-y-1 pt-0">
               <motion.div
                 layout
                 transition={{
@@ -652,18 +693,27 @@ const MainLocationHeader = ({
                   "relative flex items-end md:justify-center gap-1 overflow-x-auto no-scrollbar -mx-2 px-2 md:mx-0 md:px-0 z-10 snap-x min-h-[64px] md:min-h-[72px] pb-1",
                   embedded ? "pt-1" : "pt-2",
                 )}>
-                {categories.slice(0, 10).map((cat) => {
-                  const isActive = activeCategory?.id === cat.id;
-                  return (
-                    <CategoryNavColumn
-                      key={cat.id}
-                      cat={cat}
-                      isActive={isActive}
-                      categoryAccent={categoryAccent}
-                      onCategorySelect={onCategorySelect}
-                    />
-                  );
-                })}
+                {categories.length > 0 ? (
+                  categories.slice(0, 10).map((cat) => {
+                    const isActive = activeCategory?.id === cat.id;
+                    return (
+                      <CategoryNavColumn
+                        key={cat.id}
+                        cat={cat}
+                        isActive={isActive}
+                        categoryAccent={categoryAccent}
+                        onCategorySelect={onCategorySelect}
+                      />
+                    );
+                  })
+                ) : (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="flex min-w-[48px] shrink-0 flex-col items-center gap-0.5 px-2 pb-0.5 pt-0.5 md:min-w-[58px]">
+                      <div className="h-9 w-9 md:h-11 md:w-11 rounded-full bg-white/20 animate-pulse" />
+                      <div className="h-2 w-8 mt-1 rounded bg-white/20 animate-pulse" />
+                    </div>
+                  ))
+                )}
               </motion.div>
             </div>
           )}

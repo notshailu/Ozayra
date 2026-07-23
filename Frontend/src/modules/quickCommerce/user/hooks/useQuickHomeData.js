@@ -27,6 +27,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import LuggageIcon from "@mui/icons-material/Luggage";
 
 import { resolveQuickImageUrl } from "../utils/image";
+import { AllIcon, ElectronicsIcon, BeautyIcon, DecorIcon, MonsoonIcon, GroceryIcon } from "@/shared/components/BlinkitIcons";
 
 // --- Constants ---
 const DEFAULT_CATEGORY_THEME = {
@@ -37,12 +38,12 @@ const DEFAULT_CATEGORY_THEME = {
 
 const CATEGORY_METADATA = {
   All: {
-    icon: HomeIcon,
+    icon: AllIcon,
     theme: DEFAULT_CATEGORY_THEME,
     banner: { title: "HOUSEFULL", subtitle: "SALE", floatingElements: "sparkles" },
   },
   Grocery: {
-    icon: LocalGroceryStoreIcon,
+    icon: GroceryIcon,
     theme: { gradient: "linear-gradient(to bottom, #FF9F1C, #FFBF69)", shadow: "shadow-orange-500/20", accent: "text-orange-900" },
     banner: { title: "SUPERSAVER", subtitle: "FRESH & FAST", floatingElements: "leaves" },
   },
@@ -57,7 +58,7 @@ const CATEGORY_METADATA = {
     banner: { title: "HOME", subtitle: "KITCHEN", floatingElements: "smoke" },
   },
   Electronics: {
-    icon: DevicesIcon,
+    icon: ElectronicsIcon,
     theme: { gradient: "linear-gradient(to bottom, #7209B7, #B5179E)", shadow: "shadow-purple-500/20", accent: "text-purple-900" },
     banner: { title: "TECH FEST", subtitle: "GADGETS", floatingElements: "tech" },
   },
@@ -76,16 +77,31 @@ const CATEGORY_METADATA = {
     theme: { gradient: "linear-gradient(to bottom, #4361EE, #4895EF)", shadow: "shadow-indigo-500/20", accent: "text-indigo-900" },
     banner: { title: "SPORTS", subtitle: "GEAR", floatingElements: "confetti" },
   },
+  Monsoon: {
+    icon: MonsoonIcon,
+    theme: { gradient: "linear-gradient(to bottom, #0077B6, #00B4D8)", shadow: "shadow-blue-500/20", accent: "text-blue-900" },
+    banner: { title: "MONSOON", subtitle: "MUD", floatingElements: "drops" },
+  },
+  Beauty: {
+    icon: BeautyIcon,
+    theme: { gradient: "linear-gradient(to bottom, #FF006E, #FFBE0B)", shadow: "shadow-pink-500/20", accent: "text-pink-900" },
+    banner: { title: "GLOW", subtitle: "UP", floatingElements: "sparkles" },
+  },
+  Decor: {
+    icon: DecorIcon,
+    theme: { gradient: "linear-gradient(to bottom, #FFB703, #FB8500)", shadow: "shadow-yellow-500/20", accent: "text-yellow-900" },
+    banner: { title: "HOME", subtitle: "STYLE", floatingElements: "leaves" },
+  },
 };
 
 const ICON_COMPONENTS = {
-  electronics: DevicesIcon,
+  electronics: ElectronicsIcon,
   fashion: CheckroomIcon,
-  home: HomeIcon,
+  home: AllIcon,
   food: LocalCafeIcon,
   sports: SportsSoccerIcon,
   books: MenuBookIcon,
-  beauty: SpaIcon,
+  beauty: BeautyIcon,
   toys: ToysIcon,
   automotive: DirectionsCarIcon,
   pets: PetsIcon,
@@ -98,16 +114,18 @@ const ICON_COMPONENTS = {
   tools: BuildIcon,
   luggage: LuggageIcon,
   art: ColorLensIcon,
-  grocery: LocalGroceryStoreIcon,
+  grocery: GroceryIcon,
+  monsoon: MonsoonIcon,
+  decor: DecorIcon,
 };
 
 const ALL_CATEGORY = {
   id: "all",
   _id: "all",
   name: "All",
-  icon: HomeIcon,
+  icon: AllIcon,
   theme: DEFAULT_CATEGORY_THEME,
-  headerColor: "#065f46",
+  headerColor: "#F0EBC9",
   banner: {
     title: "HOUSEFULL",
     subtitle: "SALE",
@@ -129,7 +147,7 @@ let globalQuickHomeCache = {
 
 const CACHE_EXPIRY_MS = 5 * 1000; // 5 seconds cache duration
 
-export const useQuickHomeData = ({ currentLocation }) => {
+export const useQuickHomeData = ({ currentLocation } = {}) => {
   const hasValidCache = globalQuickHomeCache.data && (Date.now() - globalQuickHomeCache.lastFetched < CACHE_EXPIRY_MS);
   
   const [isLoading, setIsLoading] = useState(!hasValidCache);
@@ -145,6 +163,7 @@ export const useQuickHomeData = ({ currentLocation }) => {
   const [heroConfig, setHeroConfig] = useState(globalQuickHomeCache.data?.heroConfig || { banners: { items: [] }, categoryIds: [] });
   const [headerSections, setHeaderSections] = useState([]);
   const [loadingHeaderSections, setLoadingHeaderSections] = useState(false);
+  const [loadingHeroConfig, setLoadingHeroConfig] = useState(false);
   const [categoryProducts, setCategoryProducts] = useState(null); // null = use global products
 
   const fetchDataSeqRef = useRef(0);
@@ -216,7 +235,9 @@ export const useQuickHomeData = ({ currentLocation }) => {
         });
 
         const allHeaderFromAdmin = formattedHeaders.find(h => (h.slug?.toLowerCase() === "all") || (h.name?.toLowerCase() === "all"));
-        const mergedAllCategory = allHeaderFromAdmin ? { ...ALL_CATEGORY, headerColor: allHeaderFromAdmin.headerColor || ALL_CATEGORY.headerColor, icon: allHeaderFromAdmin.icon || ALL_CATEGORY.icon } : ALL_CATEGORY;
+        const mergedAllCategory = allHeaderFromAdmin 
+          ? { ...ALL_CATEGORY, headerColor: "#F0EBC9", icon: allHeaderFromAdmin.icon || ALL_CATEGORY.icon } 
+          : { ...ALL_CATEGORY, headerColor: "#F0EBC9" };
         const headersWithoutAll = formattedHeaders.filter(h => !((h.slug?.toLowerCase() === "all") || (h.name?.toLowerCase() === "all")));
         
         const finalCategories = [mergedAllCategory, ...headersWithoutAll];
@@ -317,8 +338,10 @@ export const useQuickHomeData = ({ currentLocation }) => {
 
     if (globalQuickHomeCache.headerHeroConfigs.has(headerId)) {
       setHeroConfig(globalQuickHomeCache.headerHeroConfigs.get(headerId));
+      setLoadingHeroConfig(false);
     } else {
-      setHeroConfig(globalQuickHomeCache.data?.heroConfig || { banners: { items: [] }, categoryIds: [] });
+      setHeroConfig(null);
+      setLoadingHeroConfig(true);
     }
 
     const fetchHeroConfig = async () => {
@@ -341,6 +364,8 @@ export const useQuickHomeData = ({ currentLocation }) => {
         console.error("Error fetching header hero config:", e);
         const fallback = globalQuickHomeCache.data?.heroConfig || { banners: { items: [] }, categoryIds: [] };
         setHeroConfig(fallback);
+      } finally {
+        setLoadingHeroConfig(false);
       }
     };
 
@@ -414,6 +439,7 @@ export const useQuickHomeData = ({ currentLocation }) => {
     subcategoryMap,
     headerSections,
     heroConfig,
+    loadingHeroConfig,
     isLoading: isLoading || !isBootstrapped,
     loadingHeaderSections,
     isBootstrapped,

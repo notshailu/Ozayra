@@ -83,6 +83,7 @@ const mapCategory = (category) => ({
   adminCommission: Number(category.adminCommission || 0),
   color: category.accentColor,
   approvalStatus: category.approvalStatus || 'approved',
+  isFeaturedOnHome: Boolean(category.isFeaturedOnHome),
 });
 
 const buildSellerMap = async (products = []) => {

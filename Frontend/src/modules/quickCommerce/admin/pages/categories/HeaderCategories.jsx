@@ -374,7 +374,7 @@ const HeaderCategories = () => {
                           <img
                             src={cat.image?.url || cat.image}
                             alt={cat.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain p-0.5"
                           />
                         ) : (
                           <Image className="w-5 h-5 text-gray-400" />
@@ -503,12 +503,12 @@ const HeaderCategories = () => {
                     <div className="flex flex-col items-center gap-2">
                       <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 overflow-hidden transition-colors">
+                        className="w-28 h-28 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 overflow-hidden transition-colors p-1.5">
                         {previewUrl ? (
                           <img
                             src={previewUrl}
                             alt="Preview"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                           />
                         ) : (
                           <div className="text-center">
@@ -632,7 +632,7 @@ const HeaderCategories = () => {
                       type="number"
                       value={formData.adminCommission}
                       onChange={(e) =>
-                        setFormData({ ...formData, adminCommission: parseFloat(e.target.value) || 0 })
+                        setFormData({ ...formData, adminCommission: e.target.value === "" ? "" : e.target.value })
                       }
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                       placeholder="0"
@@ -648,7 +648,7 @@ const HeaderCategories = () => {
                       type="number"
                       value={formData.handlingFees}
                       onChange={(e) =>
-                        setFormData({ ...formData, handlingFees: parseFloat(e.target.value) || 0 })
+                        setFormData({ ...formData, handlingFees: e.target.value === "" ? "" : e.target.value })
                       }
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                       placeholder="0"

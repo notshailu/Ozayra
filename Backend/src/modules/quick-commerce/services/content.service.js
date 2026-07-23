@@ -35,6 +35,20 @@ const toIdString = (value) => {
   return String(value);
 };
 
+const toId = (value) => {
+  if (!value) return null;
+  if (value instanceof mongoose.Types.ObjectId) return value;
+  if (typeof value === 'object' && value !== null && !value.$in) {
+    if (value._id) return toId(value._id);
+    if (value.id) return toId(value.id);
+  }
+  const str = String(value).trim();
+  if (mongoose.isValidObjectId(str)) {
+    return { $in: [new mongoose.Types.ObjectId(str), str] };
+  }
+  return str;
+};
+
 const normalizeStatusQuery = () => ({
   $and: [
     {

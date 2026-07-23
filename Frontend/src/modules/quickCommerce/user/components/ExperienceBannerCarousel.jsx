@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { resolveQuickImageUrl } from "../utils/image";
 
-const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap = 0 }) => {
+const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap = 0, edgeToEdge = false }) => {
   if (!items || !items.length) return null;
 
   const effectiveSlideGap = fullWidth ? 0 : slideGap;
@@ -44,7 +44,7 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
   }, [isResetting]);
 
   return (
-    <div className={cn("overflow-hidden", fullWidth && "w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]")}>
+    <div className={cn("overflow-hidden", edgeToEdge ? "w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" : "w-full")}>
       <div
         className={cn("flex ease-out", isResetting ? "transition-none" : "transition-transform duration-500")}
         style={{

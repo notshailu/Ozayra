@@ -137,7 +137,7 @@ const CategoryHierarchy = () => {
               <img
                 src={item.image?.url || item.image}
                 alt=""
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-contain rounded-lg p-0.5"
               />
             ) : type === "header" ? (
               <FolderOpen className={`w-4 h-4 ${iconColor}`} />

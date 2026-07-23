@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 import { getIO, rooms } from '../../../config/socket.js';
 import { logger } from '../../../utils/logger.js';
+import {
+  isRazorpayConfigured,
+  getRazorpayKeyId,
+  createRazorpayOrder,
+  verifyPaymentSignature,
+} from '../../food/orders/helpers/razorpay.helper.js';
 import { QuickOrder } from '../models/order.model.js';
 import { QuickCart } from '../models/cart.model.js';
 import { QuickProduct } from '../models/product.model.js';
@@ -256,6 +262,26 @@ export const placeOrder = async (req, res) => {
     const shouldFanOutSellerOrders = true;
     const deliveryAddress = normalizeDeliveryAddress(req.body?.address);
 
+    let razorpayPayload = null;
+    if (isOnlinePayment && isRazorpayConfigured()) {
+      const amountPaise = Math.round(total * 100);
+      if (amountPaise < 100) {
+        return res.status(400).json({ success: false, message: 'Amount too low for online payment' });
+      }
+      try {
+        const rzOrder = await createRazorpayOrder(amountPaise, 'INR', orderNumber);
+        razorpayPayload = {
+          key: getRazorpayKeyId(),
+          orderId: rzOrder.id,
+          amount: rzOrder.amount,
+          currency: rzOrder.currency || 'INR',
+        };
+      } catch (err) {
+        logger.error(`Razorpay order creation failed: ${err?.message || err}`);
+        return res.status(500).json({ success: false, message: err?.message || 'Payment gateway error' });
+      }
+    }
+
     // Calculate rider earning (using base payout if distance is unknown/short)
     const riderEarning = await getQuickRiderEarning(0.1);
 
@@ -285,6 +311,11 @@ export const placeOrder = async (req, res) => {
         method: paymentMode,
         status: paymentMode === 'razorpay' ? 'created' : 'cod_pending',
         amountDue: Math.max(0, total),
+        razorpay: razorpayPayload ? {
+          orderId: razorpayPayload.orderId,
+          paymentId: '',
+          signature: '',
+        } : undefined,
       },
       orderStatus: 'placed',
       riderEarning: riderEarning || 0,
@@ -399,7 +430,9 @@ export const placeOrder = async (req, res) => {
 
     await QuickCart.findOneAndUpdate(idQuery, { $set: { items: [] } }, { upsert: false });
 
-    emitQuickOrderStatusUpdate(order, 'Quick order placed successfully.');
+    if (!isOnlinePayment) {
+      emitQuickOrderStatusUpdate(order, 'Quick order placed successfully.');
+    }
 
     if (shouldFanOutSellerOrders) {
       void (async () => {
@@ -415,7 +448,9 @@ export const placeOrder = async (req, res) => {
               ),
             ),
           );
-          emitQuickSellerOrders(upserts.filter(Boolean));
+          if (!isOnlinePayment) {
+            emitQuickSellerOrders(upserts.filter(Boolean));
+          }
         } catch (error) {
           logger.error(`Quick seller order fanout failed for ${order.orderId}: ${error?.message || error}`);
         }
@@ -440,6 +475,7 @@ export const placeOrder = async (req, res) => {
         pricing: order.pricing || {},
         createdAt: order.createdAt,
       },
+      razorpay: razorpayPayload,
     });
   } catch (error) {
     logger.error(`Quick placeOrder failed: ${error?.message || error}`);
@@ -689,6 +725,108 @@ export const cancelOrder = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: error?.message || 'Failed to cancel quick order',
+    });
+  }
+};
+
+export const verifyPayment = async (req, res) => {
+  try {
+    const idQuery = resolveId(req);
+    if (!idQuery) {
+      return res.status(400).json({ success: false, message: 'sessionId or userId is required' });
+    }
+
+    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'orderId is required' });
+    }
+
+    const identityQuery = [{ orderId }];
+    if (mongoose.isValidObjectId(orderId)) {
+      identityQuery.unshift({ _id: orderId });
+    }
+
+    const order = await QuickOrder.findOne({
+      ...idQuery,
+      orderType: 'quick',
+      $or: identityQuery,
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (order.payment.status === 'paid') {
+      return res.json({ success: true, result: normalizeOrderSummary(order) });
+    }
+
+    const valid = verifyPaymentSignature(
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature
+    );
+    if (!valid) {
+      return res.status(400).json({ success: false, message: 'Payment verification failed' });
+    }
+
+    order.payment.status = 'paid';
+    if (!order.payment.razorpay) {
+      order.payment.razorpay = {};
+    }
+    order.payment.razorpay.paymentId = razorpayPaymentId;
+    order.payment.razorpay.signature = razorpaySignature;
+    order.payment.amountDue = 0;
+
+    order.statusHistory = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+    order.statusHistory.push({
+      byRole: 'USER',
+      from: order.orderStatus,
+      to: order.orderStatus,
+      note: 'Payment verified',
+    });
+
+    await order.save();
+
+    // Create / Update Transaction if required (just like in Food Order)
+    try {
+      await foodTransactionService.updateTransactionStatus(order._id, 'captured', {
+        status: 'captured',
+        razorpayPaymentId: razorpayPaymentId,
+        razorpaySignature: razorpaySignature,
+        recordedByRole: "USER",
+        recordedById: idQuery.userId ? new mongoose.Types.ObjectId(idQuery.userId) : undefined
+      });
+    } catch (txErr) {
+      logger.error(`Quick verifyPayment: Failed to update transaction status: ${txErr.message}`);
+    }
+
+    // Now emit realtime update to seller and notify
+    emitQuickOrderStatusUpdate(order, 'Payment verified successfully.');
+
+    // Find and update seller orders
+    const sellerOrders = await SellerOrder.find({ orderId: order.orderId });
+    if (sellerOrders.length > 0) {
+      const upserts = await Promise.all(
+        sellerOrders.map(async (so) => {
+          so.payment = so.payment || {};
+          so.payment.method = 'online';
+          so.status = 'pending';
+          so.workflowStatus = 'SELLER_PENDING';
+          return so.save();
+        })
+      );
+      emitQuickSellerOrders(upserts.filter(Boolean));
+    }
+
+    return res.json({
+      success: true,
+      result: normalizeOrderSummary(order),
+    });
+  } catch (error) {
+    logger.error(`Quick verifyPayment failed: ${error?.message || error}`);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Failed to verify payment',
     });
   }
 };

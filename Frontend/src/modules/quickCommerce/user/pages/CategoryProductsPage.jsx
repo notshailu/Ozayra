@@ -42,9 +42,38 @@ const getQuickCategoryImage = (category = {}) => {
 
   return (
     resolveQuickImageUrl(candidate, category?.name) ||
-    "https://cdn-icons-png.flaticon.com/128/2321/2321831.png"
+    "https://cdn-icons-png.flaticon.com/128/1828/1828859.png"
   );
 };
+
+const SidebarSkeleton = () => (
+    <div className="flex flex-col gap-6 py-4 px-3 w-full items-center">
+        {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-2 w-full animate-pulse">
+                <div className="w-[60px] h-[60px] rounded-2xl bg-slate-100/70" />
+                <div className="h-2.5 w-10 bg-slate-100/70 rounded-full" />
+            </div>
+        ))}
+    </div>
+);
+
+const ProductCardSkeleton = () => (
+    <div className="border border-slate-100 rounded-2xl p-2.5 bg-white flex flex-col h-full gap-3 animate-pulse">
+        <div className="aspect-square w-full rounded-xl bg-slate-50" />
+        <div className="h-2.5 w-1/3 bg-slate-100 rounded-full" />
+        <div className="space-y-1.5 flex-1">
+            <div className="h-3.5 w-5/6 bg-slate-100 rounded-full" />
+            <div className="h-3 w-1/2 bg-slate-100 rounded-full" />
+        </div>
+        <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-slate-50">
+            <div className="space-y-1">
+                <div className="h-4 w-12 bg-slate-100 rounded-full" />
+                <div className="h-3 w-8 bg-slate-100 rounded-full" />
+            </div>
+            <div className="h-8 w-14 bg-slate-50 rounded-lg" />
+        </div>
+    </div>
+);
 
 const CategoryProductsPage = () => {
     const { categoryId: catId } = useParams();
@@ -55,7 +84,7 @@ const CategoryProductsPage = () => {
     const { isOpen: isProductDetailOpen } = useProductDetail();
     const [selectedSubCategory, setSelectedSubCategory] = useState(initialSubcategoryId);
     const [category, setCategory] = useState(null);
-    const [subCategories, setSubCategories] = useState([{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/2321/2321831.png' }]);
+    const [subCategories, setSubCategories] = useState([{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/1828/1828859.png' }]);
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [headerTheme, setHeaderTheme] = useState(FALLBACK_HEADER_COLOR);
@@ -180,7 +209,7 @@ const CategoryProductsPage = () => {
                         icon: s.image || 'https://cdn-icons-png.flaticon.com/128/2321/2321801.png'
                     }));
                     
-                    setSubCategories([{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/2321/2321831.png' }, ...formattedSubs]);
+                    setSubCategories([{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/1828/1828859.png' }, ...formattedSubs]);
                     
                     // If we arrived here directly with a subcategory ID, select it
                     if (isDirectSub && selectedSubCategory === 'all' && !location.state?.activeSubcategoryId) {
@@ -236,67 +265,84 @@ const CategoryProductsPage = () => {
     }, [safeProducts]);
 
     return (
-        <div className="flex min-h-screen flex-col bg-white dark:bg-background font-sans pt-0 transition-colors duration-500">
-            <div className="mx-auto flex w-full max-w-[1920px] flex-1 flex-col">
+        <div className="flex h-[100dvh] md:h-screen max-h-screen flex-col bg-white dark:bg-background font-outfit pt-0 transition-colors duration-500 overflow-hidden">
+            <div className="mx-auto flex w-full max-w-[1920px] flex-1 flex-col overflow-hidden">
                 {/* Category Subheader */}
                 <header className={cn(
-                    "sticky top-0 z-30 px-4 py-4 flex items-center justify-between border-b border-white/20 shadow-[0_10px_30px_rgba(15,23,42,0.12)] backdrop-blur-md",
+                    "shrink-0 z-30 px-4 py-3.5 flex items-center justify-between border-b border-slate-100 bg-white shadow-sm",
                     isProductDetailOpen && "hidden md:flex"
-                )}
-                    style={{
-                        backgroundImage: `linear-gradient(180deg, ${headerTheme} 0%, ${headerTheme}F2 100%)`,
-                    }}>
+                )}>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}
-                            className="p-1 hover:bg-white/15 rounded-full transition-colors"
+                            className="p-1.5 hover:bg-slate-50 text-slate-600 rounded-full transition-colors active:scale-95"
                         >
-                            <ChevronLeft size={24} className="text-white" />
+                            <ChevronLeft size={22} />
                         </button>
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.24em] text-white/75">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Quick Category
                             </span>
-                            <h1 className="text-[18px] font-bold text-white tracking-tight">
-                                {category?.name || catId}
+                            <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none mt-0.5">
+                                {category?.name ? (
+                                    category.name
+                                ) : isLoading ? (
+                                    <div className="h-[18px] w-24 bg-slate-100 animate-pulse rounded-md mt-1" />
+                                ) : (
+                                    catId
+                                )}
                             </h1>
                         </div>
                     </div>
-
                 </header>
 
-                <div className="flex flex-1 relative items-start">
+                <div className="flex flex-1 relative items-start overflow-hidden min-h-0">
                     {/* Sidebar */}
-                    <aside className="w-20 md:w-28 border-r border-gray-50 dark:border-white/5 flex flex-col bg-white dark:bg-card overflow-y-auto hide-scrollbar sticky top-0 h-screen pb-32 transition-colors">
-                        {subCategories.map((cat) => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setSelectedSubCategory(cat.id)}
-                                className={cn(
-                                    "flex flex-col items-center py-4 px-1 gap-2 transition-all relative border-l-4",
-                                    selectedSubCategory === cat.id
-                                        ? "bg-[#F7FCF5] dark:bg-emerald-950/20 border-[#0c831f]"
-                                        : "border-transparent hover:bg-gray-50 dark:hover:bg-white/5"
-                                )}
-                            >
-                                <div className={cn(
-                                    "w-12 h-12 rounded-2xl flex items-center justify-center p-2 transition-all duration-300",
-                                    selectedSubCategory === cat.id ? "scale-110" : "grayscale opacity-70"
-                                )}>
-                                    <img src={cat.icon} alt={cat.name} className="w-full h-full object-contain" />
-                                </div>
-                                <span className={cn(
-                                    "text-[10px] text-center font-bold font-sans leading-tight px-1",
-                                    selectedSubCategory === cat.id ? "text-[#0c831f]" : "text-gray-500"
-                                )}>
-                                    {cat.name}
-                                </span>
-                            </button>
-                        ))}
+                    <aside className="w-24 md:w-28 shrink-0 border-r border-slate-100 flex flex-col bg-[#fcfcfc] overflow-y-auto hide-scrollbar h-full pb-28">
+                        {isLoading ? (
+                            <SidebarSkeleton />
+                        ) : (
+                            subCategories.map((cat) => {
+                                const isSelected = selectedSubCategory === cat.id;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setSelectedSubCategory(cat.id)}
+                                        className={cn(
+                                            "flex flex-col items-center py-4 px-1.5 gap-2.5 transition-all relative border-l-2 select-none outline-none",
+                                            isSelected
+                                                ? "bg-white border-green-600 text-green-700"
+                                                : "border-transparent text-slate-500 hover:bg-slate-50"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-[60px] h-[60px] rounded-2xl flex items-center justify-center transition-all duration-300 bg-slate-50 overflow-hidden relative",
+                                            isSelected 
+                                                ? "border-2 border-green-600 shadow-[0_4px_12px_rgba(12,131,31,0.15)] scale-105" 
+                                                : "border border-slate-100 opacity-90"
+                                        )}>
+                                            {cat.id === 'all' ? (
+                                                <div className="w-full h-full p-4 bg-slate-50 flex items-center justify-center">
+                                                    <img src={cat.icon} alt={cat.name} className="w-full h-full object-contain opacity-70" />
+                                                </div>
+                                            ) : (
+                                                <img src={cat.icon} alt={cat.name} className="w-full h-full object-contain p-1.5" />
+                                            )}
+                                        </div>
+                                        <span className={cn(
+                                            "text-[11px] text-center font-semibold leading-tight px-1 tracking-tight truncate w-full",
+                                            isSelected ? "text-green-700 font-bold" : "text-slate-400"
+                                        )}>
+                                            {cat.name}
+                                        </span>
+                                    </button>
+                                );
+                            })
+                        )}
                     </aside>
 
                     {/* Content */}
-                    <main className="flex-1 px-3 pt-1 pb-24 bg-white dark:bg-background transition-colors">
+                    <main className="flex-1 min-w-0 px-3 pt-2 pb-28 bg-white dark:bg-background transition-colors overflow-y-auto h-full">
                         {selectedSubCategory === 'all' && heroConfig && (
                             <>
                                 {/* Hero Banners */}
@@ -352,7 +398,7 @@ const CategoryProductsPage = () => {
                                                                 <img
                                                                     src={categoryImage}
                                                                     alt={cat.name}
-                                                                    className="absolute top-0 left-0 w-full h-[72%] object-cover group-hover:scale-110 transition-transform duration-500 rounded-t-full"
+                                                                    className="absolute top-0 left-0 w-full h-[72%] object-contain p-2 group-hover:scale-110 transition-transform duration-500 rounded-t-full"
                                                                 />
                                                             ) : (
                                                                 <div className="absolute top-0 left-0 w-full h-[72%] flex items-center justify-center bg-white/55 text-lg font-black uppercase text-slate-400 rounded-t-full">
@@ -387,13 +433,34 @@ const CategoryProductsPage = () => {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 gap-y-4 md:gap-4 lg:gap-6">
-                            {filteredProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} compact={true} />
-                            ))}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 gap-y-4 md:gap-4 lg:gap-6 p-1">
+                            {isLoading ? (
+                                Array.from({ length: 8 }).map((_, i) => (
+                                    <ProductCardSkeleton key={i} />
+                                ))
+                            ) : (
+                                filteredProducts.map((product) => (
+                                    <ProductCard key={product.id} product={product} compact={true} />
+                                ))
+                            )}
                             {filteredProducts.length === 0 && !isLoading && (
-                                <div className="col-span-2 py-20 text-center">
-                                    <p className="text-gray-400 font-bold italic">No products found in this category</p>
+                                <div className="col-span-full py-16 px-4 flex flex-col items-center justify-center text-center">
+                                    <div className="relative mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-400 animate-fade-in">
+                                        <Search size={30} strokeWidth={1.5} className="text-slate-350" />
+                                        <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 border-2 border-white text-xs">
+                                            ✨
+                                        </div>
+                                    </div>
+                                    <h3 className="text-base font-bold text-slate-800">No items found</h3>
+                                    <p className="mt-1.5 max-w-[260px] text-sm text-slate-400 leading-relaxed">
+                                        We couldn't find any products in this subcategory right now.
+                                    </p>
+                                    <button
+                                        onClick={() => setSelectedSubCategory('all')}
+                                        className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-650 transition-colors hover:bg-slate-50 active:scale-95"
+                                    >
+                                        Browse all items
+                                    </button>
                                 </div>
                             )}
                         </div>

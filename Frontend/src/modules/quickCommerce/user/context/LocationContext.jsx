@@ -10,9 +10,9 @@ import { useAuth } from "@core/context/AuthContext";
 import { userAPI } from "@food/api";
 
 const LocationContext = createContext(undefined);
-// v2 key to force one-time refresh from Google Maps for users
-// who previously only had the default/static location cached.
-const STORAGE_KEY = "location_v2";
+// v3 key to force one-time refresh from Google Maps for users
+// who previously had the city-level location cached.
+const STORAGE_KEY = "location_v3";
 
 const normalizeAddressLabel = (label = "") => {
   const normalized = String(label || "").trim().toLowerCase();
@@ -115,6 +115,7 @@ export const LocationProvider = ({ children }) => {
       try {
         const payload = {
           address: newLoc.name,
+          type: newLoc.type,
           city: newLoc.city,
           state: newLoc.state,
           pincode: newLoc.pincode,
@@ -222,7 +223,9 @@ export const LocationProvider = ({ children }) => {
                 components.find((c) => types.every((t) => c.types.includes(t)))
                   ?.long_name;
 
-              // Build address from components to match: "214, Rajshri Palace Colony, Pipliyahana, Indore, Madhya Pradesh 452018, India"
+              const streetNumber = getComponent(["street_number"]);
+              const route = getComponent(["route"]);
+              const pointOfInterest = getComponent(["point_of_interest"]);
               const premise = getComponent(["premise"]);
               const neighborhood = getComponent(["neighborhood"]);
               const sublocality = getComponent([
@@ -235,7 +238,14 @@ export const LocationProvider = ({ children }) => {
               const country = getComponent(["country"]);
 
               const displayParts = [];
-              if (premise) displayParts.push(premise);
+              if (pointOfInterest) displayParts.push(pointOfInterest);
+              if (premise && premise !== pointOfInterest) displayParts.push(premise);
+              
+              let streetAddr = "";
+              if (streetNumber) streetAddr += streetNumber;
+              if (route) streetAddr += (streetAddr ? " " : "") + route;
+              if (streetAddr) displayParts.push(streetAddr);
+              
               if (neighborhood) displayParts.push(neighborhood);
               if (sublocality && sublocality !== neighborhood)
                 displayParts.push(sublocality);
@@ -302,6 +312,29 @@ export const LocationProvider = ({ children }) => {
       return [];
     }
 
+    const processAddresses = (addrs) => {
+      setSavedAddresses(addrs);
+      if (addrs.length > 0) {
+        try {
+          if (!localStorage.getItem(STORAGE_KEY)) {
+            const defaultAddr = addrs.find((a) => a.isDefault || a.isCurrent) || addrs[0];
+            updateLocation(
+              {
+                name: defaultAddr.address,
+                type: defaultAddr.label,
+                time: "12-15 mins",
+                ...(defaultAddr.location ? { latitude: defaultAddr.location.lat, longitude: defaultAddr.location.lng } : {}),
+              },
+              { persist: true, updateSavedHome: false }
+            );
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return addrs;
+    };
+
     try {
       const addressesResponse = await userAPI.getAddresses();
       const sharedAddresses =
@@ -312,8 +345,7 @@ export const LocationProvider = ({ children }) => {
         ? sharedAddresses.map((addr, idx) => mapSharedAddress(addr, idx, user))
         : [];
 
-      setSavedAddresses(normalizedShared);
-      return normalizedShared;
+      return processAddresses(normalizedShared);
     } catch {
       try {
         const { data } = await customerApi.getProfile();
@@ -322,8 +354,7 @@ export const LocationProvider = ({ children }) => {
         const normalizedProfile = raw.map((addr, idx) =>
           mapSharedAddress(addr, idx, profile || user || {}),
         );
-        setSavedAddresses(normalizedProfile);
-        return normalizedProfile;
+        return processAddresses(normalizedProfile);
       } catch {
         try {
           const rawStored = localStorage.getItem("userAddresses");
@@ -331,8 +362,7 @@ export const LocationProvider = ({ children }) => {
           const normalizedStored = Array.isArray(parsedStored)
             ? parsedStored.map((addr, idx) => mapSharedAddress(addr, idx, user || {}))
             : [];
-          setSavedAddresses(normalizedStored);
-          return normalizedStored;
+          return processAddresses(normalizedStored);
         } catch {
           setSavedAddresses([]);
           return [];
@@ -360,6 +390,7 @@ export const LocationProvider = ({ children }) => {
           updateLocation(
             {
               name: addressName,
+              type: parsed.type,
               time: parsed.time || "12-15 mins",
               city: parsed.city,
               state: parsed.state,

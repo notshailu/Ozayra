@@ -42,7 +42,7 @@ const StatusToggle = ({ active, onToggle }) => (
 );
 
 const WeightManagement = ({ mode }) => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   const { id } = useParams();
   const isEditor = mode === 'create' || mode === 'edit';
 

@@ -45,7 +45,7 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
   }, [isResetting]);
 
   return (
-    <div className={cn("overflow-hidden", fullWidth && "w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]")}>
+    <div className={cn("overflow-hidden", edgeToEdge ? "w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" : "w-full")}>
       <div
         className={cn("flex ease-out", isResetting ? "transition-none" : "transition-transform duration-500")}
         style={{

@@ -328,12 +328,12 @@ const SubCategories = () => {
                         />
                       </td>
                       <td className="py-3 px-4">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center border border-gray-200">
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center border border-gray-200 p-0.5">
                           {cat.image?.url || cat.image ? (
                             <img
                               src={cat.image?.url || cat.image}
                               alt={cat.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain"
                             />
                           ) : (
                             <Image className="w-5 h-5 text-gray-400" />
@@ -412,12 +412,12 @@ const SubCategories = () => {
                 <div className="flex justify-center">
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 overflow-hidden transition-colors">
+                    className="w-28 h-28 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 overflow-hidden transition-colors p-1.5">
                     {previewUrl ? (
                       <img
                         src={previewUrl}
                         alt="Preview"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     ) : (
                       <div className="text-center">

@@ -83,6 +83,14 @@ const SelectLocation = () => {
   const { isLoaded, loadError } = useAppGoogleMapsLoader();
   const navigate = useNavigate();
   const routePrefix = location.pathname.startsWith('/taxi/user') ? '/taxi/user' : '';
+  const [isExiting, setIsExiting] = useState(false);
+
+  const handleBackClick = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      navigate(-1);
+    }, 150);
+  };
 
   // All known locations â€” filtered live as user types
   const allResults = [
@@ -353,7 +361,7 @@ const SelectLocation = () => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={isExiting ? { opacity: 0, y: 50, scale: 0.98 } : { opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.15, ease: 'easeOut' }}
       className="min-h-screen bg-[linear-gradient(180deg,#F8FAFC_0%,#F3F4F6_38%,#EEF2F7_100%)] max-w-lg mx-auto font-sans relative overflow-hidden pb-6"
     >
@@ -502,7 +510,7 @@ const SelectLocation = () => {
       <header className="sticky top-0 z-30">
         <div className="bg-white/70 backdrop-blur-md border-b border-white/70 shadow-[0_10px_20px_rgba(15,23,42,0.05)]">
           <div className="px-5 py-4 flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 active:scale-95 transition-all rounded-full">
+            <button onClick={handleBackClick} className="p-2 -ml-2 active:scale-95 transition-all rounded-full">
               <ArrowLeft size={22} className="text-slate-900" strokeWidth={3} />
             </button>
             <div className="min-w-0">

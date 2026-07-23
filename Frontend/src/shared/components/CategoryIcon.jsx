@@ -18,7 +18,7 @@ const CategoryIcon = ({ iconId, imageUrl, alt = 'Category', className = 'w-6 h-6
       <img
         src={imageUrl}
         alt={alt}
-        className={`${className} object-cover`}
+        className={`${className} object-contain p-0.5`}
       />
     );
   }

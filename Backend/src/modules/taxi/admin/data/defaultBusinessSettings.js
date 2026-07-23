@@ -1,11 +1,11 @@
 export const createDefaultBusinessSettings = () => ({
   scope: 'default',
   general: {
-    app_name: 'Ishsys',
+    app_name: 'Ozayra',
     contact_phone_1: '0000000000',
     contact_phone_2: '0000000000',
     contact_booking_number: '9999999999',
-    footer_1: '2024 © Ishsys.',
+    footer_1: '2026 © Ishsys.',
     footer_2: 'Design & Develop by Ishsys',
     default_lat: '22.7196',
     default_lng: '75.8577',
@@ -42,7 +42,7 @@ export const createDefaultBusinessSettings = () => ({
     enable_multiple_ride_feature: '1',
     enable_max_dist_feature: '1',
     enable_fixed_fare: '1',
-    
+
     // Sign-in Toggles
     user_email_login: '1',
     user_email_otp: '1',

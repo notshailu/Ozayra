@@ -171,15 +171,19 @@ export default function Home() {
   const [showAllCategoriesModal, setShowAllCategoriesModal] = useState(false);
   const [availabilityTick, setAvailabilityTick] = useState(Date.now());
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState("food");
-  const [quickThemeColor, setQuickThemeColor] = useState("#67c6f5");
+  const routerLocation = useRouterLocation();
+  
+  const [activeTab, setActiveTab] = useState(() => {
+    return routerLocation.pathname.endsWith("/quick") ? "quick" : "food";
+  });
+  
+  const [quickThemeColor, setQuickThemeColor] = useState("#ffffff");
   const [showToast, setShowToast] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   const heroShellRef = useRef(null);
   const restaurantLoadMoreRef = useRef(null);
   const isHandlingSwitchOff = useRef(false);
-  const routerLocation = useRouterLocation();
 
   // --- Location Logic ---
   const { location } = useLocation();
@@ -304,8 +308,8 @@ export default function Home() {
           <HomeHeader
             activeTab={activeTab}
             setActiveTab={handleTabChange}
-            location={location}
-            savedAddressText={imgUtils.formatSavedAddress(effectiveLocation)}
+            location={deliveryAddressMode === "current" ? location : defaultSavedAddress || location}
+            savedAddressText={imgUtils.formatSavedAddress(deliveryAddressMode === "current" ? location : defaultSavedAddress || location)}
             handleLocationClick={() => openLocationSelector()}
             handleSearchFocus={handleSearchFocus}
             placeholderIndex={placeholderIndex}

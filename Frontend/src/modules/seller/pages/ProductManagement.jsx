@@ -587,11 +587,11 @@ const ProductManagement = () => {
                     className="hover:bg-slate-50 transition-colors group border-b border-slate-200 last:border-b-0">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200">
+                        <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200 p-0.5">
                           <img
                             src={p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2"}
                             alt={p.name}
-                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            className="h-full w-full object-contain group-hover:scale-110 transition-transform duration-500"
                           />
                         </div>
                         <div>
@@ -1143,7 +1143,7 @@ const ProductManagement = () => {
                               onChange={(e) => handleImageUpload(e, "main")}
                             />
                             {formData.mainImage ? (
-                              <img src={formData.mainImage} alt="Main Preview" className="w-full h-full object-cover" />
+                              <img src={formData.mainImage} alt="Main Preview" className="w-full h-full object-contain p-1.5" />
                             ) : (
                               <div className="flex flex-col items-center">
                                 <HiOutlinePhoto className="h-10 w-10 text-slate-200" />
@@ -1287,9 +1287,9 @@ const ProductManagement = () => {
       >
         <div className="py-2">
           <div className="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="h-16 w-16 bg-white rounded-xl shadow-sm overflow-hidden flex items-center justify-center border border-slate-100">
+            <div className="h-16 w-16 bg-white rounded-xl shadow-sm overflow-hidden flex items-center justify-center border border-slate-100 p-0.5">
               {viewingVariants?.mainImage || viewingVariants?.galleryImages?.[0] || viewingVariants?.image ? (
-                <img src={viewingVariants.mainImage || viewingVariants.galleryImages?.[0] || viewingVariants.image} alt="" className="h-full w-full object-cover" />
+                <img src={viewingVariants.mainImage || viewingVariants.galleryImages?.[0] || viewingVariants.image} alt="" className="h-full w-full object-contain" />
               ) : (
                 <HiOutlineCube className="h-8 w-8 text-slate-200" />
               )}

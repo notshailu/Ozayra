@@ -74,10 +74,10 @@ function CategoryNavColumn({
         layout: { type: 'spring', stiffness: 520, damping: 38, mass: 0.55 },
       }}
       onClick={() => onCategorySelect && onCategorySelect(cat)}
-      className={cn(
-        "relative z-[2] flex min-w-[48px] shrink-0 cursor-pointer flex-col items-center gap-0.5 border-b-2 px-2 pb-0.5 pt-0.5 snap-start md:min-w-[58px] transition-all duration-300",
-        isActive ? "border-white" : "border-transparent"
-      )}
+      style={{
+        borderBottomColor: isActive ? "transparent" : "rgba(255, 255, 255, 0.3)",
+      }}
+      className="relative z-[2] flex min-w-[48px] shrink-0 cursor-pointer flex-col items-center gap-0.5 border-b-2 px-2 pb-0.5 pt-0.5 snap-start md:min-w-[58px] transition-all duration-300"
     >
       <div className="relative z-10 flex h-9 w-9 items-center justify-center md:h-11 md:w-11">
         {cat.id === 'all' || cat._id === 'all' ? (
@@ -101,7 +101,7 @@ function CategoryNavColumn({
         <span
           ref={labelRef}
           className={cn(
-            "relative z-10 mx-auto block max-w-[72px] truncate px-1 pb-0.5 text-center text-[8px] uppercase tracking-tight md:max-w-[88px] md:text-[10px] transition-all",
+            "relative z-10 mx-auto block max-w-[72px] truncate px-1 pb-1 text-center text-[8px] uppercase tracking-tight md:max-w-[88px] md:text-[10px] transition-all",
             isActive ? "font-black text-white" : "font-semibold text-white/50",
           )}
         >
@@ -109,10 +109,31 @@ function CategoryNavColumn({
         </span>
       </div>
       {isActive && (
-        <motion.div
-          layoutId="active-nav-glow"
-          className="absolute inset-0 bg-white/5 rounded-xl -z-10 blur-md"
-        />
+        <>
+          <motion.div
+            layoutId="active-nav-glow"
+            className="absolute inset-0 bg-white/5 rounded-xl -z-10 blur-md"
+          />
+          <motion.svg
+            layoutId="active-category-curve"
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 left-0 right-0 z-[6] h-[22px] w-full overflow-visible"
+            viewBox="0 0 100 20"
+            preserveAspectRatio="none"
+            shapeRendering="geometricPrecision"
+            transition={{
+              layout: { type: "spring", stiffness: 560, damping: 40, mass: 0.5 },
+            }}>
+            <path
+              d={pathD}
+              fill="none"
+              stroke={categoryAccent}
+              strokeWidth="2"
+              strokeLinecap="butt"
+              strokeLinejoin="round"
+            />
+          </motion.svg>
+        </>
       )}
     </motion.div>
   );

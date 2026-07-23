@@ -14,29 +14,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getQuickProductPath } from "../../utils/routes";
 import { useSettings } from "@core/context/SettingsContext";
 
-const ScallopedBadge = ({ text, className }) => (
-  <div className={cn("relative w-9 h-9 flex items-center justify-center", className)}>
-    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full drop-shadow-[0_1px_3px_rgba(168,85,247,0.4)]">
-      <path
-        fill="#A364FF"
-        d="M50 0 C 54 0, 56 4, 61 5 C 66 6, 70 2, 75 5 C 80 8, 81 14, 84 18 C 88 22, 94 23, 96 28 C 98 33, 94 38, 94 43 C 94 48, 98 52, 98 57 C 98 62, 94 66, 92 71 C 90 76, 92 82, 88 86 C 84 90, 78 89, 73 92 C 68 95, 66 100, 61 100 C 56 100, 53 96, 48 96 C 43 96, 40 100, 35 99 C 30 98, 28 92, 23 90 C 18 88, 12 89, 9 84 C 6 79, 10 74, 9 69 C 8 64, 2 61, 2 56 C 2 51, 6 47, 7 42 C 8 37, 4 31, 6 26 C 8 21, 14 20, 18 16 C 22 12, 24 6, 29 4 C 34 2, 38 6, 43 5 C 48 4, 49 0, 53 0"
-      />
-    </svg>
-    <div className="relative z-10 text-white font-black flex flex-col items-center justify-center leading-none text-center">
-      {text.includes('%') ? (
-        <>
-          <span className="text-[9px] leading-tight">{text.split(' ')[0]}</span>
-          <span className="text-[6px] opacity-90 tracking-tighter uppercase">{text.split(' ')[1] || 'OFF'}</span>
-        </>
-      ) : (
-        <span className="text-[8px] uppercase tracking-tighter">{text}</span>
-      )}
-    </div>
+const FlatBadge = ({ text, className }) => (
+  <div className={cn("bg-[#5b2bab] text-white px-1.5 py-0.5 rounded-md text-[8.5px] font-extrabold uppercase tracking-wider shadow-sm", className)}>
+    {text}
   </div>
 );
 
 const ProductCard = React.memo(
-  ({ product, badge, className, compact = false, neutralBg = false, curvedInfo = false }) => {
+  ({ product, badge, className, compact = false, colorTheme = "green" }) => {
     const navigate = useNavigate();
     const { toggleWishlist: toggleWishlistGlobal, isInWishlist } =
       useWishlist();
@@ -46,6 +31,12 @@ const ProductCard = React.memo(
 
     const [showHeartPopup, setShowHeartPopup] = React.useState(false);
     const imageRef = React.useRef(null);
+
+    const themeStyles = {
+      green: { text: "text-[#0c831f]", border: "border-[#0c831f]", bgHover: "hover:bg-green-50", bgSolid: "bg-[#0c831f]" },
+      blue: { text: "text-[#004b91]", border: "border-[#004b91]", bgHover: "hover:bg-blue-50", bgSolid: "bg-[#004b91]" }
+    };
+    const tStyle = themeStyles[colorTheme] || themeStyles.green;
 
     const getComparableProductId = React.useCallback(
       (value) => String(value ?? "").split("::")[0],
@@ -86,7 +77,7 @@ const ProductCard = React.memo(
         toggleWishlistGlobal(product);
         showToast(
           isWishlisted
-            ? `${product.name} removed from wishlist`
+             ? `${product.name} removed from wishlist`
             : `${product.name} added to wishlist`,
           isWishlisted ? "info" : "success",
         );
@@ -155,42 +146,36 @@ const ProductCard = React.memo(
     return (
       <div
         className={cn(
-          "flex-shrink-0 w-full flex flex-col h-full cursor-pointer group bg-transparent",
+          "flex-shrink-0 w-full flex flex-col h-full cursor-pointer bg-transparent",
           className,
         )}
         onClick={handleProductClick}>
-        <div className={cn(
-          "flex flex-col h-full w-full rounded-xl overflow-hidden transition-all duration-500 product-card-container premium-wave-shimmer",
-          "bg-[#EBF2FF] border border-blue-100/50 shadow-sm",
-          "hover:shadow-md"
-        )}>
+        <div className="flex flex-col h-full w-full rounded-[16px] md:rounded-[20px] overflow-hidden transition-all duration-500 border border-gray-100/80 bg-white hover:border-blue-100/60 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.08)] group/card">
           {/* Top Image Section */}
-          <div className="relative overflow-hidden w-full h-[90px] md:h-[110px] p-1 md:p-2">
-            {/* Badge (Professional Tag) */}
-            {(badge || product.discount || product.originalPrice > product.price) && (
-              <div className="absolute top-0.5 left-0.5 z-10">
-                <ScallopedBadge
-                  text={badge || product.discount || (product.originalPrice > product.price && product.originalPrice > 0
-                    ? `${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF`
-                    : null)}
-                />
-              </div>
-            )}
-
+          <div className="relative overflow-hidden w-full aspect-square bg-gradient-to-b from-slate-50/50 to-slate-100/80 flex items-center justify-center transition-transform duration-500 p-4">
+            {/* Heart Icon */}
             <button
               onClick={toggleWishlist}
-              className="absolute top-1 right-1 z-10 w-6 h-6 md:w-8 md:h-8 bg-white/90 backdrop-blur-md rounded-full shadow-sm flex items-center justify-center cursor-pointer hover:bg-white transition-all active:scale-90 border border-slate-100/50">
+              className="absolute top-2.5 right-2.5 z-10 p-1.5 flex items-center justify-center cursor-pointer active:scale-90 transition-all bg-white/50 backdrop-blur-md rounded-full shadow-sm hover:bg-white">
               <motion.div
                 whileTap={{ scale: 0.8 }}
                 animate={isWishlisted ? { scale: [1, 1.3, 1] } : {}}>
                 <Heart
-                  size={window.innerWidth < 768 ? 12 : 16}
+                  size={16}
+                  strokeWidth={2.5}
                   className={cn(
-                    isWishlisted ? "text-red-500 fill-red-500" : "text-slate-300 dark:text-slate-500 group-hover:text-slate-400 dark:group-hover:text-slate-300",
+                    isWishlisted ? "text-rose-500 fill-rose-500" : "text-gray-400 hover:text-gray-600"
                   )}
                 />
               </motion.div>
             </button>
+
+            {/* Static Dots */}
+            <div className="absolute bottom-3 left-3 flex gap-1 items-center z-10 opacity-70">
+               <div className="w-1.5 h-1.5 rounded-full border-[1.5px] border-gray-400 bg-transparent"></div>
+               <div className="w-1 h-1 rounded-full bg-gray-300"></div>
+               <div className="w-1 h-1 rounded-full bg-gray-300"></div>
+            </div>
 
             <AnimatePresence>
               {showHeartPopup && (
@@ -199,81 +184,93 @@ const ProductCard = React.memo(
                   animate={{ scale: 2.5, opacity: 0, y: -60 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none text-red-500/30">
+                  className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none text-rose-500/40">
                   <Heart size={48} fill="currentColor" />
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="w-full h-full rounded-md overflow-hidden bg-white flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+            <div className="w-full h-full p-2 flex items-center justify-center transition-transform duration-500 group-hover/card:scale-110">
               <img
                 ref={imageRef}
                 src={resolveQuickImageUrl(product.image || product.mainImage) || product.image || product.mainImage}
                 srcSet={getCloudinarySrcSet(product.image || product.mainImage)}
                 sizes="(max-width: 768px) 150px, (max-width: 1024px) 200px, 250px"
                 alt={product.name}
-                className="w-full h-full object-contain mix-blend-multiply p-0.5 md:p-1"
+                className="w-full h-full object-contain mix-blend-multiply filter contrast-[1.05]"
                 loading="lazy"
               />
             </div>
           </div>
 
           {/* Content Section */}
-          <div className={cn(
-            "flex flex-col flex-1 px-1.5 py-1 space-y-0.5 bg-[#EBF2FF] border-t border-blue-100/30 relative product-content-area transition-all duration-300",
-          )}>
-            <div className="space-y-0">
-              <div className="flex items-center gap-1 text-[7.5px] md:text-[8px] text-slate-500 font-bold uppercase tracking-wider">
-                <Clock size={7} className="text-emerald-600" />
-                <span>{product.deliveryTime || "10 MINS"}</span>
-              </div>
-              <h3 className="text-[11px] md:text-[12.5px] font-bold text-slate-900 line-clamp-1 leading-tight">
-                {product.name}
-              </h3>
-              <p className="text-[8px] md:text-[10px] text-slate-400 font-semibold italic">
-                {product.weight || "1 unit"}
-              </p>
-            </div>
+          <div className="flex flex-col flex-1 px-3.5 pb-3.5 pt-3 bg-white relative">
+             {/* Title & Weight */}
+             <div className="mb-3">
+               <h3 className="text-[13px] md:text-[14px] font-[800] text-slate-800 line-clamp-2 leading-snug tracking-tight mb-1 group-hover/card:text-[#0c831f] transition-colors">
+                 {product.name}
+               </h3>
+               <span className="text-[11px] text-slate-500 font-semibold truncate block">
+                 {product.weight || "1 unit"}
+               </span>
+             </div>
 
-            <div className="mt-auto flex items-center justify-between gap-1 pt-0.5 border-t border-slate-200/20">
-              <div className="flex flex-col justify-center">
-                <span className="text-[12.5px] md:text-[14px] font-black text-slate-900 leading-none">
-                  ₹{Number(product.price || 0).toLocaleString()}
-                </span>
-                {product.originalPrice > product.price && (
-                  <span className="text-[8.5px] md:text-[9.5px] text-slate-400 line-through font-bold leading-none mt-0.5">
-                    ₹{Number(product.originalPrice || 0).toLocaleString()}
-                  </span>
-                )}
-              </div>
+             {/* Optional Badge */}
+             {badge && (
+               <div className="self-start bg-amber-50 border border-amber-100 text-amber-600 px-1.5 py-[2px] rounded text-[9px] font-black uppercase tracking-wider mb-2 max-w-full truncate shadow-sm">
+                 {badge}
+               </div>
+             )}
 
-              {quantity > 0 ? (
-                <div className="flex items-center bg-[#0c831f] text-white rounded-lg md:rounded-xl shadow-md h-6 md:h-7.5 overflow-hidden ring-1 ring-[#0c831f]/20">
-                  <button
-                    onClick={handleDecrement}
-                    className="w-6 md:w-7.5 h-full hover:bg-black/10 transition-colors flex items-center justify-center border-r border-white/10">
-                    <Minus size={9} strokeWidth={4} />
-                  </button>
-                  <span className="text-[10px] md:text-[12px] font-black min-w-[14px] md:min-w-[18px] text-center px-1">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={handleIncrement}
-                    className="w-6 md:w-7.5 h-full hover:bg-black/10 transition-colors flex items-center justify-center border-l border-white/10">
-                    <Plus size={9} strokeWidth={4} />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleAddToCart}
-                  className={cn(
-                    "w-6 h-6 md:w-7.5 md:h-7.5 flex items-center justify-center bg-white border-[1px] border-[#0c831f] text-[#0c831f] rounded-lg md:rounded-xl shadow-sm transition-all duration-300 active:scale-95 font-bold",
-                    "hover:bg-[#0c831f] hover:text-white"
-                  )}>
-                  <Plus size={14} strokeWidth={3} />
-                </button>
-              )}
-            </div>
+             {/* Delivery Time & See More */}
+             <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+               <div className="flex items-center gap-1 text-[9px] text-slate-600 font-bold bg-slate-100/80 px-1.5 py-1 rounded-md">
+                 <Clock size={10} className="text-slate-500" strokeWidth={2.5} />
+                 <span>{product.deliveryTime || "8-15 mins"}</span>
+               </div>
+               {product.originalPrice > product.price && (
+                 <div className="text-[9px] font-black text-blue-600 bg-blue-50/80 border border-blue-100/50 px-1.5 py-1 rounded-md uppercase tracking-wider">
+                   ₹{Number(product.originalPrice - product.price).toLocaleString()} OFF
+                 </div>
+               )}
+             </div>
+
+             {/* Price and Add Button */}
+             <div className="mt-auto flex items-center justify-between gap-2 pt-1 border-t border-gray-50/50">
+               <div className="flex flex-col">
+                 <div className="flex items-baseline gap-1">
+                   <span className="text-[16px] md:text-[17px] font-[900] text-slate-900 leading-none tracking-tighter">
+                     ₹{Number(product.price || 0).toLocaleString()}
+                   </span>
+                 </div>
+                 {product.originalPrice > product.price && (
+                   <span className="text-[10px] text-slate-400 line-through leading-none mt-1 font-bold">
+                     ₹{Number(product.originalPrice || 0).toLocaleString()}
+                   </span>
+                 )}
+               </div>
+               
+               {/* ADD BUTTON */}
+               {quantity > 0 ? (
+                 <div className={`flex items-center ${tStyle.bgSolid} text-white rounded-lg shadow-sm h-8 overflow-hidden w-[70px] md:w-[75px]`}>
+                   <button onClick={handleDecrement} className="w-1/3 h-full flex items-center justify-center hover:bg-black/10 transition-colors"><Minus size={13} strokeWidth={3} /></button>
+                   <span className="w-1/3 text-center text-[13px] font-bold">{quantity}</span>
+                   <button onClick={handleIncrement} className="w-1/3 h-full flex items-center justify-center hover:bg-black/10 transition-colors"><Plus size={13} strokeWidth={3} /></button>
+                 </div>
+               ) : (
+                 <button onClick={handleAddToCart} className={`h-8 px-[18px] border ${tStyle.border} ${tStyle.text} bg-white ${tStyle.bgHover} rounded-lg text-[12px] font-bold tracking-tight uppercase shadow-sm transition-all duration-300 active:scale-95`}>
+                   ADD
+                 </button>
+               )}
+             </div>
+
+             {/* See More Link */}
+             <div className="absolute top-0 right-0 p-3 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none hidden md:block">
+                 <div className="bg-[#f0f9f3]/90 backdrop-blur-sm text-[#0c831f] px-2 py-1 rounded-md flex items-center gap-1 shadow-sm border border-[#0c831f]/10">
+                   <span className="text-[9px] font-black tracking-tight">See more</span>
+                   <span className="text-[7px] font-black">&#9654;</span>
+                 </div>
+             </div>
           </div>
         </div>
       </div>

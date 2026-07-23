@@ -413,8 +413,8 @@ const ProductManagement = () => {
                                     {/* Product Column */}
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-lg overflow-hidden bg-slate-100 ring-1 ring-slate-200">
-                                                <img src={p.mainImage || p.images?.[0]} alt={p.name} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            <div className="h-10 w-10 rounded-lg overflow-hidden bg-slate-100 ring-1 ring-slate-200 p-0.5">
+                                                <img src={p.mainImage || p.images?.[0]} alt={p.name} className="h-full w-full object-contain group-hover:scale-110 transition-transform duration-500" />
                                             </div>
                                             <div>
                                                 <p className="text-xs font-bold text-slate-900">{p.name}</p>
@@ -727,7 +727,7 @@ const ProductManagement = () => {
                                                             onChange={(e) => handleImageUpload(e, 'main')}
                                                         />
                                                         {formData.mainImage ? (
-                                                            <img src={formData.mainImage} alt="Main Preview" className="w-full h-full object-cover" />
+                                                            <img src={formData.mainImage} alt="Main Preview" className="w-full h-full object-contain p-1.5" />
                                                         ) : (
                                                             <div className="flex flex-col items-center">
                                                                 <HiOutlinePhoto className="h-10 w-10 text-slate-200" />
@@ -987,7 +987,7 @@ const ProductManagement = () => {
                     <div className="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                         <div className="h-16 w-16 bg-white rounded-xl shadow-sm overflow-hidden flex items-center justify-center border border-slate-100">
                             {viewingVariants?.mainImage || viewingVariants?.images?.[0] || viewingVariants?.galleryImages?.[0] ? (
-                                <img src={viewingVariants.mainImage || viewingVariants.images?.[0] || viewingVariants.galleryImages?.[0]} alt="" className="h-full w-full object-cover" />
+                                <img src={viewingVariants.mainImage || viewingVariants.images?.[0] || viewingVariants.galleryImages?.[0]} alt="" className="h-full w-full object-contain p-0.5" />
                             ) : (
                                 <HiOutlineCube className="h-8 w-8 text-slate-200" />
                             )}

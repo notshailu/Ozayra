@@ -62,6 +62,7 @@ import { Skeleton } from "@food/components/ui/skeleton";
 import CardBanner from "@/assets/CardBanner.webp";
 import SectionRenderer from "../components/experience/SectionRenderer";
 import ExperienceBannerCarousel from "../components/experience/ExperienceBannerCarousel";
+import FeaturedCategories from "../components/home/FeaturedCategories";
 import { useLocation } from "../context/LocationContext";
 import { resolveQuickImageUrl } from "../utils/image";
 import { getCloudinarySrcSet } from "@/shared/utils/cloudinaryUtils";
@@ -77,6 +78,8 @@ import {
   getQuickCategoryPath,
 } from "../utils/routes";
 
+import { AllIcon, ElectronicsIcon, BeautyIcon, DecorIcon, MonsoonIcon, GroceryIcon } from "@/shared/components/BlinkitIcons";
+
 const DEFAULT_CATEGORY_THEME = {
   gradient: "linear-gradient(to bottom, #F7C332, #F7E08F)",
   shadow: "shadow-yellow-500/20",
@@ -85,7 +88,7 @@ const DEFAULT_CATEGORY_THEME = {
 
 const CATEGORY_METADATA = {
   All: {
-    icon: HomeIcon,
+    icon: AllIcon,
     theme: DEFAULT_CATEGORY_THEME,
     banner: {
       title: "HOUSEFULL",
@@ -94,7 +97,7 @@ const CATEGORY_METADATA = {
     },
   },
   Grocery: {
-    icon: LocalGroceryStoreIcon,
+    icon: GroceryIcon,
     theme: {
       gradient: "linear-gradient(to bottom, #FF9F1C, #FFBF69)",
       shadow: "shadow-orange-500/20",
@@ -125,7 +128,7 @@ const CATEGORY_METADATA = {
     banner: { title: "HOME", subtitle: "KITCHEN", floatingElements: "smoke" },
   },
   Electronics: {
-    icon: DevicesIcon,
+    icon: ElectronicsIcon,
     theme: {
       gradient: "linear-gradient(to bottom, #7209B7, #B5179E)",
       shadow: "shadow-purple-500/20",
@@ -168,15 +171,30 @@ const CATEGORY_METADATA = {
     },
     banner: { title: "SPORTS", subtitle: "GEAR", floatingElements: "confetti" },
   },
+  Monsoon: {
+    icon: MonsoonIcon,
+    theme: { gradient: "linear-gradient(to bottom, #0077B6, #00B4D8)", shadow: "shadow-blue-500/20", accent: "text-blue-900" },
+    banner: { title: "MONSOON", subtitle: "MUD", floatingElements: "drops" },
+  },
+  Beauty: {
+    icon: BeautyIcon,
+    theme: { gradient: "linear-gradient(to bottom, #FF006E, #FFBE0B)", shadow: "shadow-pink-500/20", accent: "text-pink-900" },
+    banner: { title: "GLOW", subtitle: "UP", floatingElements: "sparkles" },
+  },
+  Decor: {
+    icon: DecorIcon,
+    theme: { gradient: "linear-gradient(to bottom, #FFB703, #FB8500)", shadow: "shadow-yellow-500/20", accent: "text-yellow-900" },
+    banner: { title: "HOME", subtitle: "STYLE", floatingElements: "leaves" },
+  },
 };
 
 const ALL_CATEGORY = {
   id: "all",
   _id: "all",
   name: "All",
-  icon: HomeIcon,
+  icon: AllIcon,
   theme: DEFAULT_CATEGORY_THEME,
-  headerColor: "#ffdb3a",
+  headerColor: "#F0EBC9",
   banner: {
     title: "HOUSEFULL",
     subtitle: "SALE",
@@ -185,16 +203,15 @@ const ALL_CATEGORY = {
   },
 };
 
-
 // Map icon ids saved from admin/category icon selector to MUI icons
 const ICON_COMPONENTS = {
-  electronics: DevicesIcon,
+  electronics: ElectronicsIcon,
   fashion: CheckroomIcon,
-  home: HomeIcon,
+  home: AllIcon,
   food: LocalCafeIcon,
   sports: SportsSoccerIcon,
   books: MenuBookIcon,
-  beauty: SpaIcon,
+  beauty: BeautyIcon,
   toys: ToysIcon,
   automotive: DirectionsCarIcon,
   pets: PetsIcon,
@@ -207,7 +224,9 @@ const ICON_COMPONENTS = {
   tools: BuildIcon,
   luggage: LuggageIcon,
   art: ColorLensIcon,
-  grocery: LocalGroceryStoreIcon,
+  grocery: GroceryIcon,
+  monsoon: MonsoonIcon,
+  decor: DecorIcon,
 };
 
 
@@ -246,8 +265,8 @@ const getQuickCategoryImage = (category = {}) => {
 
 function QuickHomeLoadingState({ embedded }) {
   return (
-    <div className={cn("pb-8", embedded ? "pt-0" : "pt-4 md:pt-6")}>
-      <div className="block md:hidden">
+    <div className={cn("pb-8", embedded ? "pt-6" : "pt-12 md:pt-8")}>
+      <div className="block md:hidden px-4 mb-4">
         <Skeleton className="h-[190px] w-full rounded-none" />
       </div>
 
@@ -312,6 +331,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
     subcategoryMap,
     headerSections,
     heroConfig,
+    loadingHeroConfig,
     isLoading,
     isBootstrapped
   } = useQuickHomeData({ currentLocation });
@@ -345,8 +365,8 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
   }, [activeCategory, onThemeChange]);
 
   const isInitialPageLoading = !isBootstrapped || isLoading;
-  const hasHeroBanners = (heroConfig.banners?.items || []).length > 0;
-  const shouldShowHeroFallback = !isInitialPageLoading && !hasHeroBanners;
+  const hasHeroBanners = !loadingHeroConfig && heroConfig && (heroConfig.banners?.items || []).length > 0;
+  const shouldShowHeroFallback = !isInitialPageLoading && !loadingHeroConfig && !hasHeroBanners;
 
 
   // Autoplay for Mobile Banner Carousel
@@ -390,15 +410,41 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
   }, [products]);
 
   const effectiveQuickCategories = useMemo(() => {
-    const ids = heroConfig.categoryIds || [];
+    const activeCatId = activeCategory?._id || activeCategory?.id;
+    const isAllActive = !activeCatId || activeCatId === "all";
+
+    // 1. Get raw list of all categories
+    let list = [];
+    const ids = heroConfig?.categoryIds || [];
     if (ids.length > 0) {
-      const resolved = ids.map((id) => categoryMap[id]).filter(Boolean).map((c) => ({
-        id: c._id, name: c.name, image: getQuickCategoryImage(c),
-      }));
-      if (resolved.length > 0) return resolved;
+      const resolved = ids.map((id) => categoryMap[id]).filter(Boolean);
+      if (resolved.length > 0) {
+        list = resolved;
+      }
     }
-    return quickCategories;
-  }, [heroConfig.categoryIds, categoryMap, quickCategories]);
+
+    if (list.length === 0) {
+      // Resolve full category objects from categoryMap to access parent IDs
+      list = quickCategories
+        .map((qc) => categoryMap[qc.id])
+        .filter(Boolean);
+    }
+
+    // 2. Filter categories to only match the active header category
+    if (!isAllActive) {
+      list = list.filter((c) => {
+        const parentHeaderId = c.parentId || c.headerId || c.parent?._id || c.header?._id || c.parent || c.header;
+        return String(parentHeaderId) === String(activeCatId) || String(c._id || c.id) === String(activeCatId);
+      });
+    }
+
+    // 3. Map back to standard quickCategory representation
+    return list.map((c) => ({
+      id: c._id || c.id,
+      name: c.name,
+      image: getQuickCategoryImage(c),
+    }));
+  }, [heroConfig?.categoryIds, categoryMap, quickCategories, activeCategory]);
 
   // Filter products by active header category
   // Prefer server-fetched categoryProducts when a specific category is active
@@ -472,6 +518,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
 
   return (
     <div
+      style={{ fontFamily: "'Okra', 'Outfit', sans-serif" }}
       className={cn(
         "bg-[#F5F7F8] dark:bg-background",
         embedded ? "min-h-0 bg-white dark:bg-card pt-0" : "min-h-screen pt-[176px] md:pt-[210px]",
@@ -501,7 +548,11 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
                 <div
                   className="relative w-full overflow-hidden"
                   style={embedded ? { backgroundColor: activeCategory?.headerColor || ALL_CATEGORY.headerColor } : undefined}>
-                  {hasHeroBanners ? (
+                  {loadingHeroConfig ? (
+                    <div className="mx-0 md:mx-8 lg:mx-[50px] md:my-4 rounded-none md:rounded-[32px] overflow-hidden">
+                      <Skeleton className="h-[190px] md:h-[280px] w-full" />
+                    </div>
+                  ) : hasHeroBanners ? (
                     <div className="mx-0 md:mx-8 lg:mx-[50px] md:my-4 rounded-none md:rounded-[32px] overflow-hidden">
                       <ExperienceBannerCarousel
                         section={{ title: "" }}
@@ -565,13 +616,13 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
                         onClick={() => navigate("/categories")}
                         whileTap={{ scale: 0.96 }}
                         className="min-w-full">
-                        <div className="w-full h-[190px] bg-white dark:bg-card relative overflow-hidden flex border-y border-gray-100 dark:border-white/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] group">
+                        <div className="w-full h-[190px] bg-white dark:bg-card relative overflow-hidden flex group">
                           <img
                             src={CardBanner}
                             alt="Promotion"
                             className="w-full h-full object-fill"
                           />
-                          <div className="absolute inset-0 bg-linear-to-t from-black/5 to-transparent pointer-events-none" />
+                          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-card to-transparent pointer-events-none" />
                         </div>
                       </motion.div>
                       <motion.div
@@ -621,154 +672,12 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
             </div>
           </>
 
-          {/* Promo Marquee Strip */}
-          <div className={cn("w-full md:-mt-[2px] mb-4", embedded ? "-mt-[1px]" : "-mt-[2px]")}>
-            <div
-              className={cn(
-                "relative overflow-hidden",
-                embedded
-                  ? "border-y-0 shadow-none"
-                  : "border-y border-[#e6ddc4] bg-[#f7f0df] shadow-[0_10px_30px_rgba(15,23,42,0.08)]",
-              )}
-              style={embedded ? { backgroundColor: activeCategory?.headerColor || ALL_CATEGORY.headerColor } : undefined}>
-              <div
-                className={cn(
-                  "absolute inset-y-0 left-0 w-10 pointer-events-none",
-                  embedded ? "bg-none" : "bg-gradient-to-r from-[#f7f0df] via-[#f7f0df]/90 to-transparent",
-                )}
-                style={embedded ? { backgroundImage: `linear-gradient(to right, ${activeCategory?.headerColor || ALL_CATEGORY.headerColor}, ${activeCategory?.headerColor || ALL_CATEGORY.headerColor}E6, transparent)` } : undefined}
-              />
-              <div
-                className={cn(
-                  "absolute inset-y-0 right-0 w-10 pointer-events-none",
-                  embedded ? "bg-none" : "bg-gradient-to-l from-[#f7f0df] via-[#f7f0df]/90 to-transparent",
-                )}
-                style={embedded ? { backgroundImage: `linear-gradient(to left, ${activeCategory?.headerColor || ALL_CATEGORY.headerColor}, ${activeCategory?.headerColor || ALL_CATEGORY.headerColor}E6, transparent)` } : undefined}
-              />
-              <div
-                className={cn(
-                  "classic-marquee-track flex w-max items-center gap-4 px-3 md:px-6 py-4 text-sm md:text-base font-semibold -translate-y-[4px]",
-                  embedded ? "text-white/90" : "text-[#4b463f]",
-                )}>
-                {[...MARQUEE_MESSAGES, ...MARQUEE_MESSAGES].map((message, idx) => (
-                  <React.Fragment key={`${message}-${idx}`}>
-                    <span className="whitespace-nowrap">{message}</span>
-                    <span className="text-[#8a7f66]">•</span>
-                  </React.Fragment>
-                ))}
-                <span className="whitespace-nowrap">❤️</span>
-                <span className="whitespace-nowrap">🎁</span>
-              </div>
-            </div>
-          </div>
+          {/* Promo Marquee Strip (removed by user request) */}
 
-          {/* Quick Navigation Category Slider (admin-configured or global fallback) */}
-          {effectiveQuickCategories.length > 0 && (
-            <div
-              className={cn(
-                "w-full mb-5 overflow-hidden relative group z-20 md:mt-3",
-                embedded ? "mt-2" : "mt-4 md:mt-6",
-              )}>
-              <div
-                className={cn(
-                  "relative overflow-hidden bg-white dark:bg-card",
-                  embedded ? "shadow-none" : "shadow-[0_14px_28px_rgba(15,23,42,0.09)]",
-                )}>
+          {/* Quick Navigation Category Slider (removed by user request) */}
 
-                <div className="relative z-10 px-4 pt-3 pb-1 md:px-8 md:pt-4">
-                  <h2 className="text-center text-[18px] md:text-[20px] font-bold tracking-tight text-[#132018] leading-none">
-                    Quick categories
-                  </h2>
-                </div>
-
-                {/* Left Scroll Button */}
-                <div className="absolute left-4 lg:left-10 top-[58%] -translate-y-1/2 z-20 hidden md:flex">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => scrollQuickCats("left")}
-                    className="h-10 w-10 bg-white/90 backdrop-blur-md shadow-xl rounded-full flex items-center justify-center border border-gray-100 cursor-pointer hover:bg-white text-[#0c831f] transition-all">
-                    <ChevronLeft size={22} strokeWidth={3} />
-                  </motion.button>
-                </div>
-
-                <div
-                  ref={quickCatsRef}
-                  className="relative z-10 flex items-start gap-2.5 md:gap-3 lg:gap-4 overflow-x-auto no-scrollbar px-4 pb-3 pt-1 md:px-8 md:pb-4 snap-x scroll-smooth">
-                  {effectiveQuickCategories.map((cat, idx) => {
-                    const palette =
-                      quickCategoryPalettes[idx % quickCategoryPalettes.length];
-                    const categoryImage = getQuickCategoryImage(cat);
-                    return (
-                      <motion.div
-                        key={cat.id}
-                        whileHover={{ y: -4 }}
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => {
-                          if (typeof window !== "undefined") {
-                            window.sessionStorage.setItem(
-                              QUICK_HEADER_RETURN_STORAGE_KEY,
-                              JSON.stringify({
-                                headerId:
-                                  activeCategory?._id ||
-                                  activeCategory?.id ||
-                                  ALL_CATEGORY._id,
-                                color:
-                                  activeCategory?.headerColor ||
-                                  ALL_CATEGORY.headerColor,
-                                name:
-                                  activeCategory?.name || ALL_CATEGORY.name,
-                              }),
-                            );
-                          }
-                          navigate(getQuickCategoryPath(cat.id));
-                        }}
-                        className="flex flex-col items-center gap-1 min-w-[84px] md:min-w-[112px] lg:min-w-[128px] cursor-pointer group/item snap-start">
-                        <div
-                          className="relative w-[84px] h-[96px] md:w-[112px] md:h-[126px] lg:w-[128px] lg:h-[140px] rounded-t-full rounded-b-[24px] shadow-[0_10px_22px_rgba(15,23,42,0.10)] border flex items-start justify-center transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-[0_16px_30px_rgba(15,23,42,0.14)] overflow-hidden"
-                          style={{
-                            backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.6) 24%, rgba(255,255,255,0.15) 100%), linear-gradient(135deg, ${palette.bgFrom}, ${palette.bgVia}, ${palette.bgTo})`,
-                            borderColor: palette.frameColor,
-                          }}>
-                          <div
-                            className="absolute inset-0 opacity-40 pointer-events-none"
-                            style={{ backgroundColor: palette.glowColor }}
-                          />
-                          {categoryImage ? (
-                            <img
-                              src={categoryImage}
-                              alt={cat.name}
-                              className="absolute top-0 left-0 w-full h-[72%] object-cover group-hover/item:scale-110 transition-transform duration-500 rounded-t-full"
-                            />
-                          ) : (
-                            <div className="absolute top-0 left-0 w-full h-[72%] flex items-center justify-center bg-white/55 text-2xl font-black uppercase text-slate-400 rounded-t-full">
-                              {(cat.name || "?").charAt(0)}
-                            </div>
-                          )}
-                          <div className="absolute inset-x-2 bottom-1.5 z-20 text-center">
-                            <span className="block text-[10px] md:text-[11px] lg:text-[12px] font-semibold text-[#1f2b20] leading-tight whitespace-nowrap overflow-hidden text-ellipsis drop-shadow-[0_1px_0_rgba(255,255,255,0.65)] group-hover/item:text-[#0c831f] transition-colors">
-                              {cat.name}
-                            </span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-
-                {/* Right Scroll Button */}
-                <div className="absolute right-4 lg:right-10 top-[58%] -translate-y-1/2 z-20 hidden md:flex">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => scrollQuickCats("right")}
-                    className="h-10 w-10 bg-white/90 backdrop-blur-md shadow-xl rounded-full flex items-center justify-center border border-gray-100 cursor-pointer hover:bg-white text-[#0c831f] transition-all">
-                    <ChevronRight size={22} strokeWidth={3} />
-                  </motion.button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Featured Categories Section */}
+          <FeaturedCategories categoryMap={categoryMap} activeCategory={activeCategory} />
 
           {/* Lowest Price ever Section  (kept as static for now) */}
           <div
@@ -776,7 +685,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
               "mb-4 md:mb-6",
               embedded ? "mt-4 md:mt-5" : "mt-6 md:mt-10",
             )}>
-            <div className="relative overflow-hidden bg-[#e7f3ff] pt-6 md:pt-8 pb-0 rounded-none md:rounded-[32px] mx-0 md:mx-8 lg:mx-[50px] shadow-sm">
+            <div className="relative overflow-hidden bg-[#F0EBC9] pt-6 md:pt-8 pb-0 rounded-none md:rounded-[32px] mx-0 md:mx-8 lg:mx-[50px] shadow-sm">
               <div className="relative z-10 px-4 md:px-8">
                 <div className="flex justify-between items-center mb-3 md:mb-5 px-1">
                   <div className="flex flex-col">
@@ -812,6 +721,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
                         className="bg-white rounded-[20px] shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] border-blue-50/50 transition-all"
                         compact={true}
                         curvedInfo={true}
+                        colorTheme="blue"
                       />
                     </div>
                   ))}

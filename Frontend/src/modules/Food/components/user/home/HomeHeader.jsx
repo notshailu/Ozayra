@@ -90,14 +90,16 @@ const shiftHex = (hex, amount) => {
 
 const quickTheme = (baseColor) => {
   const base = normalizeHex(baseColor, "#0c831f");
+  const isWhite = base.toLowerCase() === "#ffffff" || base.toLowerCase() === "#fff";
+  
   return {
-    topBg: `linear-gradient(180deg, ${shiftHex(base, -20)} 0%, ${shiftHex(base, 0)} 100%)`,
+    topBg: isWhite ? "#ffffff" : `linear-gradient(180deg, ${shiftHex(base, -20)} 0%, ${shiftHex(base, 0)} 100%)`,
     accent: base,
     text: "#ffffff",
     activeBg: base,
     activeText: "#ffffff",
-    inactiveBg: "rgba(0,0,0,0.3)",
-    inactiveBorder: "rgba(255,255,255,0.08)",
+    inactiveBg: isWhite ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.3)",
+    inactiveBorder: isWhite ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.08)",
   };
 };
 
@@ -301,7 +303,7 @@ export default function HomeHeader({
           ? "min-h-[280px] overflow-hidden"
           : "min-h-[60px] overflow-visible"
       }`}
-      style={{ background: theme.topBg, color: theme.text }}
+      style={{ background: theme.topBg, color: theme.text, fontFamily: !isFood ? "'Okra', 'Outfit', sans-serif" : undefined }}
     >
       {headerVideoUrl && (
         <div className="absolute inset-0 z-0 flex justify-center overflow-hidden">
@@ -401,107 +403,146 @@ export default function HomeHeader({
               </div>
             </>
           ) : (
-            <div className="flex flex-col min-w-0">
-              <span className="text-[20px] font-black tracking-tighter leading-none mb-0.5">15 mins</span>
-              <span className="text-[10px] font-bold truncate opacity-70">To {locationTitle}</span>
+            <div className="flex flex-col pt-0.5">
+              {/* Small "Blinkit in" text */}
+              <span className="text-[11px] font-extrabold text-slate-900 mb-[2px] tracking-tight">
+                Blinkit in
+              </span>
+              
+              {/* Large "12 minutes" + Pill */}
+              <div className="flex items-end gap-2 mb-1.5">
+                <span className="text-[28px] font-black text-slate-900 tracking-tighter leading-none -mt-1 block">
+                  12 minutes
+                </span>
+                
+                {/* Distance Pill */}
+                <div className="flex items-center gap-1 bg-white/60 backdrop-blur-md px-1.5 py-0.5 rounded-md text-[#087878] mb-0.5 shadow-sm border border-white/20">
+                  <ShoppingCart className="h-[11px] w-[11px]" strokeWidth={2.5} />
+                  <span className="text-[9px] font-extrabold tracking-tight">990 m away</span>
+                </div>
+              </div>
+
+              {/* Location row */}
+              <div className="flex items-center gap-0.5 text-slate-800 cursor-pointer group active:scale-95 transition-transform border-0 bg-transparent p-0 text-left">
+                <div className="text-[12px] font-medium leading-tight max-w-[250px] truncate flex items-center gap-1">
+                  <span className="font-extrabold uppercase tracking-wide text-slate-900">
+                    {location?.type || "HOME"}
+                  </span> 
+                  <span className="opacity-90 text-[11px]">- {locationTitle}{locationSubtitle && locationSubtitle !== "Tap to choose delivery location" ? `, ${locationSubtitle}` : ""}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 opacity-80 mt-px" />
+              </div>
             </div>
           )}
         </button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {isFood && (
-            <Link
-              to={walletPath}
-              className="h-[38px] w-[38px] rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-              aria-label="Open wallet"
-            >
-              <Wallet className="h-[19px] w-[19px] text-[#282c3f]" strokeWidth={2} />
-            </Link>
-          )}
-
-          {isFood && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="relative h-[38px] w-[38px] rounded-full bg-white/95 border border-white/60 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                >
-                  <Bell className="h-[18px] w-[18px] text-[#282c3f]" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-yellow-400 border border-white" />
-                  )}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0 overflow-hidden border-none shadow-2xl rounded-2xl mt-2" align="end">
-                <div className="bg-white">
-                  <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                      Notifications
-                      {unreadCount > 0 && (
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-600 border-none text-[10px] h-4">
-                          {unreadCount} New
-                        </Badge>
-                      )}
-                    </h3>
-                    <Link to="/food/user/notifications" className="text-xs font-bold text-orange-600">
-                      {mergedNotifications.length > 0 ? "View All" : ""}
-                    </Link>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {mergedNotifications.length > 0 ? (
-                      mergedNotifications.slice(0, 5).map((item, index) => (
-                        <div key={item.id || `notif-${index}`} className="p-4 flex items-start gap-3 border-b border-gray-50 last:border-0">
-                          <div className="mt-1 p-2 rounded-full bg-orange-100/50 text-orange-600">
-                            <Bell className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2 mb-0.5">
-                              <span className="text-sm font-bold text-gray-900 truncate">{item.title}</span>
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-gray-400 whitespace-nowrap">{item.time}</span>
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    removeNotification(item.id, item.source);
-                                  }}
-                                  className="rounded-full p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.message}</p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-8 text-center flex flex-col items-center gap-2">
-                        <BellOff className="h-10 w-10 text-gray-200" />
-                        <p className="text-xs text-gray-400 font-medium">All caught up!</p>
-                      </div>
+        <div className="flex items-center gap-2 shrink-0 pl-1">
+          {isFood ? (
+            <>
+              <Link
+                to={walletPath}
+                className="h-[38px] w-[38px] rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                aria-label="Open wallet"
+              >
+                <Wallet className="h-[19px] w-[19px] text-[#282c3f]" strokeWidth={2} />
+              </Link>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="relative h-[38px] w-[38px] rounded-full bg-white/95 border border-white/60 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                  >
+                    <Bell className="h-[18px] w-[18px] text-[#282c3f]" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-yellow-400 border border-white" />
                     )}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0 overflow-hidden border-none shadow-2xl rounded-2xl mt-2" align="end">
+                  <div className="bg-white">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                      <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        Notifications
+                        {unreadCount > 0 && (
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-600 border-none text-[10px] h-4">
+                            {unreadCount} New
+                          </Badge>
+                        )}
+                      </h3>
+                      <Link to="/food/user/notifications" className="text-xs font-bold text-orange-600">
+                        {mergedNotifications.length > 0 ? "View All" : ""}
+                      </Link>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {mergedNotifications.length > 0 ? (
+                        mergedNotifications.slice(0, 5).map((item, index) => (
+                          <div key={item.id || `notif-${index}`} className="p-4 flex items-start gap-3 border-b border-gray-50 last:border-0">
+                            <div className="mt-1 p-2 rounded-full bg-orange-100/50 text-orange-600">
+                              <Bell className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-0.5">
+                                <span className="text-sm font-bold text-gray-900 truncate">{item.title}</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-400 whitespace-nowrap">{item.time}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      removeNotification(item.id, item.source);
+                                    }}
+                                    className="rounded-full p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.message}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center flex flex-col items-center gap-2">
+                          <BellOff className="h-10 w-10 text-gray-200" />
+                          <p className="text-xs text-gray-400 font-medium">All caught up!</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                </PopoverContent>
+              </Popover>
+              <Link
+                to="/food/user/cart"
+                className="h-[38px] w-[38px] rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                aria-label="Open cart"
+              >
+                <ShoppingCart className="h-[20px] w-[20px] text-[#282c3f]" strokeWidth={2} />
+              </Link>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              {/* Wallet Icon (₹0) */}
+              <div onClick={() => navigate(walletPath)} className="flex flex-col items-center justify-center bg-white rounded-[14px] shadow-sm min-w-[38px] h-[38px] cursor-pointer active:scale-95 transition-transform">
+                <Wallet className="h-[17px] w-[17px] text-[#b48c1e] mt-[2px]" strokeWidth={2.5} />
+                <span className="text-[9px] font-black mt-[1px] leading-none text-slate-900">₹0</span>
+              </div>
+              
+              {/* Profile Icon */}
+              <div onClick={() => navigate("/quick/profile")} className="flex items-center justify-center bg-white rounded-[14px] shadow-sm w-[38px] h-[38px] cursor-pointer active:scale-95 transition-transform">
+                <div className="bg-slate-900 rounded-full w-[22px] h-[22px] flex items-center justify-center overflow-hidden">
+                  <svg className="w-[19px] h-[19px] text-white mt-[4px]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                 </div>
-              </PopoverContent>
-            </Popover>
+              </div>
+            </div>
           )}
-
-          <Link
-            to={isFood ? "/food/user/cart" : "/quick/cart"}
-            className="h-[38px] w-[38px] rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-            aria-label="Open cart"
-          >
-            <ShoppingCart className="h-[20px] w-[20px] text-[#282c3f]" strokeWidth={2} />
-          </Link>
         </div>
       </div>
 
       {/* Tabs (Food, Instamart, Dineout, Explore) removed per user request */}
 
       <div className="relative z-10 pt-0 pb-0 px-3 -mt-[1px] overflow-visible">
-        {isFood && (
+        {isFood ? (
           <div className="flex items-center gap-2 mb-2">
             <div
               className="flex-1 rounded-[12px] h-[46px] flex items-center px-3 cursor-pointer relative overflow-hidden bg-white shadow-[0_6px_18px_rgba(15,23,42,0.10)] border-0 text-left"
@@ -549,6 +590,41 @@ export default function HomeHeader({
                   onCheckedChange={(checked) => onVegModeChange?.(checked)}
                   className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-400"
                 />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 pb-2 pt-1 px-1">
+            <div
+              className="flex-1 rounded-[12px] h-[46px] flex items-center px-4 cursor-pointer bg-white shadow-md shadow-black/5 border border-slate-100 text-left transition-all active:scale-[0.98]"
+              onClick={handleSearchFocus}
+            >
+              <Search className="h-[18px] w-[18px] mr-2 text-slate-500" strokeWidth={2} />
+              <div className="flex-1 overflow-hidden relative h-[20px]">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={placeholderIndex}
+                    initial={{ y: 12, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -12, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 whitespace-nowrap leading-[22px] text-[13.5px] font-semibold text-slate-400 tracking-tight"
+                  >
+                    {placeholders?.[placeholderIndex] || 'Search "birthday gift"'}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+              <div className="flex items-center gap-1 border-l border-slate-200 pl-3 ml-2">
+                <button
+                  type="button"
+                  onClick={handleVoiceSearch}
+                  className={cn(
+                    "p-1.5 rounded-full transition-all",
+                    isListening ? "text-green-600 scale-110 animate-pulse" : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  <Mic className="h-[20px] w-[20px]" strokeWidth={2} />
+                </button>
               </div>
             </div>
           </div>

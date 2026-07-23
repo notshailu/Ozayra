@@ -55,6 +55,7 @@ const toCategory = (category) => ({
   isActive: category.isActive,
   approvalStatus: category.approvalStatus || 'approved',
   approvedAt: category.approvedAt || null,
+  isFeaturedOnHome: Boolean(category.isFeaturedOnHome),
 });
 
 const toProduct = (product) => ({
@@ -440,6 +441,7 @@ export const createCategory = async (req, res) => {
     adminCommission,
     handlingFees,
     headerColor,
+    isFeaturedOnHome,
   } = req.body || {};
   const image = await getCategoryImage(req);
 
@@ -474,6 +476,7 @@ export const createCategory = async (req, res) => {
     accentColor: accentColor || '#0c831f',
     sortOrder: Number(sortOrder || 0),
     isActive: (status || 'active') === 'active',
+    isFeaturedOnHome: parseBool(isFeaturedOnHome, false),
   });
 
   return res.status(201).json({ success: true, result: toCategory(category) });
@@ -500,6 +503,7 @@ export const updateCategory = async (req, res) => {
     adminCommission,
     handlingFees,
     headerColor,
+    isFeaturedOnHome,
   } = req.body || {};
 
   if (name !== undefined) category.name = name;
@@ -522,6 +526,7 @@ export const updateCategory = async (req, res) => {
   if (iconId !== undefined) category.iconId = iconId || '';
   if (adminCommission !== undefined) category.adminCommission = parseNumber(adminCommission, 0);
   if (handlingFees !== undefined) category.handlingFees = parseNumber(handlingFees, 0);
+  if (isFeaturedOnHome !== undefined) category.isFeaturedOnHome = parseBool(isFeaturedOnHome, false);
 
   await category.save();
   return res.json({ success: true, result: toCategory(category) });

@@ -620,7 +620,7 @@ const AddProduct = () => {
                     {formData.mainImage ? (
                       <img
                         src={formData.mainImage}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-1.5"
                       />
                     ) : (
                       <>
@@ -662,7 +662,7 @@ const AddProduct = () => {
                       {formData.galleryImages[i - 1] ? (
                         <img
                           src={formData.galleryImages[i - 1]}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain p-1.5"
                         />
                       ) : (
                         <>

@@ -123,6 +123,7 @@ const LocationDrawer = ({ isOpen, onClose }) => {
   const handleSelectAddress = (address) => {
     updateLocation({
       name: address.address,
+      type: address.label,
       time: "12-15 mins",
       ...(address.location ? { latitude: address.location.lat, longitude: address.location.lng } : {}),
     }, { persist: true });

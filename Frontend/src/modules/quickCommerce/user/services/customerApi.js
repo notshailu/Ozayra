@@ -54,6 +54,7 @@ export const customerApi = {
   },
 
   placeOrder: (data) => axiosInstance.post("/quick-commerce/orders", data, withQuickSession()),
+  verifyPayment: (data) => axiosInstance.post("/quick-commerce/orders/verify-payment", data, withQuickSession()),
   getOrders: (params) => quickGetWithDedupe("/quick-commerce/orders", params),
   getMyOrders: (params) => quickGetWithDedupe("/quick-commerce/orders", params),
   createOrder: (data) => axiosInstance.post("/quick-commerce/orders", data, withQuickSession()),
