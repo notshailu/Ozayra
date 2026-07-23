@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Monitor, Info, X, ChevronRight, RotateCcw, Save } from "lucide-react";
-import mobileImage1 from "@food/assets/Transaction-report-icons/mobile_image1.webp";
+import mobileImage1 from "@food/assets/Transaction-report-icons/mobile_image1.png";
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
