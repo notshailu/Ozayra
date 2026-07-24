@@ -78,14 +78,87 @@ const mapSharedAddress = (addr = {}, idx = 0, profile = {}) => {
 export const LocationProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   // Default location (used until we can resolve a better one)
-  const [currentLocation, setCurrentLocation] = useState({
-    name: "214, Rajshri Palace Colony, Pipliyahana, Indore, Madhya Pradesh 452018, India",
-    time: "12-15 mins",
-    city: "Indore",
-    state: "Madhya Pradesh",
-    pincode: "452018",
-    latitude: 22.711140989838025,
-    longitude: 75.9001552518043,
+  const [currentLocation, setCurrentLocation] = useState(() => {
+    if (typeof window === "undefined") {
+      return {
+        name: "Sidharth nagar, Vishnu Puri Colony, Indore, Madhya Pradesh 452001, India",
+        time: "12-15 mins",
+        city: "Indore",
+        state: "Madhya Pradesh",
+        pincode: "452001",
+        latitude: 22.689,
+        longitude: 75.868,
+      };
+    }
+
+    const isGenericOrCityOnly = (name) => {
+      if (!name || typeof name !== "string") return true;
+      const trimmed = name.trim();
+      if (
+        trimmed.includes("Indore, Indore City") ||
+        trimmed.includes("Rajshri Palace") ||
+        trimmed === "Select location" ||
+        trimmed === "Current Location"
+      ) {
+        return true;
+      }
+      const parts = trimmed.split(",").map((p) => p.trim()).filter(Boolean);
+      return parts.length <= 2;
+    };
+
+    try {
+      const rawV3 = window.localStorage.getItem(STORAGE_KEY);
+      if (rawV3) {
+        const parsed = JSON.parse(rawV3);
+        const name = parsed.address || parsed.name;
+        if (name && !isGenericOrCityOnly(name)) {
+          return {
+            name,
+            type: parsed.type || "Home",
+            time: parsed.time || "12-15 mins",
+            city: parsed.city || "Indore",
+            state: parsed.state || "Madhya Pradesh",
+            pincode: parsed.pincode || "",
+            latitude: parsed.latitude,
+            longitude: parsed.longitude,
+          };
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const rawFood = window.localStorage.getItem("userLocation");
+      if (rawFood) {
+        const parsed = JSON.parse(rawFood);
+        const name =
+          parsed.formattedAddress ||
+          parsed.address ||
+          parsed.name ||
+          (parsed.area ? `${parsed.area}, ${parsed.city || "Indore"}` : null);
+        if (name && !isGenericOrCityOnly(name)) {
+          return {
+            name,
+            type: parsed.type || "Home",
+            time: "12-15 mins",
+            city: parsed.city || "Indore",
+            state: parsed.state || "Madhya Pradesh",
+            pincode: parsed.pincode || "",
+            latitude: parsed.latitude,
+            longitude: parsed.longitude,
+          };
+        }
+      }
+    } catch (e) {}
+
+    return {
+      name: "Sidharth nagar, Vishnu Puri Colony, Indore, Madhya Pradesh 452001, India",
+      time: "12-15 mins",
+      city: "Indore",
+      state: "Madhya Pradesh",
+      pincode: "452001",
+      latitude: 22.689,
+      longitude: 75.868,
+    };
   });
 
   // Address list for drawer UI – will be hydrated from profile API.
@@ -219,37 +292,35 @@ export const LocationProvider = ({ children }) => {
 
               const components = data.results[0].address_components || [];
 
-              const getComponent = (types) =>
-                components.find((c) => types.every((t) => c.types.includes(t)))
+              const getComponentAny = (types) =>
+                components.find((c) => types.some((t) => c.types.includes(t)))
                   ?.long_name;
 
-              const streetNumber = getComponent(["street_number"]);
-              const route = getComponent(["route"]);
-              const pointOfInterest = getComponent(["point_of_interest"]);
-              const premise = getComponent(["premise"]);
-              const neighborhood = getComponent(["neighborhood"]);
-              const sublocality = getComponent([
-                "sublocality_level_1",
-                "sublocality",
-              ]);
-              const locality = getComponent(["locality"]);
-              const state = getComponent(["administrative_area_level_1"]);
-              const pincode = getComponent(["postal_code"]);
-              const country = getComponent(["country"]);
+              const streetNumber = getComponentAny(["street_number"]);
+              const route = getComponentAny(["route"]);
+              const pointOfInterest = getComponentAny(["point_of_interest", "establishment"]);
+              const premise = getComponentAny(["premise", "building"]);
+              const sublocality2 = getComponentAny(["sublocality_level_2"]);
+              const sublocality1 = getComponentAny(["sublocality_level_1", "sublocality"]);
+              const neighborhood = getComponentAny(["neighborhood"]);
+              const locality = getComponentAny(["locality", "postal_town"]);
+              const state = getComponentAny(["administrative_area_level_1"]);
+              const pincode = getComponentAny(["postal_code"]);
+              const country = getComponentAny(["country"]);
 
               const displayParts = [];
               if (pointOfInterest) displayParts.push(pointOfInterest);
               if (premise && premise !== pointOfInterest) displayParts.push(premise);
-              
+
               let streetAddr = "";
               if (streetNumber) streetAddr += streetNumber;
               if (route) streetAddr += (streetAddr ? " " : "") + route;
               if (streetAddr) displayParts.push(streetAddr);
-              
-              if (neighborhood) displayParts.push(neighborhood);
-              if (sublocality && sublocality !== neighborhood)
-                displayParts.push(sublocality);
-              if (locality) displayParts.push(locality);
+
+              if (sublocality2) displayParts.push(sublocality2);
+              if (sublocality1 && sublocality1 !== sublocality2) displayParts.push(sublocality1);
+              if (neighborhood && neighborhood !== sublocality1 && neighborhood !== sublocality2) displayParts.push(neighborhood);
+              if (locality && locality !== sublocality1 && locality !== sublocality2) displayParts.push(locality);
 
               let statePincode = "";
               if (state) statePincode += state;
@@ -258,8 +329,10 @@ export const LocationProvider = ({ children }) => {
 
               if (country) displayParts.push(country);
 
-              const friendlyName =
-                displayParts.join(", ") || data.results[0].formatted_address;
+              let friendlyName = displayParts.join(", ");
+              if (!friendlyName || displayParts.length < 3) {
+                friendlyName = data.results[0].formatted_address || friendlyName;
+              }
 
               liveLocation = {
                 name: friendlyName,
@@ -316,19 +389,104 @@ export const LocationProvider = ({ children }) => {
       setSavedAddresses(addrs);
       if (addrs.length > 0) {
         try {
-          if (!localStorage.getItem(STORAGE_KEY)) {
-            const defaultAddr = addrs.find((a) => a.isDefault || a.isCurrent) || addrs[0];
-            updateLocation(
-              {
-                name: defaultAddr.address,
-                type: defaultAddr.label,
-                time: "12-15 mins",
-                ...(defaultAddr.location ? { latitude: defaultAddr.location.lat, longitude: defaultAddr.location.lng } : {}),
-              },
-              { persist: true, updateSavedHome: false }
-            );
+          const rawStorage = localStorage.getItem(STORAGE_KEY);
+          let shouldOverride = !rawStorage;
+          if (rawStorage) {
+            try {
+              const parsed = JSON.parse(rawStorage);
+              const addrName = parsed.address || parsed.name || "";
+              if (addrName.includes("Indore, Indore City") || addrName.includes("Rajshri Palace Colony")) {
+                shouldOverride = true;
+              }
+            } catch (e) {
+              shouldOverride = true;
+            }
+          }
+          if (shouldOverride) {
+            try {
+              // Check if Food app has a more accurate location saved
+              const foodLocRaw = localStorage.getItem("userLocation");
+              if (foodLocRaw) {
+                const parsedFood = JSON.parse(foodLocRaw);
+                const foodAddressName = parsedFood.formattedAddress || parsedFood.address || parsedFood.name;
+                if (foodAddressName && !foodAddressName.includes("Indore, Indore City")) {
+                  updateLocation(
+                    {
+                      name: foodAddressName,
+                      type: parsedFood.type || "Other",
+                      time: "12-15 mins",
+                      city: parsedFood.city || "",
+                      state: parsedFood.state || "",
+                      pincode: parsedFood.pincode || "",
+                      latitude: parsedFood.latitude,
+                      longitude: parsedFood.longitude,
+                    },
+                    { persist: true, updateSavedHome: false }
+                  );
+                  return addrs;
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+
+            // Fallback to address book
+            if (addrs && addrs.length > 0) {
+              const defaultAddr = addrs.find((a) => a.isDefault || a.isCurrent) || addrs[0];
+              updateLocation(
+                {
+                  name: defaultAddr.address,
+                  type: defaultAddr.label,
+                  time: "12-15 mins",
+                  ...(defaultAddr.location ? { latitude: defaultAddr.location.lat, longitude: defaultAddr.location.lng } : {}),
+                },
+                { persist: true, updateSavedHome: false }
+              );
+            }
           }
         } catch {
+          // ignore
+        }
+      } else {
+        // If there are no saved addresses, but we still need to override a generic location
+        try {
+          const rawStorage = localStorage.getItem(STORAGE_KEY);
+          let shouldOverride = !rawStorage;
+          if (rawStorage) {
+            try {
+              const parsed = JSON.parse(rawStorage);
+              const addrName = parsed.address || parsed.name || "";
+              if (addrName.includes("Indore, Indore City") || addrName.includes("Rajshri Palace Colony")) {
+                shouldOverride = true;
+              }
+            } catch (e) {
+              shouldOverride = true;
+            }
+          }
+
+          if (shouldOverride) {
+            const foodLocRaw = localStorage.getItem("userLocation");
+            if (foodLocRaw) {
+              const parsedFood = JSON.parse(foodLocRaw);
+              const foodAddressName = parsedFood.formattedAddress || parsedFood.address || parsedFood.name;
+              if (foodAddressName) {
+                updateLocation(
+                  {
+                    name: foodAddressName,
+                    type: parsedFood.type || "Other",
+                    time: "12-15 mins",
+                    city: parsedFood.city || "",
+                    state: parsedFood.state || "",
+                    pincode: parsedFood.pincode || "",
+                    latitude: parsedFood.latitude,
+                    longitude: parsedFood.longitude,
+                  },
+                  { persist: true, updateSavedHome: false }
+                );
+              }
+            }
+          }
+        } catch (e) {
           // ignore
         }
       }
@@ -376,42 +534,87 @@ export const LocationProvider = ({ children }) => {
     refreshAddresses();
   }, [refreshAddresses]);
 
-  // On mount: only restore from cache. Do NOT auto-fetch – browsers block the
-  // location prompt unless it's triggered by a user gesture (e.g. tap).
+  // On mount: restore cached location from localStorage.
+  // Filters out generic default strings ("Indore, Indore City") in favor of Food app location or saved address.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const addressName = parsed.address || parsed.name;
-        if (parsed && addressName) {
-          updateLocation(
-            {
+    const resolveBestLocation = () => {
+      const isGenericOrCityOnly = (name) => {
+        if (!name || typeof name !== "string") return true;
+        const trimmed = name.trim();
+        if (
+          trimmed.includes("Indore, Indore City") ||
+          trimmed.includes("Rajshri Palace") ||
+          trimmed === "Select location" ||
+          trimmed === "Current Location"
+        ) {
+          return true;
+        }
+        const parts = trimmed.split(",").map((p) => p.trim()).filter(Boolean);
+        return parts.length <= 2;
+      };
+
+      // 1. Check location_v3 first
+      try {
+        const rawV3 = window.localStorage.getItem(STORAGE_KEY);
+        if (rawV3) {
+          const parsed = JSON.parse(rawV3);
+          const addressName = parsed.address || parsed.name;
+          if (parsed && addressName && !isGenericOrCityOnly(addressName)) {
+            return {
               name: addressName,
-              type: parsed.type,
+              type: parsed.type || "Home",
               time: parsed.time || "12-15 mins",
               city: parsed.city,
               state: parsed.state,
               pincode: parsed.pincode,
               latitude: parsed.latitude,
               longitude: parsed.longitude,
-            },
-            { persist: false, updateSavedHome: false },
-          );
+            };
+          }
         }
-      } else {
-        // If no location is stored, persist the default one immediately
-        updateLocation(currentLocation, {
-          persist: true,
-          updateSavedHome: false,
-        });
-      }
-    } catch {
-      // ignore parse errors
-    }
-    // Live fetch happens only when user taps location pill or "Use current location"
+      } catch (e) {}
+
+      // 2. Check userLocation from Food app
+      try {
+        const rawFood = window.localStorage.getItem("userLocation");
+        if (rawFood) {
+          const parsed = JSON.parse(rawFood);
+          const addressName =
+            parsed.formattedAddress ||
+            parsed.address ||
+            parsed.name ||
+            (parsed.area ? `${parsed.area}, ${parsed.city || "Indore"}` : null);
+          if (parsed && addressName && !isGenericOrCityOnly(addressName)) {
+            return {
+              name: addressName,
+              type: parsed.type || "Home",
+              time: "12-15 mins",
+              city: parsed.city || "Indore",
+              state: parsed.state || "Madhya Pradesh",
+              pincode: parsed.pincode || "",
+              latitude: parsed.latitude,
+              longitude: parsed.longitude,
+            };
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fallback default
+      return {
+        name: "Sidharth nagar, Vishnu Puri Colony, Indore, Madhya Pradesh 452001, India",
+        time: "12-15 mins",
+        city: "Indore",
+        state: "Madhya Pradesh",
+        pincode: "452001",
+        latitude: 22.689,
+        longitude: 75.868,
+      };
+    };
+
+    const bestLoc = resolveBestLocation();
+    updateLocation(bestLoc, { persist: true, updateSavedHome: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

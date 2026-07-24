@@ -1,4 +1,4 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 
 const globalSettingsSchema = new mongoose.Schema(
     {
@@ -21,6 +21,7 @@ const globalSettingsSchema = new mongoose.Schema(
             publicId: { type: String, default: '' }
         },
         themeColor: { type: String, default: '#0a0a0a' },
+        quickThemeColor: { type: String, default: '#F1ECC6' },
         modules: {
             food: { type: Boolean, default: false },
             taxi: { type: Boolean, default: true },

@@ -43,15 +43,15 @@ const FeaturedCategories = ({ categoryMap, activeCategory }) => {
   }
 
   return (
-    <div className="w-full mb-5 relative group z-20 md:mt-3 mt-2 overflow-hidden bg-white dark:bg-card shadow-sm pt-4 md:pt-6">
-      <div className="relative z-10 px-4 md:px-8 flex items-center justify-between mb-3">
+    <div className="mx-3 md:mx-8 mb-5 relative group z-20 md:mt-3 mt-2 overflow-hidden bg-white dark:bg-card shadow-sm rounded-2xl pt-4 md:pt-6 pb-2">
+      <div className="relative z-10 px-4 flex items-center justify-between mb-3">
         <h2 className="text-[18px] md:text-[20px] font-extrabold tracking-tight text-[#333333] dark:text-white leading-none">
           {sectionTitle}
         </h2>
       </div>
 
       <div className="relative">
-        <div className="absolute left-4 lg:left-10 top-[50%] -translate-y-1/2 z-20 hidden md:flex">
+        <div className="absolute left-2 lg:left-8 top-[50%] -translate-y-1/2 z-20 hidden md:flex">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -64,7 +64,7 @@ const FeaturedCategories = ({ categoryMap, activeCategory }) => {
 
         <div
           ref={scrollRef}
-          className="flex gap-3 md:gap-4 overflow-x-auto no-scrollbar px-4 md:px-8 pb-5 pt-1 snap-x scroll-smooth"
+          className="flex gap-3 md:gap-4 overflow-x-auto no-scrollbar px-4 pb-4 pt-1 snap-x scroll-smooth"
         >
           {displayedCategories.map((item, index) => {
             // Determine colors: If default green is found, use a vibrant multicolor palette based on index
@@ -125,6 +125,8 @@ const FeaturedCategories = ({ categoryMap, activeCategory }) => {
               </Link>
             );
           })}
+          {/* Spacer to fix right padding issue in webkit scroll containers */}
+          <div className="shrink-0 w-1 md:w-4" aria-hidden="true"></div>
         </div>
 
         <div className="absolute right-4 lg:right-10 top-[50%] -translate-y-1/2 z-20 hidden md:flex">

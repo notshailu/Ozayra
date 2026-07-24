@@ -17,6 +17,8 @@ import ExperienceBannerCarousel from "../components/experience/ExperienceBannerC
 import { resolveQuickImageUrl } from '../utils/image';
 import { getQuickCategoryPath } from '../utils/routes';
 import { useLocation as useAppLocation } from '../context/LocationContext';
+import { useSettings } from "@core/context/SettingsContext";
+import { useQuickHomeData } from '../hooks/useQuickHomeData';
 
 const QUICK_THEME_STORAGE_KEY = "food.quick.headerColor";
 const QUICK_HEADER_RETURN_STORAGE_KEY = "food.quick.headerReturn";
@@ -80,6 +82,14 @@ const CategoryProductsPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentLocation } = useAppLocation();
+    const { settings } = useSettings();
+    const {
+        activeCategory,
+        categories,
+        isLoading: isDataLoading,
+        isBootstrapped
+    } = useQuickHomeData({ currentLocation, settings });
+    
     const initialSubcategoryId = location.state?.activeSubcategoryId || 'all';
     const { isOpen: isProductDetailOpen } = useProductDetail();
     const [selectedSubCategory, setSelectedSubCategory] = useState(initialSubcategoryId);
@@ -88,6 +98,7 @@ const CategoryProductsPage = () => {
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [headerTheme, setHeaderTheme] = useState(FALLBACK_HEADER_COLOR);
+    const [localActiveHeader, setLocalActiveHeader] = useState(null);
 
     useEffect(() => {
         if (typeof window === "undefined") return;

@@ -47,6 +47,9 @@ import SavingsIcon from "@mui/icons-material/Savings";
 
 import { getIconSvg } from "@/shared/constants/categoryIcons";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "@core/context/AuthContext";
+import { useSettings } from "@core/context/SettingsContext";
 import { customerApi } from "../services/customerApi";
 import { toast } from "sonner";
 import ProductCard from "../components/shared/ProductCard";
@@ -312,8 +315,9 @@ function QuickHomeLoadingState({ embedded }) {
 const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) => {
   const { scrollY } = useScroll();
   const { isOpen: isProductDetailOpen } = useProductDetail();
-  const { currentLocation } = useLocation();
   const navigate = useNavigate();
+  const { currentLocation } = useLocation();
+  const { settings } = useSettings();
   const routePathname = typeof window !== "undefined" ? window.location.pathname : "";
   const quickCatsRef = useRef(null);
 
@@ -334,7 +338,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
     loadingHeroConfig,
     isLoading,
     isBootstrapped
-  } = useQuickHomeData({ currentLocation });
+  } = useQuickHomeData({ currentLocation, settings });
 
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
   const [isInstantBannerJump, setIsInstantBannerJump] = useState(false);
@@ -685,7 +689,7 @@ const Home = ({ embedded = false, onThemeChange, embeddedHeaderColor = null }) =
               "mb-4 md:mb-6",
               embedded ? "mt-4 md:mt-5" : "mt-6 md:mt-10",
             )}>
-            <div className="relative overflow-hidden bg-[#F0EBC9] pt-6 md:pt-8 pb-0 rounded-none md:rounded-[32px] mx-0 md:mx-8 lg:mx-[50px] shadow-sm">
+            <div className="relative overflow-hidden pt-6 md:pt-8 pb-0 rounded-none md:rounded-[32px] mx-0 md:mx-8 lg:mx-[50px] shadow-sm" style={{ backgroundColor: settings?.quickThemeColor || "#F1ECC6" }}>
               <div className="relative z-10 px-4 md:px-8">
                 <div className="flex justify-between items-center mb-3 md:mb-5 px-1">
                   <div className="flex flex-col">

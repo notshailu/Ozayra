@@ -7,11 +7,10 @@ import { resolveQuickImageUrl } from '../utils/image';
 import { getQuickSearchPath } from '../utils/routes';
 import { Search, Mic } from 'lucide-react';
 import { useQuickHomeData } from '../hooks/useQuickHomeData';
-
-// Pastel backgrounds typical for Blinkit category cards
-const PASTEL_TINTS = [
-    "#e8f4f6", // Soft cyan/teal (default Blinkit box color)
-];
+import { useSettings } from '@core/context/SettingsContext';
+import { useLocation } from '../context/LocationContext';
+import { getQuickCategoryPath } from '../utils/routes';
+import { cn } from "@/lib/utils";
 
 // Helper to ensure proper Title Casing even if entered lowercase in admin DB
 const formatTitle = (str = "") => {
@@ -27,28 +26,23 @@ const formatTitle = (str = "") => {
         .join(" ");
 };
 
-const CategoryCard = ({ category, idx = 0 }) => {
-    const bgTint = PASTEL_TINTS[idx % PASTEL_TINTS.length] || "#edf7f7";
-
+const CategoryCard = ({ category, themeColor }) => {
     return (
-        <div className="flex flex-col items-center group cursor-pointer">
-            {/* Square pastel card with product illustration */}
+        <div className="flex flex-col items-center cursor-pointer">
             <div 
-                className="w-full aspect-square rounded-[20px] sm:rounded-3xl dark:bg-slate-900 border border-slate-100/80 dark:border-slate-800/80 hover:border-emerald-500/40 hover:shadow-md transition-all duration-300 flex items-center justify-center p-2.5 sm:p-3.5 relative overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
-                style={{ backgroundColor: bgTint }}
+                className="w-full aspect-square rounded-[16px] sm:rounded-2xl flex items-center justify-center p-2.5 sm:p-3 relative overflow-hidden"
+                style={{ backgroundColor: themeColor }}
             >
                 <img
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-contain filter drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-contain mix-blend-multiply" // Added mix-blend-multiply to help with white backgrounds on JPGs
                     onError={(e) => {
                         e.currentTarget.src = "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=200&auto=format&fit=crop";
                     }}
                 />
             </div>
-
-            {/* Centered dark typography below card */}
-            <span className="block text-[11px] sm:text-[12px] font-semibold text-[#333333] dark:text-slate-200 text-center leading-[1.2] tracking-tight mt-1.5 px-0.5 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+            <span className="block text-[11px] sm:text-[12px] font-[600] text-[#333333] dark:text-slate-200 text-center leading-[1.25] tracking-tight mt-2 px-0.5">
                 {formatTitle(category.name)}
             </span>
         </div>
@@ -57,9 +51,12 @@ const CategoryCard = ({ category, idx = 0 }) => {
 
 const CategoriesPage = () => {
     const navigate = useNavigate();
+    const { currentLocation } = useLocation();
+    const { settings } = useSettings();
     const { categories: headerCategories, activeCategory: headerActiveCategory, setActiveCategory: setHeaderActiveCategory } = useQuickHomeData();
     const [groups, setGroups] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const quickThemeColor = settings?.quickThemeColor || "#F1ECC6";
 
     const searchPath = getQuickSearchPath();
     const [searchPlaceholder, setSearchPlaceholder] = useState('Search "chocolate"');
@@ -147,7 +144,7 @@ const CategoriesPage = () => {
     return (
         <div 
             style={{ fontFamily: "'Okra', 'Outfit', sans-serif" }}
-            className="min-h-screen bg-[#F5F7F8] dark:bg-slate-950 transition-colors duration-500 pb-24"
+            className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-500 pb-24"
         >
             {/* Unified Blinkit Warm Yellow Top Bar containing both location AND search bar inside ONE single component */}
             <MainLocationHeader 
@@ -173,7 +170,7 @@ const CategoriesPage = () => {
             />
 
             {/* Categories Content begins below the unified top header */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[145px] sm:pt-[155px] md:pt-[170px]">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[220px] sm:pt-[230px] md:pt-[250px]">
                     <AnimatePresence mode='wait'>
                         {isLoading ? (
                             <motion.div
@@ -197,24 +194,24 @@ const CategoriesPage = () => {
                                         transition={{ duration: 0.35, delay: Math.min(groupIdx * 0.06, 0.3) }}
                                         className="space-y-3.5"
                                     >
-                                        {/* Clean, Bold Section Heading (With automatic Title Casing) */}
-                                        <h2 className="text-[18px] sm:text-[20px] font-extrabold text-[#1A1A1A] dark:text-white tracking-tight px-1 mb-1">
+                                        {/* Blinkit-style Section Heading */}
+                                        <h2 className="text-[17px] sm:text-[19px] font-[800] text-[#222222] dark:text-white tracking-tight px-0 mb-2">
                                             {formatTitle(group.title)}
                                         </h2>
 
-                                        {/* 4 columns on mobile, exactly like Blinkit */}
-                                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-x-2.5 gap-y-5 sm:gap-x-4 sm:gap-y-6">
+                                        {/* 4 columns on mobile, matching Blinkit gaps */}
+                                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-x-2 gap-y-5 sm:gap-x-4 sm:gap-y-6">
                                             {group.categories.map((category, cIdx) => (
-                                                <Link
+                                                <div
                                                     key={category.id}
-                                                    to={`/quick/categories/${category.id}`}
-                                                    className="block focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-2xl"
+                                                    onClick={() => navigate(getQuickCategoryPath(category.id))}
+                                                    className="block focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-2xl cursor-pointer"
                                                 >
                                                     <CategoryCard
                                                         category={category}
-                                                        idx={cIdx}
+                                                        themeColor={quickThemeColor}
                                                     />
-                                                </Link>
+                                                </div>
                                             ))}
                                         </div>
                                     </motion.section>

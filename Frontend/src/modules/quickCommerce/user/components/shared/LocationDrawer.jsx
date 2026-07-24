@@ -52,7 +52,7 @@ const LocationDrawer = ({ isOpen, onClose }) => {
   }, []);
 
   const getComponent = useCallback((components, types) => {
-    return components?.find((c) => types.every((t) => c.types.includes(t)))
+    return components?.find((c) => types.some((t) => c.types.includes(t)))
       ?.long_name;
   }, []);
 

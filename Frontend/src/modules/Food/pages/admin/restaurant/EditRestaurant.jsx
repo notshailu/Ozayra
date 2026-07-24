@@ -111,7 +111,7 @@ async function loadGooglePlaces() {
   await new Promise((resolve, reject) => {
     const script = document.createElement("script")
     script.id = "admin-google-maps-script"
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,drawing,geometry&v=weekly`
     script.async = true
     script.defer = true
     script.onload = resolve

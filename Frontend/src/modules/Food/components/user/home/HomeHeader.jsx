@@ -28,6 +28,8 @@ import {
 import { Badge } from "@food/components/ui/badge";
 import foodPattern from "@food/assets/food_pattern_background.webp";
 import useNotificationInbox from "@food/hooks/useNotificationInbox";
+import { useAuth } from "@core/context/AuthContext";
+import { userAPI } from "@food/api";
 
 const tabs = [
   {
@@ -193,6 +195,25 @@ export default function HomeHeader({
     unreadCount: broadcastUnreadCount,
     dismiss: dismissBroadcastNotification,
   } = useNotificationInbox("user", { limit: 20 });
+  const { user } = useAuth();
+  const [realWalletBalance, setRealWalletBalance] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      let mounted = true;
+      userAPI
+        .getWallet()
+        .then((res) => {
+          const w = res?.data?.data?.wallet || res?.data?.wallet;
+          const bal = Number(w?.balance);
+          if (mounted) setRealWalletBalance(Number.isFinite(bal) ? bal : 0);
+        })
+        .catch(() => { });
+      return () => {
+        mounted = false;
+      };
+    }
+  }, [user]);
 
   useEffect(() => {
     const sync = () => {
@@ -516,14 +537,14 @@ export default function HomeHeader({
             </>
           ) : (
             <div className="flex items-center gap-3">
-              {/* Wallet Icon (₹0) */}
+              {/* Wallet Icon */}
               <div onClick={() => navigate(walletPath)} className="flex flex-col items-center justify-center bg-white rounded-[14px] shadow-sm min-w-[38px] h-[38px] cursor-pointer active:scale-95 transition-transform">
                 <Wallet className="h-[17px] w-[17px] text-[#b48c1e] mt-[2px]" strokeWidth={2.5} />
-                <span className="text-[9px] font-black mt-[1px] leading-none text-slate-900">₹0</span>
+                <span className="text-[9px] font-black mt-[1px] leading-none text-slate-900">₹{((realWalletBalance !== null ? realWalletBalance : user?.walletBalance) || 0).toLocaleString('en-IN')}</span>
               </div>
               
               {/* Profile Icon */}
-              <div onClick={() => navigate("/quick/profile")} className="flex items-center justify-center bg-white rounded-[14px] shadow-sm w-[38px] h-[38px] cursor-pointer active:scale-95 transition-transform">
+              <div onClick={() => navigate("/profile?from=quick")} className="flex items-center justify-center bg-white rounded-[14px] shadow-sm w-[38px] h-[38px] cursor-pointer active:scale-95 transition-transform">
                 <div className="bg-slate-900 rounded-full w-[22px] h-[22px] flex items-center justify-center overflow-hidden">
                   <svg className="w-[19px] h-[19px] text-white mt-[4px]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                 </div>

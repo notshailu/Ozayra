@@ -88,7 +88,7 @@ export const SettingsProvider = ({ children }) => {
       setError(null);
       // Use the Food module's public settings endpoint
       const res = await getWithDedupe("/food/admin/business-settings/public", {}, { ttl: 60 * 1000 });
-      const data = res.data?.result || res.data;
+      const data = res.data?.data || res.data?.result || res.data;
       const merged = { ...DEFAULT_SETTINGS, ...data };
       setSettings(merged);
       applyThemeVariables(merged);

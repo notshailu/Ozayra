@@ -93,6 +93,7 @@ export const quickAdminSidebarMenu = [
         ],
       },
       { type: "link", label: "Fees & Charges", path: "/admin/quick-commerce/billing", icon: "DollarSign" },
+      { type: "link", label: "App Theme", path: "/admin/quick-commerce/app-theme", icon: "Palette" },
       { type: "link", label: "My Profile", path: "/admin/quick-commerce/profile", icon: "User" },
     ],
   },

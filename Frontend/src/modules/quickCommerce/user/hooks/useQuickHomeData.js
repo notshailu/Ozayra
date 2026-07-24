@@ -125,7 +125,7 @@ const ALL_CATEGORY = {
   name: "All",
   icon: AllIcon,
   theme: DEFAULT_CATEGORY_THEME,
-  headerColor: "#F0EBC9",
+  headerColor: "#F1ECC6",
   banner: {
     title: "HOUSEFULL",
     subtitle: "SALE",
@@ -147,7 +147,7 @@ let globalQuickHomeCache = {
 
 const CACHE_EXPIRY_MS = 5 * 1000; // 5 seconds cache duration
 
-export const useQuickHomeData = ({ currentLocation } = {}) => {
+export const useQuickHomeData = ({ currentLocation, settings } = {}) => {
   const hasValidCache = globalQuickHomeCache.data && (Date.now() - globalQuickHomeCache.lastFetched < CACHE_EXPIRY_MS);
   
   const [isLoading, setIsLoading] = useState(!hasValidCache);
@@ -191,8 +191,8 @@ export const useQuickHomeData = ({ currentLocation } = {}) => {
       }
 
       const [catRes, prodRes, expRes, sectionsRes, heroRes] = await Promise.all([
-        customerApi.getCategories(),
-        hasValidLocation ? customerApi.getProducts(productParams) : Promise.resolve({ data: { success: true, result: { items: [] } } }),
+        customerApi.getCategories().catch(() => ({ data: { success: true, results: [] } })),
+        hasValidLocation ? customerApi.getProducts(productParams).catch(() => ({ data: { success: true, result: { items: [] } } })) : Promise.resolve({ data: { success: true, result: { items: [] } } }),
         customerApi.getExperienceSections({ pageType: "home" }).catch(() => null),
         hasValidLocation ? customerApi.getOfferSections({ lat: currentLocation.latitude, lng: currentLocation.longitude }).catch(() => ({ data: {} })) : Promise.resolve({ data: { results: [] } }),
         customerApi.getHeroConfig({ pageType: "home" }).catch(() => null),
@@ -235,9 +235,10 @@ export const useQuickHomeData = ({ currentLocation } = {}) => {
         });
 
         const allHeaderFromAdmin = formattedHeaders.find(h => (h.slug?.toLowerCase() === "all") || (h.name?.toLowerCase() === "all"));
+        const themeColor = settings?.quickThemeColor || "#F1ECC6";
         const mergedAllCategory = allHeaderFromAdmin 
-          ? { ...ALL_CATEGORY, headerColor: "#F0EBC9", icon: allHeaderFromAdmin.icon || ALL_CATEGORY.icon } 
-          : { ...ALL_CATEGORY, headerColor: "#F0EBC9" };
+          ? { ...ALL_CATEGORY, headerColor: themeColor, icon: allHeaderFromAdmin.icon || ALL_CATEGORY.icon } 
+          : { ...ALL_CATEGORY, headerColor: themeColor };
         const headersWithoutAll = formattedHeaders.filter(h => !((h.slug?.toLowerCase() === "all") || (h.name?.toLowerCase() === "all")));
         
         const finalCategories = [mergedAllCategory, ...headersWithoutAll];

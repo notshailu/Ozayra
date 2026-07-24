@@ -1,4 +1,4 @@
-﻿import { GlobalSettings } from '../models/settings.model.js';
+import { GlobalSettings } from '../models/settings.model.js';
 import { sendResponse } from '../../../utils/response.js';
 import { uploadImageBufferDetailed } from '../../../services/cloudinary.service.js';
 
@@ -51,7 +51,7 @@ export async function updateGlobalSettings(req, res, next) {
             data = req.body;
         }
         
-        const { companyName, email, phoneCountryCode, phoneNumber, address, state, pincode, region, logoUrl, faviconUrl, themeColor, modules } = data;
+        const { companyName, email, phoneCountryCode, phoneNumber, address, state, pincode, region, logoUrl, faviconUrl, themeColor, quickThemeColor, modules } = data;
         
         console.log("Updating global settings with data:", data);
 
@@ -99,6 +99,9 @@ export async function updateGlobalSettings(req, res, next) {
         }
         if (themeColor !== undefined) {
             settings.themeColor = themeColor;
+        }
+        if (quickThemeColor !== undefined) {
+            settings.quickThemeColor = quickThemeColor;
         }
         if (modules !== undefined) {
             settings.modules = {

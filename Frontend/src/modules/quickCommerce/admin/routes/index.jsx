@@ -43,7 +43,7 @@ const QuickZoneSetup = React.lazy(() => import("../pages/ZoneSetup"))
 const QuickAddZone = React.lazy(() => import("../pages/AddZone"))
 const QuickViewZone = React.lazy(() => import("../pages/ViewZone"))
 const SellerCommission = React.lazy(() => import("../pages/SellerCommission"))
-
+const AppTheme = React.lazy(() => import("../pages/AppTheme"))
 
 
 
@@ -90,6 +90,7 @@ function QuickCommerceAdminRoutesInner() {
       <Route path="/orders/:status" element={<OrdersList />} />
       <Route path="/orders/view/:orderId" element={<OrderDetail />} />
       <Route path="/billing" element={<BillingCharges />} />
+      <Route path="/app-theme" element={<AppTheme />} />
       <Route path="*" element={<Navigate to="/admin/quick-commerce" replace />} />
     </Routes>
   )
